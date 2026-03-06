@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YukiChat</title>
+    <style>
+        /* CSS Variables & Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+        
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+            --text-color: #fff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        
+        body {
+            background: linear-gradient(45deg, #0f2027, #203a43, #2c5364);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-color);
+            overflow: hidden;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassmorphism utility */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* App Containers */
+        #auth-container, #app-container { width: 100%; height: 100%; transition: opacity 0.3s; }
+        #auth-container { display: flex; justify-content: center; align-items: center; padding: 20px; }
+        #app-container { display: none; padding: 2vh 2vw; }
+
+        /* Auth Form */
+        .auth-box { padding: 40px; width: 100%; max-width: 400px; text-align: center; }
+        .auth-box h1 { margin-bottom: 20px; font-weight: 600; letter-spacing: 2px; }
+        .input-field {
+            width: 100%; padding: 12px 20px; margin: 10px 0; border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.5); background: rgba(0, 0, 0, 0.2);
+            color: #fff; outline: none; transition: 0.3s;
+        }
+        .input-field:focus { background: rgba(0, 0, 0, 0.4); border-color: #fff; }
+        .btn {
+            width: 100%; padding: 12px; border-radius: 25px; border: none; cursor: pointer;
+            background: rgba(255, 255, 255, 0.2); color: #fff; font-weight: 600;
+            transition: 0.3s; margin-top: 10px; border: 1px solid rgba(255,255,255,0.2);
+        }
+        .btn:hover { background: rgba(255, 255, 255, 0.4); }
+        .toggle-auth { margin-top: 15px; font-size: 0.9em; cursor: pointer; text-decoration: underline; opacity: 0.8; }
+
+        /* Chat App Layout */
+        .chat-layout { display: flex; width: 100%; max-width: 1200px; height: 96vh; margin: 0 auto; gap: 20px; }
+        .sidebar { width: 350px; display: flex; flex-direction: column; padding: 20px; }
+        .chat-area { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h2 { font-size: 1.5em; }
+        
+        /* Search & Lists */
+        .search-bar { width: 100%; margin-bottom: 20px; }
+        .list-container { flex-grow: 1; overflow-y: auto; padding-right: 5px; }
+        .list-container::-webkit-scrollbar { width: 5px; }
+        .list-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
+        
+        .user-item {
+            padding: 15px; border-radius: 12px; margin-bottom: 10px; cursor: pointer;
+            background: rgba(255, 255, 255, 0.05); transition: 0.2s; border: 1px solid transparent;
+        }
+        .user-item:hover { background: rgba(255, 255, 255, 0.15); border-color: rgba(255,255,255,0.2); }
+        .user-item.active { background: rgba(255, 255, 255, 0.25); border-color: rgba(255,255,255,0.4); }
+
+        /* Chat View */
+        .chat-header { padding: 20px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center;}
+        .back-btn { display: none; margin-right: 15px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;}
+        .messages { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        
+        .msg { max-width: 70%; padding: 12px 18px; border-radius: 20px; line-height: 1.4; word-wrap: break-word;}
+        .msg.sent { align-self: flex-end; background: rgba(0, 150, 255, 0.4); border-bottom-right-radius: 5px; }
+        .msg.received { align-self: flex-start; background: rgba(255, 255, 255, 0.2); border-bottom-left-radius: 5px; }
+        .msg img { max-width: 100%; border-radius: 10px; margin-top: 5px; cursor: pointer;}
+
+        /* Inputs */
+        .input-area { padding: 20px; display: flex; gap: 10px; border-top: 1px solid var(--glass-border); }
+        .msg-input { flex-grow: 1; }
+        .photo-btn {
+            background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 50%; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; font-size: 1.2rem; transition: 0.3s;
+        }
+        .photo-btn:hover { background: rgba(255, 255, 255, 0.4); }
+        input[type="file"] { display: none; }
+
+        #empty-chat-state { position: absolute; inset:0; display:flex; justify-content:center; align-items:center; opacity: 0.6; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .chat-layout { padding: 0; margin: 0; width: 100vw; height: 100vh; border-radius: 0; border: none; flex-direction: column; position: relative;}
+            .sidebar { width: 100%; height: 100%; border-radius: 0; border: none; }
+            .chat-area { 
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+                transform: translateX(100%); transition: transform 0.3s ease; border-radius:0; border: none;
+            }
+            /* When chat is open on mobile */
+            .show-chat .chat-area { transform: translateX(0); }
+            .show-chat .sidebar { pointer-events: none; }
+            .back-btn { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Auth Screen -->
+    <div id="auth-container">
+        <div class="auth-box glass">
+            <h1>YukiChat</h1>
+            <input type="text" id="username" class="input-field" placeholder="Username" autocomplete="off">
+            <input type="password" id="password" class="input-field" placeholder="Password">
+            <button class="btn" id="auth-btn" onclick="handleAuth()">Login</button>
+            <div class="toggle-auth" id="auth-toggle" onclick="toggleAuthMode()">Need an account? Register</div>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="app-container">
+        <div class="chat-layout glass" id="chat-layout-container">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="header">
+                    <h2>YukiChat</h2>
+                    <button class="btn" style="width: auto; padding: 5px 15px;" onclick="logout()">Logout</button>
+                </div>
+                <input type="text" id="search" class="input-field search-bar" placeholder="Search users..." onkeyup="searchUsers()">
+                <div id="user-list" class="list-container">
+                    <!-- Dynamic List -->
+                </div>
+            </div>
+
+            <!-- Chat Area -->
+            <div class="chat-area glass">
+                <div id="empty-chat-state">Select a user to start chatting</div>
+                
+                <div id="active-chat-ui" style="display: none; height: 100%; flex-direction: column;">
+                    <div class="chat-header">
+                        <button class="back-btn" onclick="closeChat()">&#8592;</button>
+                        <h3 id="chat-title">Username</h3>
+                    </div>
+                    <div class="messages" id="messages-container"></div>
+                    <div class="input-area">
+                        <label class="photo-btn">
+                            📷<input type="file" id="photo-upload" accept="image/*" onchange="sendPhoto(event)">
+                        </label>
+                        <input type="text" id="message-input" class="input-field msg-input" placeholder="Type a message..." onkeypress="handleEnter(event)">
+                        <button class="btn" style="width: 80px;" onclick="sendTextMessage()">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURATION
+        const API_BASE = 'https://YOUR_WORKER_URL_HERE.workers.dev'; // <--- REPLACE WITH YOUR WORKER DOMAIN
+        
+        // App State
+        let state = {
+            isLogin: true,
+            token: localStorage.getItem('yuki_token'),
+            userId: localStorage.getItem('yuki_userId'),
+            activeChatId: null,
+            activeChatName: '',
+            pollInterval: null
+        };
+
+        // Initialize App
+        if (state.token) { showApp(); loadChatList(); }
+
+        // --- AUTHENTICATION ---
+        function toggleAuthMode() {
+            state.isLogin = !state.isLogin;
+            document.getElementById('auth-btn').innerText = state.isLogin ? 'Login' : 'Register';
+            document.getElementById('auth-toggle').innerText = state.isLogin ? 'Need an account? Register' : 'Have an account? Login';
+        }
+
+        async function handleAuth() {
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            if(!user || !pass) return alert('Fill all fields');
+
+            const endpoint = state.isLogin ? '/api/login' : '/api/register';
+            try {
+                const res = await fetch(`${API_BASE}${endpoint}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username: user, password: pass})
+                });
+                const data = await res.json();
+                if(res.ok) {
+                    state.token = data.token;
+                    state.userId = data.userId;
+                    localStorage.setItem('yuki_token', data.token);
+                    localStorage.setItem('yuki_userId', data.userId);
+                    document.getElementById('username').value = '';
+                    document.getElementById('password').value = '';
+                    showApp();
+                    loadChatList();
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) { alert('Network error'); }
+        }
+
+        function logout() {
+            localStorage.clear();
+            state.token = null; state.userId = null; state.activeChatId = null;
+            clearInterval(state.pollInterval);
+            document.getElementById('app-container').style.display = 'none';
+            document.getElementById('auth-container').style.display = 'flex';
+        }
+
+        function showApp() {
+            document.getElementById('auth-container').style.display = 'none';
+            document.getElementById('app-container').style.display = 'block';
+        }
+
+        // --- API HELPERS ---
+        async function api(path, method = 'GET', body = null) {
+            const options = { method, headers: { 'Authorization': `Bearer ${state.token}` } };
+            if (body) {
+                options.headers['Content-Type'] = 'application/json';
+                options.body = JSON.stringify(body);
+            }
+            const res = await fetch(`${API_BASE}${path}`, options);
+            if (res.status === 401) logout();
+            return res.json();
+        }
+
+        // --- CHAT LIST & SEARCH ---
+        async function loadChatList() {
+            const chats = await api('/api/chats');
+            renderUserList(chats);
+        }
+
+        let searchTimeout;
+        function searchUsers() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(async () => {
+                const q = document.getElementById('search').value.trim();
+                if (!q) return loadChatList();
+                const users = await api(`/api/users/search?q=${q}`);
+                renderUserList(users);
+            }, 300);
+        }
+
+        function renderUserList(users) {
+            const list = document.getElementById('user-list');
+            list.innerHTML = '';
+            users.forEach(u => {
+                const div = document.createElement('div');
+                div.className = `user-item ${state.activeChatId == u.id ? 'active' : ''}`;
+                div.innerText = u.username;
+                div.onclick = () => openChat(u.id, u.username);
+                list.appendChild(div);
+            });
+        }
+
+        // --- MESSAGING ---
+        function openChat(id, username) {
+            state.activeChatId = id;
+            state.activeChatName = username;
+            
+            // UI Updates
+            document.getElementById('empty-chat-state').style.display = 'none';
+            const ui = document.getElementById('active-chat-ui');
+            ui.style.display = 'flex';
+            document.getElementById('chat-title').innerText = username;
+            
+            // Mobile toggle
+            document.getElementById('chat-layout-container').classList.add('show-chat');
+            
+            // Refresh Active states in sidebar
+            document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
+            event && event.currentTarget && event.currentTarget.classList.add('active');
+
+            // Load and Poll Messages
+            document.getElementById('messages-container').innerHTML = '';
+            fetchMessages();
+            clearInterval(state.pollInterval);
+            state.pollInterval = setInterval(fetchMessages, 3000); // Polling every 3 sec
+        }
+
+        function closeChat() {
+            document.getElementById('chat-layout-container').classList.remove('show-chat');
+            state.activeChatId = null;
+            clearInterval(state.pollInterval);
+        }
+
+        async function fetchMessages() {
+            if (!state.activeChatId) return;
+            const msgs = await api(`/api/messages/${state.activeChatId}`);
+            const container = document.getElementById('messages-container');
+            const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 50;
+
+            container.innerHTML = '';
+            msgs.forEach(m => {
+                const div = document.createElement('div');
+                div.className = `msg ${m.sender_id == state.userId ? 'sent' : 'received'}`;
+                if (m.type === 'photo') {
+                    div.innerHTML = `<img src="${m.content}" onclick="window.open('${m.content}')" />`;
+                } else {
+                    div.innerText = m.content;
+                }
+                container.appendChild(div);
+            });
+
+            if (isScrolledToBottom) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        function handleEnter(e) { if(e.key === 'Enter') sendTextMessage(); }
+
+        async function sendTextMessage() {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text || !state.activeChatId) return;
+            
+            input.value = '';
+            await api(`/api/messages/${state.activeChatId}`, 'POST', { content: text, type: 'text' });
+            fetchMessages();
+            loadChatList(); // Refresh list to bump user if needed
+        }
+
+        // --- PHOTO HANDLING ---
+        // Downscale image via canvas to keep D1 database fast and small
+        function sendPhoto(event) {
+            const file = event.target.files[0];
+            if (!file || !state.activeChatId) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = async function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_SIZE = 800; // Resize large images
+                    let width = img.width, height = img.height;
+                    
+                    if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } } 
+                    else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
+                    
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const base64Data = canvas.toDataURL('image/jpeg', 0.6); // Compress to 60% quality JPG
+                    
+                    await api(`/api/messages/${state.activeChatId}`, 'POST', { content: base64Data, type: 'photo' });
+                    fetchMessages();
+                }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+</html>
