@@ -4,125 +4,150 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YukiChat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        /* CSS Variables & Fonts */
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
-        
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.3);
-            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
-            --text-color: #fff;
+            --bg-color: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --msg-sent: #6366f1;
+            --msg-received: #334155;
+            --danger: #ef4444;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         
         body {
-            background: linear-gradient(45deg, #0f2027, #203a43, #2c5364);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
+            background: linear-gradient(135deg, var(--bg-color), #1e1b4b);
+            color: var(--text-main);
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            color: var(--text-color);
             overflow: hidden;
         }
 
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* Glassmorphism utility */
         .glass {
             background: var(--glass-bg);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            box-shadow: var(--glass-shadow);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
-        /* App Containers */
-        #auth-container, #app-container { width: 100%; height: 100%; transition: opacity 0.3s; }
-        #auth-container { display: flex; justify-content: center; align-items: center; padding: 20px; }
-        #app-container { display: none; padding: 2vh 2vw; }
-
-        /* Auth Form */
-        .auth-box { padding: 40px; width: 100%; max-width: 400px; text-align: center; }
-        .auth-box h1 { margin-bottom: 20px; font-weight: 600; letter-spacing: 2px; }
+        /* --- AUTH SCREEN --- */
+        #auth-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; }
+        .auth-box { padding: 40px; width: 90%; max-width: 400px; text-align: center; }
+        .auth-box h1 { margin-bottom: 24px; font-weight: 600; color: #fff; }
         .input-field {
-            width: 100%; padding: 12px 20px; margin: 10px 0; border-radius: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.5); background: rgba(0, 0, 0, 0.2);
-            color: #fff; outline: none; transition: 0.3s;
+            width: 100%; padding: 12px 16px; margin-bottom: 16px;
+            background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border);
+            border-radius: 8px; color: white; outline: none; transition: 0.2s;
         }
-        .input-field:focus { background: rgba(0, 0, 0, 0.4); border-color: #fff; }
+        .input-field:focus { border-color: var(--primary); }
         .btn {
-            width: 100%; padding: 12px; border-radius: 25px; border: none; cursor: pointer;
-            background: rgba(255, 255, 255, 0.2); color: #fff; font-weight: 600;
-            transition: 0.3s; margin-top: 10px; border: 1px solid rgba(255,255,255,0.2);
+            width: 100%; padding: 12px; border: none; border-radius: 8px;
+            background: var(--primary); color: white; font-weight: 500;
+            cursor: pointer; transition: 0.2s;
         }
-        .btn:hover { background: rgba(255, 255, 255, 0.4); }
-        .toggle-auth { margin-top: 15px; font-size: 0.9em; cursor: pointer; text-decoration: underline; opacity: 0.8; }
+        .btn:hover { background: var(--primary-hover); }
+        .toggle-auth { margin-top: 16px; font-size: 14px; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
+        .toggle-auth:hover { color: white; }
 
-        /* Chat App Layout */
-        .chat-layout { display: flex; width: 100%; max-width: 1200px; height: 96vh; margin: 0 auto; gap: 20px; }
-        .sidebar { width: 350px; display: flex; flex-direction: column; padding: 20px; }
-        .chat-area { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        /* --- APP SCREEN --- */
+        #app-container { display: none; width: 100%; height: 100%; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .chat-layout { display: flex; width: 100%; height: 100%; overflow: hidden; position: relative; }
         
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .header h2 { font-size: 1.5em; }
+        /* Sidebar */
+        .sidebar { width: 320px; border-right: 1px solid var(--glass-border); display: flex; flex-direction: column; height: 100%; transition: 0.3s; background: rgba(15, 23, 42, 0.4); }
+        .header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); }
+        .header-actions { display: flex; gap: 8px; }
+        .icon-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 5px; transition: 0.2s; }
+        .icon-btn:hover { color: white; }
         
-        /* Search & Lists */
-        .search-bar { width: 100%; margin-bottom: 20px; }
-        .list-container { flex-grow: 1; overflow-y: auto; padding-right: 5px; }
-        .list-container::-webkit-scrollbar { width: 5px; }
-        .list-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
+        .search-bar { margin: 15px; width: calc(100% - 30px); margin-bottom: 0; }
+        .list-container { flex: 1; overflow-y: auto; padding: 15px; }
+        .list-container::-webkit-scrollbar { width: 4px; }
+        .list-container::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 4px; }
         
         .user-item {
-            padding: 15px; border-radius: 12px; margin-bottom: 10px; cursor: pointer;
-            background: rgba(255, 255, 255, 0.05); transition: 0.2s; border: 1px solid transparent;
+            display: flex; align-items: center; padding: 12px; margin-bottom: 8px;
+            border-radius: 8px; cursor: pointer; transition: 0.2s; gap: 12px;
         }
-        .user-item:hover { background: rgba(255, 255, 255, 0.15); border-color: rgba(255,255,255,0.2); }
-        .user-item.active { background: rgba(255, 255, 255, 0.25); border-color: rgba(255,255,255,0.4); }
-
-        /* Chat View */
-        .chat-header { padding: 20px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center;}
-        .back-btn { display: none; margin-right: 15px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;}
-        .messages { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .user-item:hover { background: rgba(255,255,255,0.05); }
+        .user-item.active { background: var(--primary); color: white; }
         
-        .msg { max-width: 70%; padding: 12px 18px; border-radius: 20px; line-height: 1.4; word-wrap: break-word;}
-        .msg.sent { align-self: flex-end; background: rgba(0, 150, 255, 0.4); border-bottom-right-radius: 5px; }
-        .msg.received { align-self: flex-start; background: rgba(255, 255, 255, 0.2); border-bottom-left-radius: 5px; }
-        .msg img { max-width: 100%; border-radius: 10px; margin-top: 5px; cursor: pointer;}
+        .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #334155; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; color: #fff;}
+        .avatar-small { width: 30px; height: 30px; }
 
-        /* Inputs */
-        .input-area { padding: 20px; display: flex; gap: 10px; border-top: 1px solid var(--glass-border); }
-        .msg-input { flex-grow: 1; }
-        .photo-btn {
-            background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 50%; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; font-size: 1.2rem; transition: 0.3s;
-        }
-        .photo-btn:hover { background: rgba(255, 255, 255, 0.4); }
-        input[type="file"] { display: none; }
+        /* Chat Area */
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: rgba(15, 23, 42, 0.2); height: 100%; position: relative; }
+        #empty-chat-state { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 18px; }
+        
+        .chat-header { padding: 15px 20px; display: flex; align-items: center; border-bottom: 1px solid var(--glass-border); gap: 15px; background: rgba(0,0,0,0.2); }
+        .back-btn { display: none; background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+        .chat-header-info { display: flex; align-items: center; gap: 10px; }
 
-        #empty-chat-state { position: absolute; inset:0; display:flex; justify-content:center; align-items:center; opacity: 0.6; }
+        /* Pinned Messages */
+        #pinned-container { background: rgba(99, 102, 241, 0.1); padding: 10px 20px; border-bottom: 1px solid var(--glass-border); font-size: 13px; display: none; cursor: pointer; border-left: 3px solid var(--primary); }
+        #pinned-container span { color: var(--text-muted); font-weight: 600; margin-right: 8px; }
 
-        /* Responsive */
+        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        
+        /* Message Bubbles */
+        .msg-wrapper { display: flex; flex-direction: column; max-width: 75%; position: relative; }
+        .msg-wrapper.sent { align-self: flex-end; align-items: flex-end; }
+        .msg-wrapper.received { align-self: flex-start; align-items: flex-start; }
+        
+        .msg { padding: 10px 14px; border-radius: 12px; position: relative; word-wrap: break-word; font-size: 15px; line-height: 1.4; display: flex; flex-direction: column; }
+        .sent .msg { background: var(--msg-sent); border-bottom-right-radius: 2px; }
+        .received .msg { background: var(--msg-received); border-bottom-left-radius: 2px; }
+        
+        .msg img { max-width: 100%; border-radius: 8px; cursor: pointer; margin-top: 5px; max-height: 250px; object-fit: cover; }
+        .msg-deleted { font-style: italic; color: rgba(255,255,255,0.5); }
+        
+        /* Reply Snippet */
+        .reply-snippet { background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 6px; font-size: 12px; margin-bottom: 6px; border-left: 3px solid rgba(255,255,255,0.5); color: #ccc; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+        /* Message Actions */
+        .msg-actions { display: flex; gap: 8px; font-size: 14px; opacity: 0; transition: 0.2s; margin-top: 4px; padding: 0 4px; }
+        .msg-wrapper:hover .msg-actions { opacity: 1; }
+        .msg-actions span { cursor: pointer; color: var(--text-muted); transition: 0.2s; }
+        .msg-actions span:hover { color: white; }
+        .sent .msg-actions { justify-content: flex-end; }
+
+        /* Input Area */
+        .reply-preview { display: none; background: rgba(15, 23, 42, 0.9); padding: 10px 20px; border-top: 1px solid var(--glass-border); border-left: 3px solid var(--primary); font-size: 13px; justify-content: space-between; align-items: center;}
+        .reply-preview .close { cursor: pointer; color: var(--danger); font-weight: bold; }
+        
+        .input-area { padding: 15px 20px; border-top: 1px solid var(--glass-border); display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.2); }
+        .photo-btn { cursor: pointer; font-size: 20px; color: var(--text-muted); transition: 0.2s; }
+        .photo-btn:hover { color: white; }
+        .photo-btn input { display: none; }
+        .msg-input { margin-bottom: 0; background: rgba(255,255,255,0.05); }
+
+        /* Settings Modal */
+        #settings-modal { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .settings-content { background: var(--bg-color); padding: 30px; border-radius: 12px; width: 90%; max-width: 350px; border: 1px solid var(--glass-border); text-align: center; }
+        .settings-content img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; border: 2px solid var(--primary); }
+        .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-cancel { background: transparent; border: 1px solid var(--text-muted); }
+        
+        /* Mobile Responsive */
         @media (max-width: 768px) {
-            .chat-layout { padding: 0; margin: 0; width: 100vw; height: 100vh; border-radius: 0; border: none; flex-direction: column; position: relative;}
-            .sidebar { width: 100%; height: 100%; border-radius: 0; border: none; }
-            .chat-area { 
-                position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-                transform: translateX(100%); transition: transform 0.3s ease; border-radius:0; border: none;
-            }
-            /* When chat is open on mobile */
-            .show-chat .chat-area { transform: translateX(0); }
-            .show-chat .sidebar { pointer-events: none; }
+            #app-container { padding: 0; border-radius: 0; }
+            .chat-layout { border-radius: 0; border: none; }
+            .sidebar { width: 100%; position: absolute; z-index: 10; }
+            .chat-area { position: absolute; width: 100%; z-index: 20; transform: translateX(100%); transition: transform 0.3s ease; }
+            .chat-layout.show-chat .chat-area { transform: translateX(0); }
+            .chat-layout.show-chat .sidebar { transform: translateX(-30%); opacity: 0; }
             .back-btn { display: block; }
+            .msg-actions { opacity: 1; font-size: 16px; gap: 12px; } /* Always show actions on mobile */
         }
     </style>
 </head>
@@ -142,11 +167,15 @@
     <!-- Main App Screen -->
     <div id="app-container">
         <div class="chat-layout glass" id="chat-layout-container">
+            
             <!-- Sidebar -->
             <div class="sidebar">
                 <div class="header">
                     <h2>YukiChat</h2>
-                    <button class="btn" style="width: auto; padding: 5px 15px;" onclick="logout()">Logout</button>
+                    <div class="header-actions">
+                        <button class="icon-btn" onclick="openSettings()" title="Settings">⚙️</button>
+                        <button class="icon-btn" onclick="logout()" title="Logout">🚪</button>
+                    </div>
                 </div>
                 <input type="text" id="search" class="input-field search-bar" placeholder="Search users..." onkeyup="searchUsers()">
                 <div id="user-list" class="list-container">
@@ -155,17 +184,31 @@
             </div>
 
             <!-- Chat Area -->
-            <div class="chat-area glass">
+            <div class="chat-area">
                 <div id="empty-chat-state">Select a user to start chatting</div>
                 
                 <div id="active-chat-ui" style="display: none; height: 100%; flex-direction: column;">
                     <div class="chat-header">
                         <button class="back-btn" onclick="closeChat()">&#8592;</button>
-                        <h3 id="chat-title">Username</h3>
+                        <div class="chat-header-info">
+                            <img id="chat-header-avatar" class="avatar avatar-small" src="" alt="A">
+                            <h3 id="chat-title">Username</h3>
+                        </div>
                     </div>
+                    
+                    <div id="pinned-container" onclick="scrollToPinned()">
+                        <span>📌 Pinned:</span> <span id="pinned-text" style="color:white; font-weight:normal;"></span>
+                    </div>
+
                     <div class="messages" id="messages-container"></div>
+                    
+                    <div class="reply-preview" id="reply-preview">
+                        <div><span style="color:var(--primary); font-weight:bold;">Replying to:</span> <span id="reply-preview-text">...</span></div>
+                        <div class="close" onclick="cancelReply()">✕</div>
+                    </div>
+
                     <div class="input-area">
-                        <label class="photo-btn">
+                        <label class="photo-btn" title="Send Photo">
                             📷<input type="file" id="photo-upload" accept="image/*" onchange="sendPhoto(event)">
                         </label>
                         <input type="text" id="message-input" class="input-field msg-input" placeholder="Type a message..." onkeypress="handleEnter(event)">
@@ -173,25 +216,68 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Settings Modal -->
+            <div id="settings-modal">
+                <div class="settings-content">
+                    <h3>Profile Settings</h3>
+                    <div style="margin: 20px 0;">
+                        <img id="settings-avatar-preview" src="" alt="Avatar">
+                        <label class="btn" style="display:inline-block; padding: 6px 12px; font-size:12px; margin-bottom: 15px;">
+                            Change Avatar
+                            <input type="file" style="display:none;" accept="image/*" onchange="previewAvatar(event)">
+                        </label>
+                        <input type="text" id="settings-username" class="input-field" placeholder="New Username">
+                    </div>
+                    <div class="modal-buttons">
+                        <button class="btn btn-cancel" onclick="closeSettings()">Cancel</button>
+                        <button class="btn" onclick="saveSettings()">Save</button>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
     <script>
         // CONFIGURATION
-        const API_BASE = 'https://yukichat.kviappsgames.workers.dev'; // <--- REPLACE WITH YOUR WORKER DOMAIN
+        const API_BASE = 'https://yukichat.kviappsgames.workers.dev'; // <--- REPLACE IF NEEDED
         
-        // App State
         let state = {
             isLogin: true,
             token: localStorage.getItem('yuki_token'),
             userId: localStorage.getItem('yuki_userId'),
+            username: localStorage.getItem('yuki_username'),
             activeChatId: null,
             activeChatName: '',
-            pollInterval: null
+            pollInterval: null,
+            replyingToId: null,
+            newAvatarBase64: null,
+            allMessages:[] // To quickly find pinned/replied texts locally
         };
 
         // Initialize App
-        if (state.token) { showApp(); loadChatList(); }
+        window.onload = async () => {
+            if (state.token) { 
+                showApp(); 
+                await loadChatList();
+                checkUrlForUser();
+            }
+        };
+
+        // --- DEEP LINKING (?user=username) ---
+        async function checkUrlForUser() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetUsername = urlParams.get('user');
+            if (targetUsername) {
+                // Remove parameter from URL to prevent loops
+                window.history.replaceState({}, document.title, window.location.pathname);
+                const res = await api(`/api/user/username/${targetUsername}`);
+                if (res && res.id) {
+                    openChat(res.id, res.username, res.avatar);
+                }
+            }
+        }
 
         // --- AUTHENTICATION ---
         function toggleAuthMode() {
@@ -214,17 +300,14 @@
                 });
                 const data = await res.json();
                 if(res.ok) {
-                    state.token = data.token;
-                    state.userId = data.userId;
+                    state.token = data.token; state.userId = data.userId; state.username = data.username;
                     localStorage.setItem('yuki_token', data.token);
                     localStorage.setItem('yuki_userId', data.userId);
-                    document.getElementById('username').value = '';
-                    document.getElementById('password').value = '';
+                    localStorage.setItem('yuki_username', data.username);
                     showApp();
-                    loadChatList();
-                } else {
-                    alert(data.error);
-                }
+                    await loadChatList();
+                    checkUrlForUser();
+                } else alert(data.error);
             } catch (err) { alert('Network error'); }
         }
 
@@ -253,6 +336,12 @@
             return res.json();
         }
 
+        function getAvatarUrl(avatarStr, username) {
+            if (avatarStr && avatarStr.startsWith('data:image')) return avatarStr;
+            // Generate deterministic default avatar
+            return `https://api.dicebear.com/7.x/initials/svg?seed=${username}&backgroundColor=6366f1`;
+        }
+
         // --- CHAT LIST & SEARCH ---
         async function loadChatList() {
             const chats = await api('/api/chats');
@@ -276,35 +365,76 @@
             users.forEach(u => {
                 const div = document.createElement('div');
                 div.className = `user-item ${state.activeChatId == u.id ? 'active' : ''}`;
-                div.innerText = u.username;
-                div.onclick = () => openChat(u.id, u.username);
+                
+                const img = document.createElement('img');
+                img.className = 'avatar';
+                img.src = getAvatarUrl(u.avatar, u.username);
+                
+                const name = document.createElement('div');
+                name.innerText = u.username;
+                
+                div.appendChild(img);
+                div.appendChild(name);
+                div.onclick = () => openChat(u.id, u.username, u.avatar);
                 list.appendChild(div);
             });
         }
 
+        // --- PROFILE SETTINGS ---
+        function openSettings() {
+            document.getElementById('settings-modal').style.display = 'flex';
+            document.getElementById('settings-username').value = state.username;
+            document.getElementById('settings-avatar-preview').src = getAvatarUrl(null, state.username);
+            state.newAvatarBase64 = null;
+        }
+        function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
+        
+        function previewAvatar(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                compressImage(e.target.result, 300, (base64) => {
+                    document.getElementById('settings-avatar-preview').src = base64;
+                    state.newAvatarBase64 = base64;
+                });
+            }
+            reader.readAsDataURL(file);
+        }
+        
+        async function saveSettings() {
+            const newName = document.getElementById('settings-username').value.trim();
+            const body = { username: newName };
+            if (state.newAvatarBase64) body.avatar = state.newAvatarBase64;
+            
+            const res = await api('/api/settings', 'POST', body);
+            if(res.success) {
+                state.username = newName;
+                localStorage.setItem('yuki_username', newName);
+                closeSettings();
+                loadChatList();
+            } else alert(res.error || 'Failed to update');
+        }
+
         // --- MESSAGING ---
-        function openChat(id, username) {
+        function openChat(id, username, avatar) {
             state.activeChatId = id;
             state.activeChatName = username;
+            cancelReply();
             
-            // UI Updates
             document.getElementById('empty-chat-state').style.display = 'none';
-            const ui = document.getElementById('active-chat-ui');
-            ui.style.display = 'flex';
+            document.getElementById('active-chat-ui').style.display = 'flex';
             document.getElementById('chat-title').innerText = username;
+            document.getElementById('chat-header-avatar').src = getAvatarUrl(avatar, username);
             
-            // Mobile toggle
             document.getElementById('chat-layout-container').classList.add('show-chat');
-            
-            // Refresh Active states in sidebar
             document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
-            event && event.currentTarget && event.currentTarget.classList.add('active');
+            loadChatList(); // Refresh active state visually
 
-            // Load and Poll Messages
             document.getElementById('messages-container').innerHTML = '';
             fetchMessages();
             clearInterval(state.pollInterval);
-            state.pollInterval = setInterval(fetchMessages, 3000); // Polling every 3 sec
+            state.pollInterval = setInterval(fetchMessages, 3000);
         }
 
         function closeChat() {
@@ -316,24 +446,96 @@
         async function fetchMessages() {
             if (!state.activeChatId) return;
             const msgs = await api(`/api/messages/${state.activeChatId}`);
+            state.allMessages = msgs;
+            renderMessages(msgs);
+        }
+
+        function renderMessages(msgs) {
             const container = document.getElementById('messages-container');
             const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 50;
-
             container.innerHTML = '';
+            
+            // Handle Pinned
+            const pinnedMsgs = msgs.filter(m => m.is_pinned && !m.is_deleted);
+            const pinnedEl = document.getElementById('pinned-container');
+            if(pinnedMsgs.length > 0) {
+                pinnedEl.style.display = 'block';
+                const lastPinned = pinnedMsgs[pinnedMsgs.length-1];
+                document.getElementById('pinned-text').innerText = lastPinned.type === 'photo' ? '📷 Photo' : lastPinned.content;
+            } else {
+                pinnedEl.style.display = 'none';
+            }
+
             msgs.forEach(m => {
-                const div = document.createElement('div');
-                div.className = `msg ${m.sender_id == state.userId ? 'sent' : 'received'}`;
-                if (m.type === 'photo') {
-                    div.innerHTML = `<img src="${m.content}" onclick="window.open('${m.content}')" />`;
-                } else {
-                    div.innerText = m.content;
+                const isSent = m.sender_id == state.userId;
+                const wrapper = document.createElement('div');
+                wrapper.className = `msg-wrapper ${isSent ? 'sent' : 'received'}`;
+                wrapper.id = `msg-${m.id}`;
+                
+                let msgHtml = `<div class="msg">`;
+                
+                // Reply Snippet
+                if (m.reply_to) {
+                    let replyText = "Message deleted";
+                    if (m.reply_content) {
+                        replyText = m.reply_type === 'photo' ? '📷 Photo' : m.reply_content;
+                    }
+                    msgHtml += `<div class="reply-snippet">${replyText}</div>`;
                 }
-                container.appendChild(div);
+
+                // Main Content
+                if (m.is_deleted) {
+                    msgHtml += `<span class="msg-deleted">Message deleted</span>`;
+                } else if (m.type === 'photo') {
+                    msgHtml += `<img src="${m.content}" onclick="window.open('${m.content}')" />`;
+                } else {
+                    msgHtml += `<span>${m.content}</span>`;
+                }
+                msgHtml += `</div>`;
+                
+                // Actions (Reply, Pin, Delete)
+                if (!m.is_deleted) {
+                    let actions = `<div class="msg-actions">
+                        <span onclick="setupReply(${m.id}, '${m.type === 'photo' ? 'Photo' : m.content.replace(/'/g, "\\'")}')" title="Reply">↩️</span>
+                        <span onclick="togglePin(${m.id})" title="${m.is_pinned ? 'Unpin' : 'Pin'}">${m.is_pinned ? '📍' : '📌'}</span>`;
+                    if(isSent) actions += `<span onclick="deleteMessage(${m.id})" title="Delete">🗑️</span>`;
+                    actions += `</div>`;
+                    msgHtml += actions;
+                }
+                
+                wrapper.innerHTML = msgHtml;
+                container.appendChild(wrapper);
             });
 
-            if (isScrolledToBottom) {
-                container.scrollTop = container.scrollHeight;
-            }
+            if (isScrolledToBottom) container.scrollTop = container.scrollHeight;
+        }
+
+        // --- MESSAGE ACTIONS ---
+        function setupReply(id, text) {
+            state.replyingToId = id;
+            document.getElementById('reply-preview').style.display = 'flex';
+            document.getElementById('reply-preview-text').innerText = text.substring(0, 50) + (text.length > 50 ? '...' : '');
+            document.getElementById('message-input').focus();
+        }
+        function cancelReply() {
+            state.replyingToId = null;
+            document.getElementById('reply-preview').style.display = 'none';
+        }
+        
+        async function togglePin(id) {
+            await api(`/api/messages/${id}/pin`, 'PUT');
+            fetchMessages();
+        }
+
+        async function deleteMessage(id) {
+            if(!confirm("Delete this message?")) return;
+            await api(`/api/messages/${id}`, 'DELETE');
+            fetchMessages();
+        }
+
+        function scrollToPinned() {
+            const container = document.getElementById('messages-container');
+            container.scrollTop = 0; // Simple fallback, real app would find the ID and scrollIntoView
         }
 
         function handleEnter(e) { if(e.key === 'Enter') sendTextMessage(); }
@@ -344,40 +546,47 @@
             if (!text || !state.activeChatId) return;
             
             input.value = '';
-            await api(`/api/messages/${state.activeChatId}`, 'POST', { content: text, type: 'text' });
+            const replyId = state.replyingToId;
+            cancelReply();
+
+            await api(`/api/messages/${state.activeChatId}`, 'POST', { content: text, type: 'text', reply_to: replyId });
             fetchMessages();
-            loadChatList(); // Refresh list to bump user if needed
+            loadChatList(); 
         }
 
-        // --- PHOTO HANDLING ---
-        // Downscale image via canvas to keep D1 database fast and small
         function sendPhoto(event) {
             const file = event.target.files[0];
             if (!file || !state.activeChatId) return;
             
             const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = async function() {
-                    const canvas = document.createElement('canvas');
-                    const MAX_SIZE = 800; // Resize large images
-                    let width = img.width, height = img.height;
-                    
-                    if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } } 
-                    else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
-                    
-                    canvas.width = width; canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    
-                    const base64Data = canvas.toDataURL('image/jpeg', 0.6); // Compress to 60% quality JPG
-                    
-                    await api(`/api/messages/${state.activeChatId}`, 'POST', { content: base64Data, type: 'photo' });
+            reader.onload = e => {
+                compressImage(e.target.result, 800, async (base64) => {
+                    const replyId = state.replyingToId;
+                    cancelReply();
+                    await api(`/api/messages/${state.activeChatId}`, 'POST', { content: base64, type: 'photo', reply_to: replyId });
                     fetchMessages();
-                }
-                img.src = e.target.result;
+                    loadChatList();
+                });
             }
             reader.readAsDataURL(file);
+            event.target.value = ''; // Reset
+        }
+
+        // Utility: Canvas Compression
+        function compressImage(dataUrl, maxSize, callback) {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let w = img.width, h = img.height;
+                if (w > h) { if (w > maxSize) { h *= maxSize / w; w = maxSize; } } 
+                else { if (h > maxSize) { w *= maxSize / h; h = maxSize; } }
+                
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                callback(canvas.toDataURL('image/jpeg', 0.6));
+            }
+            img.src = dataUrl;
         }
     </script>
 </body>
