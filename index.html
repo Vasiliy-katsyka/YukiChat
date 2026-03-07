@@ -87,19 +87,57 @@ frontend:
         #ctx-menu { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bg-panel); border-top-left-radius: 24px; border-top-right-radius: 24px; transform: translateY(100%); transition: 0.3s; z-index: 9000; padding: 20px 20px calc(20px + var(--safe-bottom)); }
         .ctx-item { padding: 16px; display: flex; align-items: center; gap: 16px; font-size: 16px; cursor: pointer; border-radius: 12px; transition: 0.2s; font-weight: 500; }
         .ctx-item:hover { background: var(--bg-hover); }
+
+        /* 6 Themes */
+        [data-theme="dracula"] { --bg-base: #282a36; --bg-panel: #44475a; --bg-input: #282a36; --border: #6272a4; --primary: #ff79c6; --text-main: #f8f8f2; --text-muted: #6272a4; --msg-sent: #bd93f9; --msg-recv: #44475a; }
+        [data-theme="cyberpunk"] { --bg-base: #fcee0a; --bg-panel: #000; --bg-input: #111; --border: #00ffff; --primary: #ff003c; --text-main: #00ffff; --text-muted: #fcee0a; --msg-sent: #ff003c; --msg-recv: #111; }
+        [data-theme="forest"] { --bg-base: #1c2321; --bg-panel: #2e3830; --bg-input: #1c2321; --border: #4a5d4e; --primary: #5c8266; --text-main: #e8ede9; --text-muted: #8a9c8f; --msg-sent: #5c8266; --msg-recv: #2e3830; }
+        [data-theme="synthwave"] { --bg-base: #241b2f; --bg-panel: #26233a; --bg-input: #1b1924; --border: #f69e7b; --primary: #ff3a9a; --text-main: #ffe2e2; --text-muted: #a88eaa; --msg-sent: #ff3a9a; --msg-recv: #26233a; }
+        
+        /* New features CSS */
+        .online-dot { width: 14px; height: 14px; background: var(--success); border-radius: 50%; border: 2px solid var(--bg-panel); position: absolute; bottom: 0; right: 0; }
+        .msg-tick { font-size: 11px; margin-left: 6px; display: inline-block; }
+        .msg-tick.read { color: #34d399; }
+        .link-preview { background: var(--bg-input); padding: 10px; border-radius: 10px; margin-top: 6px; font-size: 13px; border-left: 3px solid var(--primary); }
+        .link-preview a { color: var(--primary); text-decoration: none; word-break: break-all; }
+        .reply-block { background: rgba(0,0,0,0.15); border-left: 3px solid var(--primary); padding: 6px 10px; border-radius: 8px; font-size: 13px; margin-bottom: 6px; cursor: pointer; }
+        .pinned-bar { background: var(--bg-panel); padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .reply-bar-active { background: var(--bg-panel); padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+
+        /* Skeletons */
+        .skeleton { background: linear-gradient(90deg, var(--bg-input) 25%, var(--border) 50%, var(--bg-input) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 12px; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .skel-av { width: 52px; height: 52px; border-radius: 50%; }
+        .skel-text { height: 16px; margin-bottom: 8px; width: 60%; }
+        .skel-text.short { width: 40%; }
     </style>
 </head>
 <body>
     <div class="toast" id="toast">Message</div>
 
     <!-- AUTH PANEL -->
-    <div id="panel-auth" class="panel active" style="z-index: 100; justify-content: center; padding: 32px;">
-        <div style="max-width: 400px; width: 100%; margin: 0 auto; text-align: center;">
+    <!-- AUTH PANEL -->
+    <div id="panel-auth" class="panel active" style="z-index: 100; justify-content: center; padding: 32px; overflow-y: auto;">
+        <div style="max-width: 400px; width: 100%; margin: auto; text-align: center;">
             <h1 style="font-size: 36px; font-weight: 800; margin-bottom: 30px;">YukiChat <span style="color:var(--primary)">Pro</span></h1>
+            
+            <div id="auth-reg-fields" style="display:none; margin-bottom: 20px;">
+                <label style="position:relative; display:inline-block; margin-bottom:16px;">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzMzNDE1NSI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==" id="auth-av-preview" class="avatar" style="width:90px;height:90px; border:2px dashed var(--primary)">
+                    <div style="position:absolute; bottom:0; right:-5px; background:var(--primary); padding:6px; border-radius:50%; font-size:12px">📷</div>
+                    <input type="file" hidden accept="image/*" onchange="App.authAv(event)">
+                </label>
+                <div style="color:var(--text-muted); font-size:13px;">Add a Profile Photo (Optional)</div>
+            </div>
+
             <input type="text" id="auth-u" class="input-field" placeholder="Username" style="margin-bottom: 16px;">
-            <input type="password" id="auth-p" class="input-field" placeholder="Password" style="margin-bottom: 32px;">
-            <button class="btn" style="width: 100%; margin-bottom: 16px;" onclick="App.auth(true)">Log In</button>
-            <button class="btn btn-outline" style="width: 100%; border:none" onclick="App.auth(false)">Create Account</button>
+            <input type="password" id="auth-p" class="input-field" placeholder="Password" style="margin-bottom: 24px;">
+            
+            <button class="btn" id="btn-auth-main" style="width: 100%; margin-bottom: 16px;" onclick="App.submitAuth()">Log In</button>
+            <div style="color:var(--text-muted); font-size:14px;">
+                <span id="auth-toggle-txt">Don't have an account?</span> 
+                <span style="color:var(--primary); cursor:pointer; font-weight:600;" onclick="App.toggleAuthMode()">Sign Up</span>
+            </div>
         </div>
     </div>
 
@@ -126,9 +164,18 @@ frontend:
             <button class="icon-btn" id="call-btn" onclick="RTC.startCall()" style="display:none">📞</button>
         </div>
         
-        <div class="chat-area">
+        <!-- Replace only the .chat-area div inside #panel-chat -->
+        <div class="chat-area" id="chat-area-bg">
+            <div id="pinned-msg" class="pinned-bar" style="display:none;" onclick="App.scrollToPin()">
+                <div>📌</div><div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" id="pinned-text"></div>
+            </div>
             <div class="messages" id="msgs"></div>
+            <div id="reply-preview" class="reply-bar-active" style="display:none;">
+                <div style="border-left:3px solid var(--primary); padding-left:10px; font-size:14px; color:var(--text-muted)" id="reply-preview-text">Replying...</div>
+                <button class="icon-btn" style="width:30px;height:30px;font-size:14px;" onclick="App.cancelReply()">✕</button>
+            </div>
             <div class="input-bar" id="input-bar">
+                <!-- (keep existing input-bar content) -->
                 <button class="icon-btn" onclick="document.getElementById('file-upload').click()">+</button>
                 <input type="file" id="file-upload" hidden onchange="App.prepMedia(event)">
                 <textarea id="msg-input" class="msg-input" placeholder="Message..." rows="1"></textarea>
@@ -196,21 +243,41 @@ frontend:
                     <div style="position:absolute; bottom:20px; right:0; background:var(--primary); padding:10px; border-radius:50%; cursor:pointer;">📷</div>
                     <input type="file" hidden accept="image/*" onchange="App.updateProfile(event, 'avatar')">
                 </label>
-                <h2 id="set-name" style="margin-bottom:8px;">Name</h2>
+                <div style="margin-bottom:8px; display:flex; justify-content:center; align-items:center; gap:8px;">
+                    <input type="text" id="set-name" class="input-field" style="text-align:center; border:none; background:transparent; font-size:24px; font-weight:700; padding:0; width:auto;" onblur="App.updateProfile(null, 'username')">
+                    <span style="font-size:14px; color:var(--text-muted)">✏️</span>
+                </div>
                 <input type="text" id="set-bio" class="input-field" style="text-align:center; border:none; background:transparent;" placeholder="Bio..." onblur="App.updateProfile(null, 'bio')">
             </div>
             
+            <h3 style="padding: 16px; color:var(--primary); font-size:13px; text-transform:uppercase;">Appearance</h3>
+            <div class="user-item"><span>Theme</span>
+                <select id="set-theme" class="input-field" style="width:140px; padding:8px" onchange="App.setTheme(this.value)">
+                    <option value="dark">Dark</option><option value="light">Light</option><option value="oled">OLED</option>
+                    <option value="dracula">Dracula</option><option value="cyberpunk">Cyberpunk</option><option value="forest">Forest</option><option value="synthwave">Synthwave</option>
+                </select>
+            </div>
+            <div class="user-item"><span>Chat Wallpaper (URL)</span>
+                <input type="text" id="set-wall" class="input-field" style="width:150px; padding:8px; font-size:12px;" placeholder="Image URL..." onblur="App.setWallpaper(this.value)">
+            </div>
+
             <h3 style="padding: 16px; color:var(--primary); font-size:13px; text-transform:uppercase;">Privacy</h3>
             <div class="user-item"><span>Who can call me</span><select id="set-call" class="input-field" style="width:140px; padding:8px" onchange="App.updateProfile(null,'privacy')"><option value="everyone">Everyone</option><option value="noone">No One</option></select></div>
             <div class="user-item"><span>Profile Photo</span><select id="set-pfp" class="input-field" style="width:140px; padding:8px" onchange="App.updateProfile(null,'privacy')"><option value="everyone">Everyone</option><option value="noone">No One</option></select></div>
             
             <h3 style="padding: 16px; color:var(--primary); font-size:13px; text-transform:uppercase;">App</h3>
-            <div class="user-item" onclick="Router.push('panel-sessions')"><span>Devices & Sessions</span></div>
+            <div class="user-item" onclick="App.loadSessions()"><span>Devices & Sessions</span></div>
             <div class="user-item" id="install-btn" style="display:none; color:var(--primary)" onclick="App.installPWA()"><span>⬇️ Install App</span></div>
             <div class="user-item" style="color:var(--danger);" onclick="App.logout()"><span>Log Out</span></div>
         </div>
     </div>
 
+    <!-- SESSIONS PANEL -->
+    <div id="panel-sessions" class="panel">
+        <div class="panel-header"><button class="icon-btn" onclick="Router.pop()">←</button><div class="panel-title">Active Sessions</div></div>
+        <div class="panel-body" id="sessions-list" style="padding: 10px;"></div>
+    </div>
+    
     <!-- NEW CHAT / CHANNELS PANEL -->
     <div id="panel-new" class="panel">
         <div class="panel-header"><button class="icon-btn" onclick="Router.pop()">←</button><div class="panel-title">New Chat</div></div>
@@ -225,9 +292,12 @@ frontend:
 
     <!-- CONTEXT MENU -->
     <div id="ctx-menu" onclick="this.style.transform='translateY(100%)'">
-        <div style="display:flex; justify-content:space-around; margin-bottom:20px; font-size:32px; border-bottom:1px solid var(--border); padding-bottom:20px;">
+        <div style="display:flex; justify-content:space-around; margin-bottom:20px; font-size:28px; border-bottom:1px solid var(--border); padding-bottom:20px; flex-wrap:wrap; gap:10px;">
             <span onclick="App.msgAct('react','❤️')">❤️</span><span onclick="App.msgAct('react','😂')">😂</span><span onclick="App.msgAct('react','👍')">👍</span>
+            <span onclick="App.msgAct('react','😢')">😢</span><span onclick="App.msgAct('react','🔥')">🔥</span><span onclick="App.msgAct('react','💩')">💩</span>
         </div>
+        <div class="ctx-item" onclick="App.initReply()">↩️ Reply</div>
+        <div class="ctx-item" onclick="App.msgAct('pin')">📌 Pin / Unpin</div>
         <div class="ctx-item" onclick="navigator.clipboard.writeText(App.targetTxt); UI.toast('Copied')">📋 Copy Text</div>
         <div class="ctx-item danger" id="ctx-del" onclick="App.msgAct('delete')">🗑️ Delete Message</div>
     </div>
@@ -254,7 +324,7 @@ frontend:
         const State = { 
             t: localStorage.getItem('y_t'), u: JSON.parse(localStorage.getItem('y_u')||'{}'), 
             chats: new Map(), chat: null, syncLoop: null, lastMsgId: 0,
-            capMedia: null, capType: null
+            capMedia: null, capType: null, authMode: 'login', regAv: null, replyTo: null
         };
 
         const req = async (path, m='GET', b=null) => {
@@ -391,21 +461,56 @@ frontend:
         };
 
         const App = {
-            async auth(isLog) {
+            // --- AUTHENTICATION ---
+            toggleAuthMode() {
+                State.authMode = State.authMode === 'login' ? 'register' : 'login';
+                document.getElementById('auth-reg-fields').style.display = State.authMode === 'register' ? 'block' : 'none';
+                document.getElementById('btn-auth-main').textContent = State.authMode === 'register' ? 'Create Account' : 'Log In';
+                document.getElementById('auth-toggle-txt').textContent = State.authMode === 'register' ? 'Already have an account?' : "Don't have an account?";
+                document.getElementById('auth-toggle-txt').nextElementSibling.textContent = State.authMode === 'register' ? 'Log In' : 'Sign Up';
+            },
+            authAv(e) {
+                const f = e.target.files[0]; if(!f) return; const r = new FileReader();
+                r.onload = ev => { State.regAv = ev.target.result; document.getElementById('auth-av-preview').src = State.regAv; };
+                r.readAsDataURL(f);
+            },
+            async submitAuth() {
                 const u = document.getElementById('auth-u').value.trim(); const p = document.getElementById('auth-p').value.trim();
+                const isLog = State.authMode === 'login';
                 try {
-                    const d = await req(`/api/${isLog?'login':'register'}`, 'POST', { username: u, password: p });
+                    const payload = { username: u, password: p, device: navigator.userAgent.substring(0,30) };
+                    if(!isLog && State.regAv) payload.avatar = State.regAv;
+                    const d = await req(`/api/${isLog?'login':'register'}`, 'POST', payload);
                     State.t = d.token; State.u = d; localStorage.setItem('y_t', d.token); localStorage.setItem('y_u', JSON.stringify(d));
                     document.getElementById('panel-auth').classList.remove('active'); this.start();
                 } catch(e) { UI.toast(e.message); }
             },
+            // Fallback for old HTML just in case
+            async auth(isLog) { State.authMode = isLog ? 'login' : 'register'; await this.submitAuth(); },
+
             logout() { localStorage.clear(); location.reload(); },
             installPWA() { if(deferredPrompt) deferredPrompt.prompt(); },
 
+            // --- APPEARANCE ---
+            setTheme(t) { document.documentElement.setAttribute('data-theme', t); localStorage.setItem('y_theme', t); document.getElementById('set-theme').value=t; },
+            setWallpaper(w) { document.getElementById('chat-area-bg').style.backgroundImage = w ? `url(${w})` : 'none'; localStorage.setItem('y_wall', w); document.getElementById('set-wall').value=w; },
+
+            // --- INITIALIZATION ---
             start() {
                 document.getElementById('my-avatar').src = State.u.avatar||defAv; document.getElementById('set-av').src = State.u.avatar||defAv;
-                document.getElementById('set-name').textContent = State.u.username; document.getElementById('set-bio').value = State.u.bio||'';
+                // Check if set-name is input (new) or textContent (old)
+                const nameEl = document.getElementById('set-name');
+                if(nameEl.tagName === 'INPUT') nameEl.value = State.u.username; else nameEl.textContent = State.u.username;
+                document.getElementById('set-bio').value = State.u.bio||'';
                 
+                // Load saved appearance
+                const t = localStorage.getItem('y_theme') || 'dark'; this.setTheme(t);
+                const w = localStorage.getItem('y_wall') || ''; this.setWallpaper(w);
+
+                // Initial UI Loading Skeletons for Chat List
+                let skels=''; for(let i=0;i<6;i++) skels+=`<div class="user-item"><div class="skel-av skeleton"></div><div class="user-info"><div class="skel-text skeleton"></div><div class="skel-text short skeleton"></div></div></div>`;
+                document.getElementById('chat-list').innerHTML = skels;
+
                 // Route Handlers for ?channel= / ?group=
                 const p = new URLSearchParams(window.location.search);
                 if(p.get('channel') || p.get('group')) {
@@ -417,11 +522,15 @@ frontend:
                 this.sync(); State.syncLoop = setInterval(() => this.sync(), 3000);
             },
 
+            // --- REAL-TIME SYNC ---
             async sync() {
                 try {
-                    const isTyping = State.chat && document.getElementById('msg-input').value.trim().length > 0;
+                    const isTyping = State.chat && document.getElementById('msg-input') && document.getElementById('msg-input').value.trim().length > 0;
                     const d = await req('/api/sync', 'POST', {typingIn: isTyping ? State.chat : null});
                     
+                    // Sort chats by last message time (descending)
+                    d.chats.sort((a,b) => new Date(b.last_msg_time || 0) - new Date(a.last_msg_time || 0));
+
                     let html = '';
                     d.chats.forEach(c => {
                         State.chats.set(c.id, c);
@@ -429,10 +538,12 @@ frontend:
                         const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
                         const av = canSeePfp ? (isDM?(c.dm_avatar||defAv):(c.avatar||defAv)) : defAv;
                         
-                        let prevH = c.last_msg || 'Start chatting...';
+                        let prevH = c.last_msg ? c.last_msg.replace(/</g,'&lt;') : 'Start chatting...';
                         if(c.last_msg_type === 'photo') prevH = '🖼️ Photo';
                         if(c.last_msg_type === 'file') prevH = '📁 File';
+                        
                         if(isDM && c.dm_typing == c.id) prevH = '<span style="color:var(--primary)">typing...</span>';
+                        else if(!isDM && c.is_typing == c.id) prevH = '<span style="color:var(--primary)">typing...</span>';
 
                         const bage = c.unread > 0 ? `<span class="badge">${c.unread}</span>` : '';
                         
@@ -440,15 +551,21 @@ frontend:
                         const hasCall = d.calls.find(x => x.chat_id === c.id);
                         const callBtn = hasCall ? `<span class="call-badge" onclick="event.stopPropagation(); RTC.joinCall(${hasCall.id}); App.openChat(${c.id})">📞 Join Call</span>` : '';
 
+                        // Online Dot Indicator
+                        const isOnline = isDM && c.dm_last_seen && (new Date() - new Date(c.dm_last_seen + (c.dm_last_seen.includes('Z')?'':'Z')) < 60000);
+                        const onlineDot = isOnline ? `<div class="online-dot"></div>` : '';
+
                         html += `<div class="user-item" onclick="App.openChat(${c.id})">
-                                <img src="${av}" class="avatar">
+                                <div style="position:relative"><img src="${av}" class="avatar">${onlineDot}</div>
                                 <div class="user-info"><div class="user-name"><span>${n}</span> ${bage}</div><div class="user-last-msg">${prevH}</div></div>
                                 ${callBtn}
                             </div>`;
 
+                        // Active Chat specific updates
                         if(State.chat === c.id) {
                             if(isDM && c.dm_typing == c.id) document.getElementById('chat-status').innerHTML = 'typing...';
-                            else if(isDM) document.getElementById('chat-status').innerHTML = UI.formatTime(c.dm_last_seen);
+                            else if(!isDM && c.is_typing == c.id) document.getElementById('chat-status').innerHTML = 'typing...';
+                            else if(isDM) document.getElementById('chat-status').innerHTML = isOnline ? '<span style="color:var(--success)">Online</span>' : UI.formatTime(c.dm_last_seen);
                             
                             document.getElementById('call-btn').style.display = (c.type==='dm' && UI.checkPriv(c.dm_call_privacy, State.u.username)===false) ? 'none' : 'flex';
                             
@@ -460,6 +577,7 @@ frontend:
                 } catch(e){}
             },
 
+            // --- SEARCH & CHAT CREATION ---
             async searchGlobal(q) {
                 const resEl = document.getElementById(Router.stack.includes('panel-new') ? 'global-search-res' : 'chat-list');
                 if(!q) return this.sync();
@@ -479,6 +597,7 @@ frontend:
                 catch(e) { UI.toast(e.message); }
             },
 
+            // --- CHAT INTERFACE ---
             openChat(id) {
                 State.chat = id; const c = State.chats.get(id); Router.push('panel-chat');
                 const isDM = c.type==='dm'; const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
@@ -496,29 +615,68 @@ frontend:
             },
 
             async loadMsgs(id) {
+                const cont = document.getElementById('msgs');
+                if(State.lastMsgId === 0) cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div><div class="skeleton skel-text short" style="height:40px; border-radius:18px; margin-left:auto; margin-top:10px;"></div></div>`;
+                
                 try {
-                    const msgs = await req(`/api/messages/${id}`); const cont = document.getElementById('msgs'); let html = '';
+                    const msgs = await req(`/api/messages/${id}`); let html = ''; let pinned = null;
                     msgs.forEach(m => {
                         const isMine = m.sender_id === State.u.userId; let inner = '';
+                        if(m.is_pinned) pinned = m.content;
+
+                        // Reply Block
+                        if(m.reply_to_id) {
+                            const repM = msgs.find(x => x.id === m.reply_to_id);
+                            const repTxt = repM ? repM.content.replace(/</g,'&lt;') : 'Deleted message';
+                            inner += `<div class="reply-block" onclick="document.getElementById('msg-${m.reply_to_id}').scrollIntoView({behavior:'smooth', block:'center'})">${repTxt}</div>`;
+                        }
+
+                        // Link parsing & HTML escape
+                        let cleanTxt = m.content.replace(/</g,'&lt;');
+                        const urlMatch = cleanTxt.match(/(https?:\/\/[^\s]+)/g);
+                        if(urlMatch && m.type==='text') {
+                            cleanTxt = cleanTxt.replace(urlMatch[0], `<a href="${urlMatch[0]}" target="_blank" style="color:inherit; text-decoration:underline;">${urlMatch[0]}</a>`);
+                            cleanTxt += `<div class="link-preview"><a href="${urlMatch[0]}" target="_blank">🔗 View Link Preview</a></div>`;
+                        }
+
                         if(m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="window.open(this.src)">`;
-                        else inner += m.content.replace(/</g,'&lt;');
+                        else inner += cleanTxt;
                         
                         if(m.caption) inner += `<div class="msg-caption">${m.caption.replace(/</g,'&lt;')}</div>`;
 
                         let rxs = JSON.parse(m.reactions||'{}'); let rxH = ''; for(let k in rxs) rxH += rxs[k];
-                        if(rxH) inner += `<div style="position:absolute; bottom:-10px; right:8px; background:var(--bg-base); border-radius:12px; padding:2px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.2); font-size:14px; border:1px solid var(--border)">${rxH}</div>`;
+                        if(rxH) inner += `<div style="position:absolute; bottom:-10px; right:8px; background:var(--bg-base); border-radius:12px; padding:2px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:14px; border:1px solid var(--border); z-index:2;">${rxH}</div>`;
 
-                        html += `<div class="msg-row ${isMine?'sent':'received'}" oncontextmenu="event.preventDefault(); App.targetTxt='${m.type==='text'?m.content:''}'; State.targetId=${m.id}; document.getElementById('ctx-menu').style.transform='translateY(0)'; document.getElementById('ctx-del').style.display='${isMine?'flex':'none'}'">
-                            <div class="msg-bubble">${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px">${UI.formatTime(m.created_at)}</div></div></div>`;
+                        // Read/Sent Ticks
+                        const tick = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
+
+                        html += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" oncontextmenu="event.preventDefault(); App.targetTxt='${m.type==='text'?m.content:''}'; State.targetId=${m.id}; document.getElementById('ctx-menu').style.transform='translateY(0)'; document.getElementById('ctx-del').style.display='${isMine?'flex':'none'}'">
+                            <div class="msg-bubble">${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px">${UI.formatTime(m.created_at)}${tick}</div></div></div>`;
                     });
+                    
+                    // Display Pin Bar if something is pinned
+                    const pinEl = document.getElementById('pinned-msg');
+                    if(pinEl) {
+                        if(pinned) { pinEl.style.display='flex'; document.getElementById('pinned-text').textContent = pinned; }
+                        else pinEl.style.display='none';
+                    }
+
                     cont.innerHTML = html; cont.scrollTop = cont.scrollHeight;
                 } catch(e){}
             },
 
+            // --- MESSAGING ACTIONS ---
+            initReply() { State.replyTo = State.targetId; document.getElementById('reply-preview').style.display='flex'; document.getElementById('reply-preview-text').textContent = App.targetTxt || 'Media'; document.getElementById('ctx-menu').style.transform='translateY(100%)'; document.getElementById('msg-input').focus(); },
+            cancelReply() { State.replyTo = null; document.getElementById('reply-preview').style.display='none'; },
+            scrollToPin() { const c = document.getElementById('msgs'); if(c) c.scrollTop = 0; },
+
             async sendText() {
                 const inp = document.getElementById('msg-input'); const txt = inp.value.trim();
                 if(!txt || !State.chat) return; inp.value='';
-                try { await req(`/api/messages/${State.chat}`, 'POST', {content:txt, type:'text'}); State.lastMsgId=0; this.sync(); } catch(e){}
+                try { 
+                    await req(`/api/messages/${State.chat}`, 'POST', {content:txt, type:'text', reply_to_id: State.replyTo}); 
+                    this.cancelReply(); State.lastMsgId=0; this.sync(); 
+                } catch(e){}
             },
 
             prepMedia(e) {
@@ -542,6 +700,7 @@ frontend:
                 try { await req(`/api/messages/${State.targetId}/action`, 'POST', {action:act, emoji}); document.getElementById('ctx-menu').style.transform='translateY(100%)'; State.lastMsgId=0; this.sync(); } catch(e){}
             },
 
+            // --- PROFILE & SETTINGS ---
             viewProfile(chatId) {
                 const c = State.chats.get(chatId); if(!c) return;
                 const isDM = c.type==='dm'; const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
@@ -569,8 +728,30 @@ frontend:
                     const r = new FileReader(); r.onload=async ev=>{ body.avatar=ev.target.result; await req('/api/user/profile','PUT',body); document.getElementById('set-av').src=body.avatar; document.getElementById('my-avatar').src=body.avatar; UI.toast('Updated'); }; r.readAsDataURL(f); return;
                 }
                 if(field==='bio') body.bio = document.getElementById('set-bio').value;
+                if(field==='username') { body.username = document.getElementById('set-name').value; State.u.username = body.username; localStorage.setItem('y_u', JSON.stringify(State.u)); }
                 if(field==='privacy') { body.call_privacy = document.getElementById('set-call').value; body.pfp_privacy = document.getElementById('set-pfp').value; }
-                try { await req('/api/user/profile','PUT',body); UI.toast('Updated'); } catch(e){}
+                try { await req('/api/user/profile','PUT',body); UI.toast('Updated'); } catch(e){ UI.toast(e.message); }
+            },
+
+            // --- SESSIONS ---
+            async loadSessions() {
+                Router.push('panel-sessions');
+                const cont = document.getElementById('sessions-list'); if(!cont) return;
+                cont.innerHTML = '<div style="padding:20px; text-align:center;">Loading...</div>';
+                try {
+                    const sess = await req('/api/sessions'); let h='';
+                    sess.forEach(s => {
+                        h+=`<div class="user-item" style="display:block">
+                            <div style="font-weight:600; margin-bottom:4px">${s.device} ${s.is_current ? '<span class="badge" style="margin-left:8px">Current</span>' : ''}</div>
+                            <div style="font-size:13px; color:var(--text-muted)">${s.ip} • ${s.location}</div>
+                            ${!s.is_current ? `<button class="btn btn-outline" style="padding:6px 12px; font-size:12px; margin-top:8px; border-color:var(--danger); color:var(--danger)" onclick="App.revokeSession('${s.token}')">Revoke</button>`:''}
+                        </div>`;
+                    });
+                    cont.innerHTML = h || '<div style="text-align:center; padding:20px;">No sessions</div>';
+                } catch(e){}
+            },
+            async revokeSession(t) { 
+                try { await req('/api/sessions/revoke', 'POST', {tokenToRevoke: t}); this.loadSessions(); UI.toast('Revoked'); } catch(e){} 
             }
         };
 
