@@ -248,10 +248,17 @@
             const opt = { method:m, headers:{} };
             if(State.t) opt.headers['Authorization'] = `Bearer ${State.t}`;
             if(b) { opt.headers['Content-Type']='application/json'; opt.body=JSON.stringify(b); }
+            
             const res = await fetch(API+path, opt);
-            if(res.status===401) { App.logout(); throw new Error('Auth'); }
+            
+            // FIX: Only logout/reload if it's a protected route, NOT during login/register
+            if(res.status === 401 && !path.includes('/api/login') && !path.includes('/api/register')) { 
+                App.logout(); 
+                throw new Error('Session Expired'); 
+            }
+            
             const d = await res.json();
-            if(!res.ok) throw new Error(d.error||'Err');
+            if(!res.ok) throw new Error(d.error || 'Request Failed');
             return d;
         };
 
@@ -319,13 +326,30 @@
         /* ================= APP LOGIC ================= */
         const App = {
             async auth(isLog) {
-                const u=document.getElementById('auth-u').value.trim(); const p=document.getElementById('auth-p').value.trim();
-                if(!u||!p) return UI.toast('Fill all fields');
+                const u = document.getElementById('auth-u').value.trim();
+                const p = document.getElementById('auth-p').value.trim();
+                if(!u || !p) return UI.toast('Fill all fields');
+                
+                // FIX: Safer device name detection that won't crash on mobile
+                let devName = "Unknown Device";
+                try { devName = navigator.userAgent.match(/\(([^)]+)\)/)[1]; } catch(e) { devName = navigator.platform; }
+            
                 try {
-                    const d = await req(`/api/${isLog?'login':'register'}`, 'POST', {username:u, password:p, device: navigator.userAgent.split(') ')[0]+')'});
-                    State.t = d.token; State.u = d; localStorage.setItem('y_t', d.token); localStorage.setItem('y_u', JSON.stringify(d));
-                    document.getElementById('panel-auth').classList.remove('active'); this.start();
-                } catch(e) { UI.toast(e.message); }
+                    const d = await req(`/api/${isLog?'login':'register'}`, 'POST', {
+                        username: u, 
+                        password: p, 
+                        device: devName
+                    });
+                    
+                    State.t = d.token; 
+                    State.u = d; 
+                    localStorage.setItem('y_t', d.token); 
+                    localStorage.setItem('y_u', JSON.stringify(d));
+                    document.getElementById('panel-auth').classList.remove('active');
+                    this.start();
+                } catch(e) { 
+                    UI.toast(e.message); // Now this will show "Invalid credentials" instead of reloading
+                }
             },
             logout() { localStorage.clear(); location.reload(); },
 
