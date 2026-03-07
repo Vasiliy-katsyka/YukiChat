@@ -13,92 +13,108 @@
         :root {
             --bg-base: #0f172a; --bg-panel: #1e293b; --bg-input: #0f172a; --bg-hover: rgba(255,255,255,0.05);
             --border: #334155; --primary: #3b82f6; --text-main: #f8fafc; --text-muted: #94a3b8; 
-            --msg-sent: #3b82f6; --msg-recv: #334155; --danger: #ef4444; 
+            --msg-sent: #3b82f6; --msg-recv: #334155; --danger: #ef4444; --success: #10b981;
             --shadow: 0 10px 40px rgba(0,0,0,0.5); --radius: 20px; --msg-size: 16px;
             --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
 
-        /* Premium Themes */
+        /* Expanded Premium Themes */
         [data-theme="light"] { --bg-base: #f8fafc; --bg-panel: #ffffff; --bg-input: #f1f5f9; --bg-hover: rgba(0,0,0,0.05); --border: #e2e8f0; --primary: #0ea5e9; --text-main: #0f172a; --text-muted: #64748b; --msg-sent: #0ea5e9; --msg-recv: #f1f5f9; --shadow: 0 4px 20px rgba(0,0,0,0.05); }
-        [data-theme="oled"] { --bg-base: #000; --bg-panel: #000; --bg-input: #111; --border: #222; --primary: #8b5cf6; --msg-recv: #111; }
-        [data-theme="dracula"] { --bg-base: #282a36; --bg-panel: #44475a; --bg-input: #282a36; --border: #6272a4; --primary: #bd93f9; --text-main: #f8f8f2; --text-muted: #6272a4; --msg-sent: #bd93f9; --msg-recv: #6272a4; }
-        [data-theme="cyberpunk"] { --bg-base: #fcee0a; --bg-panel: #000; --bg-input: #111; --border: #ff003c; --primary: #00f0ff; --text-main: #fff; --text-muted: #ccc; --msg-sent: #ff003c; --msg-recv: #111; }
-        [data-theme="midnight"] { --bg-base: #020617; --bg-panel: #0f172a; --bg-input: #020617; --border: #1e293b; --primary: #eab308; --text-main: #f8fafc; --text-muted: #94a3b8; --msg-sent: #eab308; --msg-recv: #1e293b; }
+        [data-theme="oled"] { --bg-base: #000; --bg-panel: #000; --bg-input: #111; --border: #222; --primary: #8b5cf6; --msg-recv: #111; --msg-sent: #8b5cf6; }
+        [data-theme="dracula"] { --bg-base: #282a36; --bg-panel: #44475a; --bg-input: #282a36; --border: #6272a4; --primary: #ff79c6; --text-main: #f8f8f2; --text-muted: #6272a4; --msg-sent: #ff79c6; --msg-recv: #6272a4; }
+        [data-theme="cyberpunk"] { --bg-base: #fcee0a; --bg-panel: #000; --bg-input: #111; --border: #ff003c; --primary: #00f0ff; --text-main: #fff; --text-muted: #ccc; --msg-sent: #ff003c; --msg-recv: #111; }[data-theme="midnight"] { --bg-base: #020617; --bg-panel: #0f172a; --bg-input: #020617; --border: #1e293b; --primary: #eab308; --text-main: #f8fafc; --text-muted: #94a3b8; --msg-sent: #eab308; --msg-recv: #1e293b; }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; }
         body { background: var(--bg-base); color: var(--text-main); height: 100dvh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; }
         
-        /* Core UI */
-        .btn { padding: 16px 24px; border: none; border-radius: 16px; background: var(--primary); color: #fff; font-weight: 600; font-size: 16px; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 10px; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-        .btn:active { transform: scale(0.96); }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
-        .input-field { width: 100%; padding: 16px 20px; background: var(--bg-input); border: 1px solid var(--border); color: var(--text-main); border-radius: 16px; outline: none; font-size: 16px; transition: border 0.2s; }
-        .input-field:focus { border-color: var(--primary); }
-        .avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: var(--bg-input); flex-shrink: 0; }
-        .icon-btn { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; border: none; font-size: 24px; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
+        /* Core Elements */
+        .btn { padding: 16px 24px; border: none; border-radius: 16px; background: var(--primary); color: #fff; font-weight: 600; font-size: 16px; cursor: pointer; transition: transform 0.2s, filter 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 10px; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .btn:active { transform: scale(0.96); filter: brightness(0.9); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); text-shadow: none; }
+        .input-field { width: 100%; padding: 16px 20px; background: var(--bg-input); border: 1px solid var(--border); color: var(--text-main); border-radius: 16px; outline: none; font-size: 16px; transition: border 0.3s, box-shadow 0.3s; }
+        .input-field:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+        .avatar { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; background: var(--bg-input); flex-shrink: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .icon-btn { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; border: none; font-size: 22px; color: var(--text-main); cursor: pointer; transition: 0.2s; }
+        .icon-btn:active { background: var(--bg-hover); transform: scale(0.9); }
         
-        /* Panel Architecture (Unbreakable Fullscreen) */
-        .panel { position: absolute; inset: 0; background: var(--bg-panel); z-index: 10; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.3, 1, 0.3, 1); height: 100%; }
-        .panel.active { transform: translateX(0); box-shadow: -10px 0 30px rgba(0,0,0,0.2); }
+        /* Architecture */
+        .panel { position: absolute; inset: 0; background: var(--bg-panel); z-index: 10; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.25, 1, 0.25, 1); height: 100%; }
+        .panel.active { transform: translateX(0); box-shadow: -15px 0 40px rgba(0,0,0,0.3); }
         .panel.root { transform: translateX(0); z-index: 5; }
-        .panel-header { flex-shrink: 0; height: calc(70px + var(--safe-top)); padding-top: var(--safe-top); display: flex; align-items: center; padding-left: 16px; padding-right: 16px; border-bottom: 1px solid var(--border); gap: 16px; background: var(--bg-panel); }
-        .panel-title { font-size: 22px; font-weight: 700; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .panel-header { flex-shrink: 0; height: calc(70px + var(--safe-top)); padding-top: var(--safe-top); display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid var(--border); gap: 12px; background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 20; }
+        .panel-title { font-size: 20px; font-weight: 700; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .panel-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: var(--safe-bottom); position: relative; }
 
-        /* Chat List Elements */
-        .search-bar { padding: 12px 16px; background: var(--bg-panel); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-        .user-item { display: flex; align-items: center; gap: 16px; padding: 16px; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid rgba(0,0,0,0.02); }
+        /* Chat List */
+        .search-bar { padding: 12px 16px; background: transparent; flex-shrink: 0; position: relative; z-index: 1; }
+        .user-item { display: flex; align-items: center; gap: 16px; padding: 14px 16px; cursor: pointer; transition: background 0.2s; position: relative; }
         .user-item:hover { background: var(--bg-hover); }
         .user-info { flex: 1; overflow: hidden; }
-        .user-name { font-weight: 600; font-size: 17px; display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .user-name { font-weight: 600; font-size: 16px; display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center; }
         .user-last-msg { font-size: 14px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .badge { background: var(--primary); color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
-        .online-dot { position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background: #10b981; border-radius: 50%; border: 3px solid var(--bg-panel); }
+        .badge { background: var(--primary); color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 700; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .online-dot { position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background: var(--success); border-radius: 50%; border: 3px solid var(--bg-panel); box-shadow: 0 0 8px var(--success); }
 
-        /* Chat Layout specifically formatted to never hide inputs */
-        .chat-area { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; background-size: cover; background-position: center; }
-        .messages { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-        .input-bar { flex-shrink: 0; background: var(--bg-panel); border-top: 1px solid var(--border); padding: 12px 16px calc(12px + var(--safe-bottom)); display: flex; align-items: flex-end; gap: 12px; position: relative; z-index: 10; }
+        /* Chat Area */
+        .chat-area { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; background-size: cover; background-position: center; background-color: var(--bg-base); }
+        .messages { flex: 1; padding: 20px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; scroll-behavior: smooth; }
         
-        .msg-row { display: flex; gap: 12px; max-width: 90%; width: fit-content; position: relative; margin-top: 4px; }
+        .msg-row { display: flex; gap: 8px; max-width: 85%; width: fit-content; position: relative; margin-top: 4px; user-select: none; }
         .msg-row.sent { align-self: flex-end; flex-direction: row-reverse; }
         .msg-row.received { align-self: flex-start; }
-        .msg-bubble { padding: 12px 16px; font-size: var(--msg-size); line-height: 1.5; border-radius: var(--radius); position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.1); min-width: 60px; word-break: break-word; }
-        .msg-row.sent .msg-bubble { background: var(--msg-sent); color: #fff; border-top-right-radius: 4px; }
-        .msg-row.received .msg-bubble { background: var(--msg-recv); border-top-left-radius: 4px; }
+        .msg-bubble { padding: 10px 14px; font-size: var(--msg-size); line-height: 1.4; border-radius: 18px; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.1); min-width: 50px; word-break: break-word; }
+        .msg-row.sent .msg-bubble { background: var(--msg-sent); color: #fff; border-bottom-right-radius: 4px; }
+        .msg-row.received .msg-bubble { background: var(--msg-recv); border-bottom-left-radius: 4px; }
         
-        .msg-media { max-width: 100%; border-radius: 12px; margin-top: 6px; cursor: pointer; }
-        .secure-media { filter: blur(25px); cursor: pointer; }
+        .msg-media { max-width: 100%; border-radius: 12px; margin-top: 4px; cursor: pointer; object-fit: cover; max-height: 300px; background: rgba(0,0,0,0.1); }
+        .secure-media { filter: blur(30px); cursor: pointer; transition: filter 0.3s; }
         .secure-media.revealed { filter: blur(0); }
-        .msg-meta { font-size: 11px; opacity: 0.6; margin-top: 6px; display: flex; justify-content: flex-end; gap: 6px; align-items: center; }
+        .msg-meta { font-size: 11px; opacity: 0.7; margin-top: 4px; display: flex; justify-content: flex-end; gap: 4px; align-items: center; user-select: none; }
+        .msg-edited { font-size: 10px; font-style: italic; opacity: 0.5; margin-right: 4px; }
         
-        /* Attachment Drawer */
-        .attach-drawer { position: absolute; bottom: calc(100% + 10px); left: 16px; right: 16px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 24px; display: flex; padding: 24px; gap: 24px; justify-content: center; transform: translateY(20px) scale(0.95); opacity: 0; pointer-events: none; transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 100; }
+        /* Reply UI */
+        .reply-banner { background: rgba(0,0,0,0.2); border-left: 4px solid var(--primary); padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .reply-preview { display: none; padding: 12px 16px; background: var(--bg-panel); border-top: 1px solid var(--border); align-items: center; justify-content: space-between; font-size: 14px; color: var(--text-muted); }
+        .reply-preview.active { display: flex; }
+
+        /* Input Area */
+        .input-bar { flex-shrink: 0; background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(20px); border-top: 1px solid var(--border); padding: 12px 16px calc(12px + var(--safe-bottom)); display: flex; align-items: flex-end; gap: 10px; position: relative; z-index: 10; }
+        .attach-drawer { position: absolute; bottom: calc(100% + 10px); left: 16px; right: 16px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 24px; display: flex; padding: 20px; gap: 20px; justify-content: space-around; transform: translateY(20px) scale(0.95); opacity: 0; pointer-events: none; transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: var(--shadow); z-index: 100; }
         .attach-drawer.active { transform: translateY(0) scale(1); opacity: 1; pointer-events: all; }
-        .attach-item { display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--text-muted); cursor: pointer; font-size: 14px; }
-        .attach-icon { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; background: var(--bg-input); transition: 0.2s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
-        .attach-item:hover .attach-icon { background: var(--primary); color: #fff; transform: translateY(-5px); }
+        .attach-item { display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--text-main); cursor: pointer; font-size: 13px; font-weight: 500; }
+        .attach-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; background: var(--bg-input); transition: 0.2s; }
+        .attach-item:hover .attach-icon { background: var(--primary); color: #fff; transform: translateY(-4px); }
         
-        /* Input Field styling */
-        .msg-input { flex: 1; resize: none; min-height: 52px; max-height: 150px; padding: 14px 20px; border-radius: 26px; background: var(--bg-input); border: 1px solid var(--border); color: var(--text-main); font-size: 16px; outline: none; line-height: 1.4; }
+        .msg-input { flex: 1; resize: none; min-height: 48px; max-height: 120px; padding: 13px 18px; border-radius: 24px; background: var(--bg-input); border: 1px solid var(--border); color: var(--text-main); font-size: 16px; outline: none; line-height: 1.4; transition: 0.2s; }
+        .msg-input:focus { border-color: var(--primary); }
         .msg-input::-webkit-scrollbar { display: none; }
 
-        /* Modals & Menus */
-        #ctx-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 8999; display: none; opacity: 0; transition: 0.3s; }
-        #ctx-menu { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(30, 41, 59, 0.9); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.1); border-top-left-radius: 30px; border-top-right-radius: 30px; transform: translateY(100%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 9000; padding: 24px 24px calc(24px + var(--safe-bottom)); box-shadow: 0 -10px 40px rgba(0,0,0,0.5); }
-        .ctx-item { padding: 16px 20px; display: flex; align-items: center; gap: 16px; font-size: 17px; cursor: pointer; border-radius: 16px; transition: 0.2s; font-weight: 500; }
-        .ctx-item:hover { background: rgba(255,255,255,0.1); }
+        /* Context Menu */
+        #ctx-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 8999; display: none; opacity: 0; transition: 0.3s; }
+        #ctx-menu { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bg-panel); border-top: 1px solid var(--border); border-top-left-radius: 24px; border-top-right-radius: 24px; transform: translateY(100%); transition: 0.3s cubic-bezier(0.25, 1, 0.25, 1); z-index: 9000; padding: 20px 20px calc(20px + var(--safe-bottom)); box-shadow: 0 -10px 40px rgba(0,0,0,0.5); }
+        .ctx-item { padding: 16px; display: flex; align-items: center; gap: 16px; font-size: 16px; cursor: pointer; border-radius: 12px; transition: 0.2s; font-weight: 500; color: var(--text-main); }
+        .ctx-item:hover { background: var(--bg-hover); }
         .ctx-item.danger { color: var(--danger); }
         
-        /* Skeleton & PWA */
+        /* Utils */
+        .typing-indicator { display: flex; gap: 4px; padding: 4px 8px; align-items: center; }
+        .typing-dot { width: 6px; height: 6px; background: var(--text-muted); border-radius: 50%; animation: typing 1.4s infinite ease-in-out both; }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
         .skeleton { background: linear-gradient(90deg, var(--bg-input) 25%, var(--bg-hover) 50%, var(--bg-input) 75%); background-size: 200% 100%; animation: load 1.5s infinite; border-radius: 8px; }
         @keyframes load { to { background-position: -200% 0; } }
         
-        .pwa-card { background: linear-gradient(135deg, #8b5cf6, #3b82f6); padding: 20px; border-radius: 20px; color: white; text-align: center; margin: 16px; font-weight: 600; cursor: pointer; display: none; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); }
-        
-        .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 20px 16px; border-bottom: 1px solid var(--border); font-size: 17px; }
-        .toast { position: fixed; bottom: calc(20px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(100px); background: var(--text-main); color: var(--bg-base); padding: 14px 28px; border-radius: 30px; z-index: 10000; font-weight: 600; transition: 0.3s; opacity: 0; }
+        .toast { position: fixed; top: calc(20px + var(--safe-top)); left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--text-main); color: var(--bg-base); padding: 12px 24px; border-radius: 30px; z-index: 10000; font-weight: 600; font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); opacity: 0; }
         .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        
+        /* Audio Player Mockup */
+        .audio-player { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.1); padding: 8px 12px; border-radius: 12px; }
+        .play-btn { width: 32px; height: 32px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; }
+        .waveform { height: 20px; flex: 1; display: flex; align-items: center; gap: 2px; }
+        .wave-bar { width: 3px; background: var(--text-main); border-radius: 2px; animation: wave 1s infinite alternate; }
+        @keyframes wave { 0% { height: 4px; } 100% { height: 18px; } }
     </style>
 </head>
 <body>
@@ -108,46 +124,59 @@
     <!-- AUTH PANEL -->
     <div id="panel-auth" class="panel active" style="z-index: 100; justify-content: center; padding: 32px; background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-base) 100%);">
         <div style="max-width: 400px; width: 100%; margin: 0 auto; text-align: center;">
-            <div style="font-size: 72px; margin-bottom: 16px; filter: drop-shadow(0 10px 20px rgba(59,130,246,0.3));">❄️</div>
-            <h1 style="margin-bottom: 8px; font-size: 36px; font-weight: 800;">YukiChat <span style="color:var(--primary)">Pro</span></h1>
-            <p style="color:var(--text-muted); font-size: 16px; margin-bottom: 40px;">End-to-end focus. Zero compromise.</p>
-            <input type="text" id="auth-u" class="input-field" placeholder="Username" style="margin-bottom: 16px;">
-            <div style="position:relative; margin-bottom: 24px;">
+            <div style="font-size: 72px; margin-bottom: 16px; filter: drop-shadow(0 10px 20px rgba(59,130,246,0.3)); animation: float 3s ease-in-out infinite;">❄️</div>
+            <h1 style="margin-bottom: 8px; font-size: 36px; font-weight: 800; letter-spacing: -1px;">YukiChat <span style="color:var(--primary)">Pro</span></h1>
+            <p style="color:var(--text-muted); font-size: 15px; margin-bottom: 40px;">End-to-end focus. Zero compromise.</p>
+            <input type="text" id="auth-u" class="input-field" placeholder="Username" style="margin-bottom: 16px;" autocomplete="off">
+            <div style="position:relative; margin-bottom: 32px;">
                 <input type="password" id="auth-p" class="input-field" placeholder="Password">
-                <span onclick="UI.togglePassword()" style="position:absolute; right: 20px; top: 16px; cursor:pointer; font-size: 20px; color:var(--text-muted);">👁️</span>
+                <span onclick="UI.togglePassword()" style="position:absolute; right: 20px; top: 16px; cursor:pointer; font-size: 18px; opacity: 0.7;">👁️</span>
             </div>
-            <button class="btn" style="width: 100%; margin-bottom: 16px; padding: 20px;" onclick="App.auth(true)">Log In</button>
-            <button class="btn btn-outline" style="width: 100%; border: none; font-size: 15px;" onclick="App.auth(false)">Create New Account</button>
+            <button class="btn" id="btn-login" style="width: 100%; margin-bottom: 16px; padding: 18px; font-size: 17px;" onclick="App.auth(true)">Log In</button>
+            <button class="btn btn-outline" id="btn-register" style="width: 100%; border: none; font-size: 15px;" onclick="App.auth(false)">Create New Account</button>
         </div>
     </div>
 
     <!-- ROOT PANEL: CHAT LIST -->
     <div id="panel-root" class="panel root">
         <div class="panel-header" style="border-bottom:none">
-            <h1 class="panel-title" style="font-size: 32px;">Chats</h1>
+            <h1 class="panel-title" style="font-size: 28px; letter-spacing: -0.5px;">Chats</h1>
             <button class="icon-btn" onclick="Router.push('panel-new')" style="background: var(--bg-input);">✏️</button>
-            <img src="" id="my-avatar" class="avatar" style="width:44px;height:44px;cursor:pointer" onclick="Router.push('panel-settings')">
+            <img src="" id="my-avatar" class="avatar" style="width:40px;height:40px;cursor:pointer" onclick="Router.push('panel-settings')">
         </div>
-        <div class="search-bar"><input type="text" class="input-field" placeholder="Search chats..." style="padding: 12px 16px; border-radius: 12px; background: var(--bg-input);" oninput="App.search(this.value)"></div>
+        <div class="search-bar">
+            <input type="text" class="input-field" placeholder="Search chats..." style="padding: 12px 16px; border-radius: 12px; background: var(--bg-input); font-size: 15px;" oninput="App.search(this.value)">
+        </div>
         <div class="panel-body" id="chat-list">
-            <div class="user-item"><div class="avatar skeleton"></div><div style="flex:1"><div class="skeleton" style="width:50%;height:20px;margin-bottom:8px"></div><div class="skeleton" style="width:80%;height:16px"></div></div></div>
+            <!-- Skeletons -->
+            <div class="user-item"><div class="avatar skeleton"></div><div style="flex:1"><div class="skeleton" style="width:40%;height:18px;margin-bottom:6px"></div><div class="skeleton" style="width:70%;height:14px"></div></div></div>
+            <div class="user-item"><div class="avatar skeleton"></div><div style="flex:1"><div class="skeleton" style="width:50%;height:18px;margin-bottom:6px"></div><div class="skeleton" style="width:60%;height:14px"></div></div></div>
         </div>
     </div>
 
     <!-- PANEL: ACTIVE CHAT -->
     <div id="panel-chat" class="panel">
-        <div class="panel-header" style="background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(20px); z-index: 20;">
-            <button class="icon-btn" onclick="Router.pop()" style="margin-left:-10px">←</button>
-            <img src="" id="chat-av" class="avatar" style="width:44px;height:44px;">
-            <div style="flex:1;">
-                <div class="panel-title" id="chat-title" style="font-size: 19px;">Chat</div>
-                <div style="font-size: 13px; color: var(--primary); font-weight: 500;" id="chat-status">Connecting...</div>
+        <div class="panel-header">
+            <button class="icon-btn" onclick="Router.pop()" style="margin-left:-8px">←</button>
+            <img src="" id="chat-av" class="avatar" style="width:42px;height:42px;">
+            <div style="flex:1; cursor: pointer;" onclick="App.showProfileModal()">
+                <div class="panel-title" id="chat-title" style="font-size: 18px;">Chat</div>
+                <div style="font-size: 13px; color: var(--primary); font-weight: 500; min-height:15px" id="chat-status">Connecting...</div>
             </div>
+            <button class="icon-btn" onclick="App.clearChat()">⋮</button>
         </div>
         
         <div class="chat-area">
-            <div class="messages" id="msgs"></div>
+            <div class="messages" id="msgs" onscroll="App.handleScroll()"></div>
             
+            <div class="reply-preview" id="reply-preview">
+                <div style="flex:1; overflow:hidden;">
+                    <div style="font-size: 12px; color: var(--primary); font-weight: 600; margin-bottom:2px">Replying to...</div>
+                    <div id="reply-text" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+                </div>
+                <button class="icon-btn" onclick="App.cancelReply()" style="width:30px;height:30px;font-size:16px">✕</button>
+            </div>
+
             <div class="input-bar">
                 <div class="attach-drawer" id="attach-drawer">
                     <label class="attach-item"><div class="attach-icon">🖼️</div><span>Photo</span><input type="file" hidden accept="image/*" onchange="App.uploadFile(event, 'photo')"></label>
@@ -157,8 +186,8 @@
 
                 <button class="icon-btn" id="drawer-btn" onclick="UI.toggleDrawer()" style="transition: 0.3s; transform-origin: center;">+</button>
                 <textarea id="msg-input" class="msg-input" placeholder="Message..." rows="1"></textarea>
-                <button class="icon-btn" id="mic-btn" onclick="App.toggleMic()" style="background:var(--primary); color:#fff; border-radius:26px; width:52px; height:52px">🎤</button>
-                <button class="icon-btn" id="send-btn" onclick="App.sendText()" style="background:var(--primary); color:#fff; border-radius:26px; width:52px; height:52px; display:none">➤</button>
+                <button class="icon-btn" id="mic-btn" onclick="App.toggleMic()" style="background:var(--primary); color:#fff; border-radius:24px; width:48px; height:48px; box-shadow: 0 4px 10px rgba(59,130,246,0.3);">🎤</button>
+                <button class="icon-btn" id="send-btn" onclick="App.sendAction()" style="background:var(--primary); color:#fff; border-radius:24px; width:48px; height:48px; display:none; box-shadow: 0 4px 10px rgba(59,130,246,0.3);">➤</button>
             </div>
         </div>
     </div>
@@ -168,103 +197,102 @@
         <div class="panel-header"><button class="icon-btn" onclick="Router.pop()">←</button><div class="panel-title">Settings</div></div>
         <div class="panel-body">
             
-            <div class="pwa-card" id="pwa-setting" onclick="installPWA()">📲 Install YukiChat to Home Screen</div>
-
-            <div style="text-align:center; padding: 32px 16px; border-bottom: 8px solid var(--bg-input);">
+            <div style="text-align:center; padding: 32px 16px; border-bottom: 1px solid var(--border);">
                 <label style="position:relative; display:inline-block">
                     <img src="" id="set-av" class="avatar" style="width:120px;height:120px; margin-bottom:16px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
-                    <div style="position:absolute; bottom:20px; right:0; background:var(--primary); color: #fff; padding:10px; border-radius:50%; cursor:pointer; font-size: 14px;">📷</div>
+                    <div style="position:absolute; bottom:20px; right:0; background:var(--primary); color: #fff; padding:10px; border-radius:50%; cursor:pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">📷</div>
                     <input type="file" hidden accept="image/*" onchange="App.updateProfile(event, 'avatar')">
                 </label>
                 <h2 id="set-name" style="margin-bottom:8px; font-size: 24px;">Name</h2>
-                <input type="text" id="set-bio" class="input-field" style="text-align:center; border:none; background:transparent" placeholder="Add a few words about yourself..." onblur="App.updateProfile(null, 'bio')">
+                <input type="text" id="set-bio" class="input-field" style="text-align:center; border:none; background:transparent; box-shadow:none; padding: 8px;" placeholder="Add a few words about yourself..." onblur="App.updateProfile(null, 'bio')">
             </div>
 
-            <h3 style="padding: 24px 16px 8px; color:var(--primary); font-size:13px; text-transform:uppercase; letter-spacing: 1px;">Appearance</h3>
-            <div class="setting-row"><span>Color Theme</span>
+            <h3 style="padding: 24px 16px 8px; color:var(--primary); font-size:13px; text-transform:uppercase; letter-spacing: 1px; font-weight: 700;">Appearance</h3>
+            <div class="user-item" style="justify-content: space-between;"><span>Color Theme</span>
                 <select class="input-field" style="width:160px; padding:10px" onchange="UI.setTheme(this.value)" id="theme-sel">
                     <option value="dark">Dark</option><option value="light">Light</option><option value="oled">OLED</option>
                     <option value="dracula">Dracula</option><option value="cyberpunk">Cyberpunk</option><option value="midnight">Midnight</option>
                 </select>
             </div>
-            <div class="setting-row"><span>Custom Wallpaper</span>
-                <label class="btn btn-outline" style="padding: 8px 16px; cursor:pointer">Upload <input type="file" hidden accept="image/*" onchange="UI.uploadWall(event)"></label>
-            </div>
-            <div class="setting-row"><span>Text Size</span>
-                <input type="range" min="14" max="22" value="16" oninput="document.documentElement.style.setProperty('--msg-size', this.value+'px')">
+            <div class="user-item" style="justify-content: space-between;"><span>Chat Wallpaper</span>
+                <label class="btn btn-outline" style="padding: 8px 16px; cursor:pointer; font-size: 14px;">Upload <input type="file" hidden accept="image/*" onchange="UI.uploadWall(event)"></label>
             </div>
 
-            <h3 style="padding: 24px 16px 8px; color:var(--primary); font-size:13px; text-transform:uppercase; letter-spacing: 1px;">Security & Account</h3>
-            <div class="setting-row" onclick="Router.push('panel-sessions')" style="cursor:pointer"><span>Devices & Sessions</span> <span style="color:var(--text-muted)">➔</span></div>
-            <div class="setting-row" style="color:var(--danger); cursor:pointer" onclick="App.logout()"><span>Log Out</span></div>
+            <h3 style="padding: 24px 16px 8px; color:var(--primary); font-size:13px; text-transform:uppercase; letter-spacing: 1px; font-weight: 700;">Security & App</h3>
+            <div class="user-item" onclick="Router.push('panel-sessions')"><span>Devices & Sessions</span> <span style="color:var(--text-muted)">➔</span></div>
+            <div class="user-item" style="color:var(--danger);" onclick="App.logout()"><span>Log Out</span></div>
         </div>
     </div>
 
     <!-- PANEL: SESSIONS -->
     <div id="panel-sessions" class="panel">
         <div class="panel-header"><button class="icon-btn" onclick="Router.pop()">←</button><div class="panel-title">Active Sessions</div></div>
-        <div class="panel-body" style="padding: 24px;" id="sessions-list"></div>
+        <div class="panel-body" style="padding: 20px;" id="sessions-list"></div>
     </div>
 
     <!-- PANEL: NEW CHAT -->
     <div id="panel-new" class="panel">
-        <div class="panel-header"><button class="icon-btn" onclick="Router.pop()">←</button><div class="panel-title">New Message</div></div>
-        <div class="panel-body" style="padding: 24px;">
-            <button class="btn" style="width:100%; margin-bottom:24px" onclick="App.createGroup()">👥 Create Group</button>
-            <input type="text" class="input-field" placeholder="Search global usernames..." oninput="App.searchGlobal(this.value)">
-            <div id="global-search-res" style="margin-top: 16px;"></div>
+        <div class="panel-header"><button class="icon-btn" onclick="Router.pop()">←</button><div class="panel-title">New Chat</div></div>
+        <div class="panel-body" style="padding: 20px;">
+            <button class="btn" style="width:100%; margin-bottom:24px" onclick="App.createGroup()">👥 Create New Group</button>
+            <input type="text" class="input-field" placeholder="Search users by name..." oninput="App.searchGlobal(this.value)">
+            <div id="global-search-res" style="margin-top: 16px; display:flex; flex-direction:column; gap:8px;"></div>
         </div>
     </div>
 
     <!-- ACTION MENU (Context) -->
     <div id="ctx-overlay" onclick="UI.closeCtx()"></div>
     <div id="ctx-menu">
-        <div style="display:flex; justify-content:space-around; margin-bottom:24px; font-size:36px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:24px;">
+        <div style="display:flex; justify-content:space-around; margin-bottom:20px; font-size:32px; border-bottom:1px solid var(--border); padding-bottom:20px;">
             <span style="cursor:pointer; transition:0.2s" onclick="App.msgAct('react','❤️')">❤️</span>
             <span style="cursor:pointer; transition:0.2s" onclick="App.msgAct('react','😂')">😂</span>
             <span style="cursor:pointer; transition:0.2s" onclick="App.msgAct('react','🔥')">🔥</span>
             <span style="cursor:pointer; transition:0.2s" onclick="App.msgAct('react','👍')">👍</span>
+            <span style="cursor:pointer; transition:0.2s" onclick="App.msgAct('react','👎')">👎</span>
         </div>
         <div class="ctx-item" onclick="App.prepReply()"><span>↩️</span> Reply to Message</div>
+        <div class="ctx-item" id="ctx-edit" onclick="App.prepEdit()"><span>✏️</span> Edit Message</div>
         <div class="ctx-item" onclick="navigator.clipboard.writeText(App.targetTxt); UI.closeCtx(); UI.toast('Copied to clipboard')"><span>📋</span> Copy Text</div>
-        <div class="ctx-item danger" id="ctx-del" onclick="App.msgAct('delete')"><span>🗑️</span> Completely Delete</div>
+        <div class="ctx-item danger" id="ctx-del" onclick="App.msgAct('delete')"><span>🗑️</span> Delete for Everyone</div>
     </div>
 
     <script>
-        /* ================= PWA SETUP ================= */
+        /* ================= PWA & CONFIG ================= */
         const defAv = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzMzNDE1NSI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==";
-        const manifest = { name:"YukiChat Pro", short_name:"Yuki", display:"standalone", background_color:"#0f172a", theme_color:"#0f172a", icons:[{src:defAv, sizes:"192x192", type:"image/svg+xml"}]};
-        document.head.appendChild(Object.assign(document.createElement("link"), {rel:"manifest", href:URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type:"application/json"}))}));
         
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('pwa-setting').style.display='block'; });
-        function installPWA() { if(deferredPrompt) { deferredPrompt.prompt(); deferredPrompt=null; document.getElementById('pwa-setting').style.display='none'; } }
-
-        /* ================= CORE ================= */
-        const API = 'https://yukichat.kviappsgames.workers.dev'; 
-        const State = { t: localStorage.getItem('y_t'), u: JSON.parse(localStorage.getItem('y_u')||'{}'), chats: new Map(), chat: null, targetId: null, targetTxt: '', rec: null, chunks:[] };
+        // Use relative path for CF Worker, or hardcoded URL if external
+        const API = ''; 
+        
+        const State = { 
+            t: localStorage.getItem('y_t'), 
+            u: JSON.parse(localStorage.getItem('y_u')||'{}'), 
+            chats: new Map(), chat: null, 
+            targetId: null, targetTxt: '', replyTo: null, editId: null,
+            isRecording: false, mediaRecorder: null, audioChunks:[],
+            autoScroll: true
+        };
 
         const req = async (path, m='GET', b=null) => {
             const opt = { method:m, headers:{} };
             if(State.t) opt.headers['Authorization'] = `Bearer ${State.t}`;
             if(b) { opt.headers['Content-Type']='application/json'; opt.body=JSON.stringify(b); }
             
-            const res = await fetch(API+path, opt);
-            
-            // FIX: Only logout/reload if it's a protected route, NOT during login/register
-            if(res.status === 401 && !path.includes('/api/login') && !path.includes('/api/register')) { 
-                App.logout(); 
-                throw new Error('Session Expired'); 
-            }
-            
-            const d = await res.json();
-            if(!res.ok) throw new Error(d.error || 'Request Failed');
-            return d;
+            try {
+                const res = await fetch(API+path, opt);
+                if(res.status === 401 && !path.includes('/login') && !path.includes('/register')) { 
+                    App.logout(); throw new Error('Session Expired'); 
+                }
+                const d = await res.json();
+                if(!res.ok) throw new Error(d.error || 'Request Failed');
+                return d;
+            } catch(e) { throw e; }
         };
 
+        /* ================= ROUTING ================= */
         const Router = {
             stack:['panel-root'],
             push(id) {
+                if(this.stack[this.stack.length-1] === id) return;
                 this.stack.push(id); document.getElementById(id).classList.add('active');
                 history.pushState({id}, '', `#${id}`);
                 if(id==='panel-sessions') App.loadSessions();
@@ -286,30 +314,46 @@
                 
                 const inp = document.getElementById('msg-input');
                 inp.addEventListener('input', function() {
-                    this.style.height = '52px'; this.style.height = (this.scrollHeight) + 'px';
+                    this.style.height = '48px'; this.style.height = Math.min(this.scrollHeight, 120) + 'px';
                     const v = this.value.trim();
                     document.getElementById('mic-btn').style.display = v ? 'none' : 'flex';
                     document.getElementById('send-btn').style.display = v ? 'flex' : 'none';
                     if(State.chat) App.typing();
+                });
+                
+                // Keyboard submit support
+                inp.addEventListener('keydown', (e) => {
+                    if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); App.sendAction(); }
                 });
             },
             togglePassword() { const p = document.getElementById('auth-p'); p.type = p.type==='password'?'text':'password'; },
             setTheme(t) { localStorage.setItem('y_th', t); document.documentElement.setAttribute('data-theme', t); document.getElementById('theme-sel').value = t; },
             uploadWall(e) {
                 const f = e.target.files[0]; if(!f) return;
-                const r = new FileReader(); r.onload = ev => { localStorage.setItem('y_wall', ev.target.result); UI.applyWall(ev.target.result); UI.toast('Wallpaper Applied'); }; r.readAsDataURL(f);
+                App.compressImage(f, 1080, (b64) => {
+                    localStorage.setItem('y_wall', b64); UI.applyWall(b64); UI.toast('Wallpaper Applied');
+                });
             },
             applyWall(w) { if(w) document.querySelector('.chat-area').style.backgroundImage = `url(${w})`; },
-            toast(m) { const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3000); },
+            toast(m) { 
+                const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); 
+                setTimeout(()=>t.classList.remove('show'), 3000); 
+            },
             toggleDrawer() { 
                 const d = document.getElementById('attach-drawer'); const b = document.getElementById('drawer-btn');
-                d.classList.toggle('active'); b.style.transform = d.classList.contains('active') ? 'rotate(45deg)' : 'rotate(0)'; b.style.color = d.classList.contains('active') ? 'var(--primary)' : 'var(--text-muted)';
+                d.classList.toggle('active'); 
+                b.style.transform = d.classList.contains('active') ? 'rotate(45deg)' : 'rotate(0)'; 
+                b.style.color = d.classList.contains('active') ? 'var(--primary)' : 'var(--text-main)';
             },
-            closeDrawer() { document.getElementById('attach-drawer').classList.remove('active'); document.getElementById('drawer-btn').style.transform='rotate(0)'; document.getElementById('drawer-btn').style.color='var(--text-muted)'; },
-            openCtx(id, isMine, txt) {
+            closeDrawer() { 
+                document.getElementById('attach-drawer').classList.remove('active'); 
+                const b = document.getElementById('drawer-btn'); b.style.transform='rotate(0)'; b.style.color='var(--text-main)'; 
+            },
+            openCtx(id, isMine, txt, type) {
                 State.targetId=id; State.targetTxt=txt;
                 document.getElementById('ctx-overlay').style.display='block';
                 document.getElementById('ctx-del').style.display=isMine?'flex':'none';
+                document.getElementById('ctx-edit').style.display=(isMine && type==='text')?'flex':'none';
                 setTimeout(()=> { document.getElementById('ctx-overlay').style.opacity='1'; document.getElementById('ctx-menu').style.transform='translateY(0)'; }, 10);
             },
             closeCtx() {
@@ -318,37 +362,47 @@
                 setTimeout(()=>document.getElementById('ctx-overlay').style.display='none', 300);
             },
             promptDestruct() {
-                this.closeDrawer(); const sec = prompt("Self-destruct timer (seconds):", "10");
-                if(sec) { const inp = document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.onchange = e => App.uploadFile(e, 'photo', parseInt(sec)); inp.click(); }
+                this.closeDrawer(); const sec = prompt("Set timer (seconds) before destruction:", "10");
+                if(sec && !isNaN(sec)) { 
+                    const inp = document.createElement('input'); inp.type='file'; inp.accept='image/*'; 
+                    inp.onchange = e => App.uploadFile(e, 'photo', parseInt(sec)); inp.click(); 
+                }
+            },
+            formatTime(dStr) {
+                if(!dStr) return '';
+                const d = new Date(dStr + (dStr.includes('Z')?'':'Z'));
+                const now = new Date();
+                const isToday = d.getDate()===now.getDate() && d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+                return isToday ? d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : d.toLocaleDateString([], {month:'short', day:'numeric'});
             }
         };
 
         /* ================= APP LOGIC ================= */
         const App = {
+            pollInterval: null,
+            typingTimer: null,
+
             async auth(isLog) {
                 const u = document.getElementById('auth-u').value.trim();
                 const p = document.getElementById('auth-p').value.trim();
-                if(!u || !p) return UI.toast('Fill all fields');
+                if(!u || !p) return UI.toast('Please fill all fields');
                 
-                // FIX: Safer device name detection that won't crash on mobile
-                let devName = "Unknown Device";
-                try { devName = navigator.userAgent.match(/\(([^)]+)\)/)[1]; } catch(e) { devName = navigator.platform; }
-            
+                let devName = "Browser Session";
+                try { devName = navigator.userAgent.match(/\(([^)]+)\)/)[1] || devName; } catch(e) {}
+                
+                const btn = isLog ? document.getElementById('btn-login') : document.getElementById('btn-register');
+                const orig = btn.innerText; btn.innerText = "Processing..."; btn.disabled = true;
+
                 try {
-                    const d = await req(`/api/${isLog?'login':'register'}`, 'POST', {
-                        username: u, 
-                        password: p, 
-                        device: devName
-                    });
-                    
-                    State.t = d.token; 
-                    State.u = d; 
-                    localStorage.setItem('y_t', d.token); 
-                    localStorage.setItem('y_u', JSON.stringify(d));
+                    const d = await req(`/api/${isLog?'login':'register'}`, 'POST', { username: u, password: p, device: devName });
+                    State.t = d.token; State.u = d; 
+                    localStorage.setItem('y_t', d.token); localStorage.setItem('y_u', JSON.stringify(d));
                     document.getElementById('panel-auth').classList.remove('active');
                     this.start();
                 } catch(e) { 
-                    UI.toast(e.message); // Now this will show "Invalid credentials" instead of reloading
+                    UI.toast(e.message); 
+                } finally {
+                    btn.innerText = orig; btn.disabled = false;
                 }
             },
             logout() { localStorage.clear(); location.reload(); },
@@ -356,150 +410,292 @@
             start() {
                 document.getElementById('my-avatar').src = State.u.avatar||defAv; document.getElementById('set-av').src = State.u.avatar||defAv;
                 document.getElementById('set-name').textContent = State.u.username; document.getElementById('set-bio').value = State.u.bio||'';
-                this.poll(); setInterval(() => this.poll(), 4000);
+                this.poll(); 
+                this.pollInterval = setInterval(() => this.poll(), 3000); // Faster polling for real-time feel
             },
 
             async poll() {
                 try {
-                    await req('/api/presence', 'POST', {typingIn: State.chat && document.getElementById('msg-input').value ? State.chat : null});
+                    const isTyping = State.chat && document.getElementById('msg-input').value.trim().length > 0;
+                    await req('/api/presence', 'POST', {typingIn: isTyping ? State.chat : null});
+                    
                     const chats = await req('/api/chats');
                     const cList = document.getElementById('chat-list');
-                    if(chats.length===0) cList.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)">No chats yet. Search for users!</div>';
-                    else {
-                        cList.innerHTML = '';
-                        chats.forEach(c => {
-                            State.chats.set(c.id, c);
-                            const isDM = c.type==='dm'; const n = isDM?c.dm_username:c.name; const av = isDM?(c.dm_avatar||defAv):(c.avatar||defAv);
-                            
-                            // Accurate Timezone handling for Presence
-                            let isOnline = false;
-                            if(isDM && c.dm_last_seen) {
-                                const lsd = new Date(c.dm_last_seen + (c.dm_last_seen.includes('Z') ? '' : 'Z'));
-                                isOnline = (new Date() - lsd) < 40000; // 40 seconds threshold
-                            }
-                            
-                            const ty = isDM && c.dm_typing == c.id ? '<span style="color:var(--primary)">typing...</span>' : null;
-                            const onl = isOnline ? '<div class="online-dot"></div>' : '';
-                            
-                            let msgPrev = c.last_msg || 'New chat';
-                            if(c.last_msg_type === 'photo' || msgPrev.startsWith('data:image')) msgPrev = '🖼️ Photo';
-                            if(c.last_msg_type === 'audio' || msgPrev.startsWith('data:audio')) msgPrev = '🎤 Voice Message';
+                    if(chats.length===0) { cList.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)">No chats yet. Tap ✏️ to start!</div>'; return; }
+                    
+                    let html = '';
+                    chats.forEach(c => {
+                        State.chats.set(c.id, c);
+                        const isDM = c.type==='dm'; const n = isDM?c.dm_username:c.name; const av = isDM?(c.dm_avatar||defAv):(c.avatar||defAv);
+                        
+                        let isOnline = false;
+                        if(isDM && c.dm_last_seen) {
+                            const lsd = new Date(c.dm_last_seen + (c.dm_last_seen.includes('Z') ? '' : 'Z'));
+                            isOnline = (new Date() - lsd) < 35000;
+                        }
+                        
+                        const isTypingNow = isDM && c.dm_typing == c.id;
+                        const onl = isOnline ? '<div class="online-dot"></div>' : '';
+                        
+                        let msgPrev = c.last_msg || 'Say hi!';
+                        if(c.last_msg_type === 'photo') msgPrev = '🖼️ Photo';
+                        if(c.last_msg_type === 'audio') msgPrev = '🎤 Voice Note';
+                        if(c.last_msg_type === 'file') msgPrev = '📁 File';
 
-                            cList.innerHTML += `
-                                <div class="user-item" onclick="App.openChat(${c.id})">
-                                    <div style="position:relative"><img src="${av}" class="avatar">${onl}</div>
-                                    <div class="user-info">
-                                        <div class="user-name"><span>${n}</span> ${c.unread>0?`<span class="badge">${c.unread}</span>`:''}</div>
-                                        <div class="user-last-msg">${ty || msgPrev}</div>
-                                    </div>
-                                </div>`;
-                            if(State.chat === c.id) document.getElementById('chat-status').textContent = ty ? 'typing...' : (isDM ? (isOnline ? 'online' : 'offline') : c.unread+' unread');
-                        });
-                    }
+                        const prevH = isTypingNow ? '<span style="color:var(--primary); font-weight:600">typing...</span>' : msgPrev.substring(0,40);
+                        const bage = c.unread > 0 ? `<span class="badge">${c.unread}</span>` : '';
+
+                        html += `
+                            <div class="user-item" onclick="App.openChat(${c.id})">
+                                <div style="position:relative"><img src="${av}" class="avatar">${onl}</div>
+                                <div class="user-info">
+                                    <div class="user-name"><span>${n}</span> ${bage}</div>
+                                    <div class="user-last-msg">${prevH}</div>
+                                </div>
+                            </div>`;
+                            
+                        // Update active header status instantly
+                        if(State.chat === c.id) {
+                            let stat = isDM ? (isOnline ? 'Online' : `Last seen: ${UI.formatTime(c.dm_last_seen)}`) : `${c.unread} unread`;
+                            if(isTypingNow) stat = '<div class="typing-indicator">Typing<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+                            document.getElementById('chat-status').innerHTML = stat;
+                        }
+                    });
+                    if(cList.innerHTML !== html) cList.innerHTML = html; // Prevent UI flash if no changes
+                    
                     if(State.chat) this.loadMsgs(State.chat);
                 } catch(e){}
             },
 
             async searchGlobal(q) {
-                if(!q) return document.getElementById('global-search-res').innerHTML='';
+                const resEl = document.getElementById('global-search-res');
+                if(!q) return resEl.innerHTML='';
                 const u = await req(`/api/users/search?q=${q}`);
                 let h = '';
-                u.forEach(x => h+=`<div class="user-item" style="background:var(--bg-input); border-radius:16px; margin-bottom:8px" onclick="App.startDM(${x.id})"><img src="${x.avatar||defAv}" class="avatar"><div class="user-info"><div class="user-name">${x.username}</div><div class="user-last-msg">${x.bio||''}</div></div></div>`);
-                document.getElementById('global-search-res').innerHTML = h;
+                u.forEach(x => {
+                    h+=`<div class="user-item" style="background:var(--bg-input); border-radius:16px;" onclick="App.startDM(${x.id})">
+                        <img src="${x.avatar||defAv}" class="avatar">
+                        <div class="user-info"><div class="user-name">${x.username}</div><div class="user-last-msg">${x.bio||'No bio yet'}</div></div>
+                    </div>`;
+                });
+                resEl.innerHTML = h || '<div style="color:var(--text-muted); text-align:center; padding:10px;">No users found</div>';
             },
 
             async startDM(id) { const d = await req('/api/chats', 'POST', {type:'dm', target_user_id:id}); Router.pop(); this.openChat(d.chat_id); },
-            async createGroup() { const n = prompt("Group Name:"); if(!n) return; const d = await req('/api/chats', 'POST', {type:'group', name:n}); Router.pop(); this.openChat(d.chat_id); },
+            async createGroup() { const n = prompt("Enter group name:"); if(!n) return; const d = await req('/api/chats', 'POST', {type:'group', name:n}); Router.pop(); this.openChat(d.chat_id); },
 
             openChat(id) {
                 State.chat = id; const c = State.chats.get(id); Router.push('panel-chat');
                 const isDM = c.type==='dm';
                 document.getElementById('chat-title').textContent = isDM ? c.dm_username : c.name;
                 document.getElementById('chat-av').src = isDM ? (c.dm_avatar||defAv) : (c.avatar||defAv);
+                State.autoScroll = true; // reset scroll lock on new chat
                 this.loadMsgs(id);
             },
-            closeChat() { State.chat=null; }, typing() { },
+            closeChat() { State.chat=null; this.cancelReply(); },
+            typing() { /* Handled in poll payload dynamically */ },
+            handleScroll() {
+                const el = document.getElementById('msgs');
+                State.autoScroll = (el.scrollHeight - el.scrollTop - el.clientHeight < 50);
+            },
 
             async loadMsgs(id) {
                 if(State.chat !== id) return;
                 try {
                     const msgs = await req(`/api/messages/${id}`);
                     const cont = document.getElementById('msgs');
-                    const isBtm = cont.scrollHeight - cont.scrollTop <= cont.clientHeight + 100;
                     
                     let html = '';
                     for(let m of msgs) {
                         const isMine = m.sender_id === State.u.userId;
                         let inner = '';
-                        if(m.type === 'photo') {
-                            if(m.expires_at) inner += `<img src="${m.content}" class="msg-media secure-media" onpointerdown="App.reveal(this, ${m.id})">`;
-                            else inner += `<img src="${m.content}" class="msg-media" onclick="window.open(this.src)">`;
-                        } else inner += m.content.replace(/</g,'&lt;').replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:inherit; text-decoration:underline">$1</a>');
+                        
+                        // Handle Replies UI
+                        if(m.reply_to_id) {
+                            const repMsg = msgs.find(x => x.id === m.reply_to_id);
+                            const repTxt = repMsg ? (repMsg.type==='text'?repMsg.content : 'Attachment') : 'Deleted message';
+                            inner += `<div class="reply-banner">${repTxt}</div>`;
+                        }
 
+                        // Content
+                        if(m.type === 'photo') {
+                            if(m.expires_at) inner += `<img src="${m.content}" class="msg-media secure-media" onpointerdown="App.reveal(this, ${m.id})" title="Hold to view">`;
+                            else inner += `<img src="${m.content}" class="msg-media" onclick="window.open(this.src)">`;
+                        } else if(m.type === 'audio') {
+                            inner += `<div class="audio-player"><div class="play-btn" onclick="new Audio('${m.content}').play()">▶</div><div class="waveform"><div class="wave-bar"></div><div class="wave-bar" style="animation-delay:0.2s"></div><div class="wave-bar" style="animation-delay:0.4s"></div><div class="wave-bar" style="animation-delay:0.6s"></div></div></div>`;
+                        } else {
+                            inner += m.content.replace(/</g,'&lt;').replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:var(--primary); text-decoration:underline">$1</a>');
+                        }
+
+                        // Reactions
                         let rxs = JSON.parse(m.reactions||'{}'); let rxH = '';
                         for(let k in rxs) rxH += rxs[k];
-                        if(rxH) inner += `<div style="position:absolute; bottom:-12px; right:10px; background:var(--bg-panel); border-radius:12px; padding:2px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.2); font-size:14px; border:1px solid var(--border)">${rxH}</div>`;
+                        if(rxH) inner += `<div style="position:absolute; bottom:-10px; right:8px; background:var(--bg-base); border-radius:12px; padding:2px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.2); font-size:14px; border:1px solid var(--border)">${rxH}</div>`;
 
-                        const time = new Date(m.created_at + (m.created_at.includes('Z')?'':'Z')).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-                        const ticks = isMine ? (m.is_read ? '<span style="color:#10b981">✓✓</span>' : '✓') : '';
+                        // Meta data
+                        const time = UI.formatTime(m.created_at);
+                        const ticks = isMine ? (m.is_read ? '<span style="color:var(--success)">✓✓</span>' : '<span>✓</span>') : '';
+                        const edited = m.edited_at ? '<span class="msg-edited">(edited)</span>' : '';
                         
-                        html += `<div class="msg-row ${isMine?'sent':'received'}" oncontextmenu="event.preventDefault(); UI.openCtx(${m.id}, ${isMine}, '${m.type==='text'?m.content.replace(/'/g,"\\'"):''}')"><div class="msg-bubble">${inner}<div class="msg-meta">${time} ${ticks}</div></div></div>`;
+                        html += `<div class="msg-row ${isMine?'sent':'received'}" 
+                            oncontextmenu="event.preventDefault(); UI.openCtx(${m.id}, ${isMine}, '${m.type==='text'?m.content.replace(/'/g,"\\'"):''}', '${m.type}')" 
+                            ondblclick="App.quickReact(${m.id}, '❤️')">
+                            <div class="msg-bubble">${inner}<div class="msg-meta">${edited} ${time} ${ticks}</div></div>
+                        </div>`;
                     }
-                    cont.innerHTML = html;
-                    if(isBtm) cont.scrollTop = cont.scrollHeight;
+                    
+                    if(cont.innerHTML !== html) {
+                        cont.innerHTML = html;
+                        if(State.autoScroll) cont.scrollTop = cont.scrollHeight;
+                    }
                 } catch(e){}
+            },
+
+            sendAction() {
+                if(State.editId) this.submitEdit(); else this.sendText();
             },
 
             async sendText() {
                 const inp = document.getElementById('msg-input'); let txt = inp.value.trim();
                 if(!txt || !State.chat) return;
-                inp.value=''; inp.dispatchEvent(new Event('input')); UI.closeDrawer();
-                try { await req(`/api/messages/${State.chat}`, 'POST', {content:txt, type:'text'}); this.poll(); } catch(e) { UI.toast('Failed'); }
+                inp.value=''; inp.style.height='48px'; UI.closeDrawer();
+                const replyTo = State.replyTo; this.cancelReply();
+                
+                try { 
+                    await req(`/api/messages/${State.chat}`, 'POST', {content:txt, type:'text', reply_to_id: replyTo}); 
+                    State.autoScroll = true; this.poll(); 
+                } catch(e) { UI.toast('Failed to send'); }
+            },
+
+            // Feature: Compress Images Client-Side before uploading
+            compressImage(file, maxSize, callback) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let w = img.width; let h = img.height;
+                        if (w > maxSize || h > maxSize) { const ratio = Math.min(maxSize/w, maxSize/h); w *= ratio; h *= ratio; }
+                        const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+                        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+                        callback(canvas.toDataURL('image/jpeg', 0.8));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
             },
 
             uploadFile(e, type, expires_in=null) {
                 const f = e.target.files[0]; if(!f) return;
-                if(f.size>2000000) return UI.toast('File > 2MB');
-                UI.closeDrawer(); const r = new FileReader();
-                r.onload = async ev => { UI.toast('Uploading...'); try { await req(`/api/messages/${State.chat}`, 'POST', {content:ev.target.result, type, expires_in}); this.poll(); } catch(e){ UI.toast('Upload Error'); } }; r.readAsDataURL(f);
+                UI.closeDrawer();
+                if(type === 'photo') {
+                    UI.toast('Compressing...');
+                    this.compressImage(f, 1200, async (b64) => {
+                        try { await req(`/api/messages/${State.chat}`, 'POST', {content:b64, type, expires_in}); this.poll(); } 
+                        catch(err){ UI.toast('Upload Error'); }
+                    });
+                } else {
+                    if(f.size > 5000000) return UI.toast('File too large (Max 5MB)');
+                    const r = new FileReader();
+                    r.onload = async ev => { try { await req(`/api/messages/${State.chat}`, 'POST', {content:ev.target.result, type:'file', expires_in}); this.poll(); } catch(err){} };
+                    r.readAsDataURL(f);
+                }
+            },
+
+            /* Feature: True Audio Messages via MediaRecorder */
+            async toggleMic() {
+                if(State.isRecording) {
+                    State.mediaRecorder.stop(); State.isRecording = false;
+                    document.getElementById('mic-btn').style.background = 'var(--primary)';
+                    document.getElementById('mic-btn').innerHTML = '🎤';
+                } else {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        State.mediaRecorder = new MediaRecorder(stream);
+                        State.audioChunks =[];
+                        State.mediaRecorder.ondataavailable = e => State.audioChunks.push(e.data);
+                        State.mediaRecorder.onstop = async () => {
+                            const blob = new Blob(State.audioChunks, { type: 'audio/webm' });
+                            const reader = new FileReader();
+                            reader.onload = async e => {
+                                await req(`/api/messages/${State.chat}`, 'POST', {content: e.target.result, type: 'audio'}); this.poll();
+                            };
+                            reader.readAsDataURL(blob);
+                            stream.getTracks().forEach(t => t.stop());
+                        };
+                        State.mediaRecorder.start(); State.isRecording = true;
+                        document.getElementById('mic-btn').style.background = 'var(--danger)';
+                        document.getElementById('mic-btn').innerHTML = '⏹';
+                        UI.toast('Recording...');
+                    } catch(e) { UI.toast('Microphone access denied'); }
+                }
             },
 
             async reveal(el, id) {
                 if(el.classList.contains('revealed')) return;
                 el.classList.add('revealed'); req(`/api/messages/${id}/action`, 'POST', {action:'reveal'});
-                let s = 10; const int = setInterval(()=>{ s--; if(s<=0) { el.src=''; el.alt='Destroyed'; clearInterval(int); } }, 1000);
+                let s = 10; const int = setInterval(()=>{ s--; if(s<=0) { el.src=''; el.alt='Destroyed'; el.style.background='#000'; clearInterval(int); } }, 1000);
             },
 
             async msgAct(act, emoji=null) {
                 try { await req(`/api/messages/${State.targetId}/action`, 'POST', {action:act, emoji}); UI.closeCtx(); this.poll(); } catch(e) {}
             },
-            prepReply() { document.getElementById('msg-input').value = `> ${State.targetTxt}\n\n`; document.getElementById('msg-input').focus(); UI.closeCtx(); },
+            async quickReact(id, emoji) {
+                try { await req(`/api/messages/${id}/action`, 'POST', {action:'react', emoji}); this.poll(); } catch(e) {}
+            },
+            
+            prepReply() { 
+                State.replyTo = State.targetId; 
+                document.getElementById('reply-text').textContent = State.targetTxt;
+                document.getElementById('reply-preview').classList.add('active');
+                document.getElementById('msg-input').focus(); UI.closeCtx(); 
+            },
+            cancelReply() {
+                State.replyTo = null; State.editId = null;
+                document.getElementById('reply-preview').classList.remove('active');
+                const inp = document.getElementById('msg-input'); inp.value=''; inp.dispatchEvent(new Event('input'));
+            },
+            prepEdit() {
+                State.editId = State.targetId;
+                document.getElementById('reply-text').textContent = "Editing message...";
+                document.getElementById('reply-preview').classList.add('active');
+                const inp = document.getElementById('msg-input');
+                inp.value = State.targetTxt; inp.focus(); inp.dispatchEvent(new Event('input'));
+                UI.closeCtx();
+            },
+            async submitEdit() {
+                const txt = document.getElementById('msg-input').value.trim();
+                if(!txt) return;
+                try { await req(`/api/messages/${State.editId}/action`, 'POST', {action:'edit', text:txt}); this.cancelReply(); this.poll(); } catch(e){}
+            },
+
+            async clearChat() {
+                if(!confirm("Clear chat history?")) return;
+                try { await req(`/api/chats/${State.chat}/clear`, 'POST'); this.poll(); UI.toast('Chat Cleared'); } catch(e){}
+            },
 
             updateProfile(e, type) {
                 if(type === 'avatar') {
                     const f = e.target.files[0]; if(!f) return;
-                    const r = new FileReader(); r.onload = async ev => {
-                        const img=new Image(); img.onload = async () => {
-                            const cv=document.createElement('canvas'); cv.width=200; cv.height=200; const ctx=cv.getContext('2d');
-                            const sc=Math.max(200/img.width, 200/img.height);
-                            ctx.drawImage(img, (200-img.width*sc)/2, (200-img.height*sc)/2, img.width*sc, img.height*sc);
-                            const b64 = cv.toDataURL('image/jpeg', 0.8);
-                            await req('/api/user/profile', 'PUT', {avatar:b64});
-                            document.getElementById('set-av').src=b64; document.getElementById('my-avatar').src=b64;
-                            State.u.avatar=b64; localStorage.setItem('y_u', JSON.stringify(State.u));
-                        }; img.src=ev.target.result;
-                    }; r.readAsDataURL(f);
-                } else { req('/api/user/profile', 'PUT', {bio: document.getElementById('set-bio').value}); }
+                    this.compressImage(f, 400, async (b64) => {
+                        await req('/api/user/profile', 'PUT', {avatar:b64});
+                        document.getElementById('set-av').src=b64; document.getElementById('my-avatar').src=b64;
+                        State.u.avatar=b64; localStorage.setItem('y_u', JSON.stringify(State.u));
+                        UI.toast('Avatar Updated');
+                    });
+                } else { 
+                    req('/api/user/profile', 'PUT', {bio: document.getElementById('set-bio').value}); 
+                    UI.toast('Bio Updated');
+                }
             },
 
             async loadSessions() {
                 try {
                     const s = await req('/api/sessions'); let h = '';
                     s.forEach(x => {
-                        h += `<div style="background:var(--bg-input); padding:16px; border-radius:16px; margin-bottom:16px; border:1px solid var(--border)">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-weight:600"><span>${x.device.substring(0,25)}</span> ${x.is_current?'<span class="badge" style="background:#10b981">This Device</span>':''}</div>
-                            <div style="font-size:14px; color:var(--text-muted); margin-bottom:12px">📍 ${x.location} • 🌐 ${x.ip}</div>
-                            ${!x.is_current ? `<button class="btn" style="padding:8px 16px; background:var(--danger); width:100%" onclick="App.revokeSession('${x.token}')">Revoke Access</button>` : ''}
+                        h += `<div style="background:var(--bg-input); padding:16px; border-radius:16px; margin-bottom:12px; border:1px solid var(--border)">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-weight:600; color:var(--text-main)"><span>${x.device.substring(0,30)}</span> ${x.is_current?'<span class="badge" style="background:var(--success)">Current</span>':''}</div>
+                            <div style="font-size:13px; color:var(--text-muted); margin-bottom:12px">📍 ${x.location} • 🌐 ${x.ip} <br>🗓️ ${UI.formatTime(x.created_at)}</div>
+                            ${!x.is_current ? `<button class="btn" style="padding:10px 16px; background:transparent; border:1px solid var(--danger); color:var(--danger); width:100%; font-size:14px" onclick="App.revokeSession('${x.token}')">Revoke Access</button>` : ''}
                         </div>`;
                     }); document.getElementById('sessions-list').innerHTML = h;
                 } catch(e){}
