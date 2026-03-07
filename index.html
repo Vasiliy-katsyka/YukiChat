@@ -312,7 +312,7 @@
         const manifest = { name:"YukiChat Pro", short_name:"YukiChat", start_url:".", display:"standalone", background_color:"#0f172a", theme_color:"#0f172a", icons:[{src:defAv, sizes:"192x192", type:"image/svg+xml"}] };
         document.getElementById('pwa-manifest').href = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifest));
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('https://raw.githubusercontent.com/Vasiliy-katsyka/YukiChat/refs/heads/main/sw.js')
+            navigator.serviceWorker.register('/sw.js')
                 .then(() => console.log('SW Registered'))
                 .catch(err => console.error('SW Failed:', err));
         }
