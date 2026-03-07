@@ -558,8 +558,17 @@
 
             // --- APPEARANCE ---
             setTheme(t) { document.documentElement.setAttribute('data-theme', t); localStorage.setItem('y_theme', t); document.getElementById('set-theme').value=t; },
-            setWallpaper(w) { document.getElementById('chat-area-bg').style.backgroundImage = w ? `url(${w})` : 'none'; localStorage.setItem('y_wall', w); document.getElementById('set-wall').value=w; },
-
+            setWallpaper(w) {
+                // Apply the wallpaper to the chat background
+                document.getElementById('chat-area-bg').style.backgroundImage = w ? `url(${w})` : 'none';
+                localStorage.setItem('y_wall', w);
+                
+                // Only try to update the input field if it exists in the DOM
+                const wallInput = document.getElementById('set-wall');
+                if (wallInput) {
+                    wallInput.value = w;
+                }
+            },
             // --- INITIALIZATION ---
             start() {
                 document.getElementById('my-avatar').src = State.u.avatar||defAv; document.getElementById('set-av').src = State.u.avatar||defAv;
