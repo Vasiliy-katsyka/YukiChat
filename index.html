@@ -331,7 +331,7 @@
             if(State.t) opt.headers['Authorization'] = `Bearer ${State.t}`;
             if(b) { opt.headers['Content-Type']='application/json'; opt.body=JSON.stringify(b); }
             const res = await fetch(API+path, opt);
-            if(res.status === 401 && path!=='/api/login') { localStorage.clear(); location.reload(); }
+            if(res.status === 401 && path!=='/api/login') { localStorage.removeItem('y_t'); location.reload(); }
             const d = await res.json(); if(!res.ok) throw new Error(d.error || 'API Error');
             return d;
         };
