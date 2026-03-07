@@ -3,174 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#0f172a" id="meta-theme-color">
+    <meta name="theme-color" content="#ffffff" id="meta-theme-color">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="manifest" id="pwa-manifest">
     <title>YukiChat</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
-        /* Default Theme (Matches Image Light Mode exactly) */
         :root {
-            --bg-base: #ffffff; --bg-panel: #ffffff; --bg-input: #f2f2f7; --bg-hover: rgba(0,0,0,0.03);
-            --border: #e5e5ea; --primary: #000000; --text-main: #000000; --text-muted: #8e8e93; 
-            --msg-sent: #000000; --msg-sent-text: #ffffff; --msg-recv: #f2f2f7; --msg-recv-text: #000000;
-            --danger: #ff3b30; --success: #34c759;
-            --shadow: 0 8px 30px rgba(0,0,0,0.08); --radius: 20px; --msg-size: 16px;
-            --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --bg-base: #ffffff; 
+            --bg-panel: #ffffff; 
+            --bg-input: #f4f4f5; 
+            --bg-hover: #f9fafb;
+            --border: #e5e7eb; 
+            --primary: #000000; 
+            --text-main: #000000; 
+            --text-muted: #6b7280; 
+            --msg-sent: #000000; 
+            --msg-sent-txt: #ffffff;
+            --msg-recv: #f4f4f5; 
+            --msg-recv-txt: #000000;
+            --danger: #ef4444; 
+            --success: #10b981;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08); 
+            --radius: 24px; 
+            --msg-size: 15px;
+            --safe-top: env(safe-area-inset-top, 0px); 
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --chat-bg: #ffffff;
         }
 
-        /* Original Dark & Other Themes Maintained */[data-theme="dark"] { --bg-base: #0f172a; --bg-panel: #1e293b; --bg-input: #0f172a; --bg-hover: rgba(255,255,255,0.05); --border: #334155; --primary: #3b82f6; --text-main: #f8fafc; --text-muted: #94a3b8; --msg-sent: #3b82f6; --msg-sent-text: #ffffff; --msg-recv: #334155; --msg-recv-text: #f8fafc; }[data-theme="light"] { /* Fallback */ --bg-base: #f8fafc; --bg-panel: #ffffff; --bg-input: #f1f5f9; --border: #e2e8f0; --primary: #0ea5e9; --text-main: #0f172a; --text-muted: #64748b; --msg-sent: #0ea5e9; --msg-sent-text: #ffffff; --msg-recv: #f1f5f9; --msg-recv-text: #0f172a; }
-        [data-theme="oled"] { --bg-base: #000; --bg-panel: #000; --bg-input: #111; --border: #222; --primary: #8b5cf6; --msg-sent: #8b5cf6; --msg-sent-text: #ffffff; --msg-recv: #111; --msg-recv-text: #ffffff; }[data-theme="dracula"] { --bg-base: #282a36; --bg-panel: #44475a; --bg-input: #282a36; --border: #6272a4; --primary: #ff79c6; --text-main: #f8f8f2; --text-muted: #6272a4; --msg-sent: #bd93f9; --msg-sent-text: #ffffff; --msg-recv: #44475a; --msg-recv-text: #f8f8f2; }
-        [data-theme="cyberpunk"] { --bg-base: #fcee0a; --bg-panel: #000; --bg-input: #111; --border: #00ffff; --primary: #ff003c; --text-main: #00ffff; --text-muted: #fcee0a; --msg-sent: #ff003c; --msg-sent-text: #ffffff; --msg-recv: #111; --msg-recv-text: #00ffff; }
-        [data-theme="forest"] { --bg-base: #1c2321; --bg-panel: #2e3830; --bg-input: #1c2321; --border: #4a5d4e; --primary: #5c8266; --text-main: #e8ede9; --text-muted: #8a9c8f; --msg-sent: #5c8266; --msg-sent-text: #ffffff; --msg-recv: #2e3830; --msg-recv-text: #e8ede9; }
-        [data-theme="synthwave"] { --bg-base: #241b2f; --bg-panel: #26233a; --bg-input: #1b1924; --border: #f69e7b; --primary: #ff3a9a; --text-main: #ffe2e2; --text-muted: #a88eaa; --msg-sent: #ff3a9a; --msg-sent-text: #ffffff; --msg-recv: #26233a; --msg-recv-text: #ffe2e2; }
+        /* Keep existing themes working, modifying core elements */
+        [data-theme="dark"] { --bg-base: #0f172a; --bg-panel: #1e293b; --bg-input: #334155; --bg-hover: rgba(255,255,255,0.05); --border: #334155; --primary: #ffffff; --text-main: #f8fafc; --text-muted: #94a3b8; --msg-sent: #ffffff; --msg-sent-txt: #000000; --msg-recv: #334155; --msg-recv-txt: #ffffff; --chat-bg: #0f172a; }
+        [data-theme="oled"] { --bg-base: #000000; --bg-panel: #000000; --bg-input: #111111; --border: #222222; --primary: #ffffff; --text-main: #ffffff; --text-muted: #666666; --msg-sent: #ffffff; --msg-sent-txt: #000000; --msg-recv: #111111; --msg-recv-txt: #ffffff; --chat-bg: #000000; }
+        [data-theme="dracula"] { --bg-base: #282a36; --bg-panel: #282a36; --bg-input: #44475a; --border: #6272a4; --primary: #ff79c6; --text-main: #f8f8f2; --msg-sent: #ff79c6; --msg-sent-txt: #282a36; --msg-recv: #44475a; --msg-recv-txt: #f8f8f2; --chat-bg: #282a36; }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; }
         body { background: var(--bg-base); color: var(--text-main); height: 100dvh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; }
         
-        .btn { padding: 16px 24px; border: none; border-radius: 24px; background: var(--primary); color: var(--bg-base); font-weight: 600; font-size: 16px; cursor: pointer; transition: transform 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
-        .btn:active { transform: scale(0.96); }
+        button { cursor: pointer; border: none; background: transparent; color: inherit; }
+        input, textarea, select { font-family: inherit; }
+
+        .btn { padding: 14px 24px; border-radius: 20px; background: var(--primary); color: var(--bg-base); font-weight: 600; font-size: 15px; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; width: 100%; }
+        .btn:active { transform: scale(0.97); opacity: 0.9; }
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
         
-        .input-field { width: 100%; padding: 14px 20px; background: var(--bg-input); border: none; color: var(--text-main); border-radius: 20px; outline: none; font-size: 16px; transition: 0.2s; }
-        .input-field:focus { box-shadow: 0 0 0 2px var(--border); }
-        select.input-field { appearance: none; cursor: pointer; }
+        .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: var(--bg-input); flex-shrink: 0; }
+        .icon-btn { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text-main); transition: 0.2s; }
+        .icon-btn:active { background: var(--bg-hover); }
 
-        .avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: var(--bg-input); flex-shrink: 0; }
-        .icon-btn { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; border: none; font-size: 20px; color: var(--text-main); cursor: pointer; }
-        
-        /* Mobile Panels Default */
-        .panel { position: absolute; inset: 0; background: var(--bg-panel); z-index: 10; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.25, 1, 0.25, 1); height: 100%; }
+        /* Panels & Layout */
+        .panel { position: absolute; inset: 0; background: var(--bg-panel); z-index: 10; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); height: 100%; width: 100%; }
         .panel.active { transform: translateX(0); }
         .panel.root { transform: translateX(0); z-index: 5; }
-        
-        /* Headers */
-        .panel-header { flex-shrink: 0; height: calc(70px + var(--safe-top)); padding-top: var(--safe-top); display: flex; align-items: center; padding: 0 20px; gap: 12px; background: var(--bg-panel); z-index: 20; }
-        .panel-title { font-size: 18px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .panel.root .panel-title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+
+        .panel-header { flex-shrink: 0; height: calc(60px + var(--safe-top)); padding-top: var(--safe-top); display: flex; align-items: center; padding: 0 20px; gap: 12px; background: var(--bg-panel); z-index: 20; }
+        .panel-title { font-size: 18px; font-weight: 600; flex: 1; text-align: center; }
         .panel-body { flex: 1; overflow-y: auto; padding-bottom: var(--safe-bottom); }
 
-        /* Transform the header "Edit" button into the Floating + Button from the image */
-        #panel-root .panel-header button[onclick="Router.push('panel-new')"] {
-            position: absolute; bottom: calc(24px + var(--safe-bottom)); right: 24px;
-            width: 60px; height: 60px; border-radius: 50%; background: var(--primary) !important;
-            box-shadow: var(--shadow); z-index: 100; display: flex; align-items: center; justify-content: center;
-            color: transparent !important; transition: 0.2s; 
-        }
-        #panel-root .panel-header button[onclick="Router.push('panel-new')"]::after {
-            content: "+"; color: var(--bg-base); font-size: 32px; font-weight: 400; line-height: 1; position: absolute;
-        }
-
-        /* Chat List Items */
-        .user-item { display: flex; align-items: center; gap: 14px; padding: 12px 20px; cursor: pointer; transition: background 0.2s; position: relative; }
+        /* Chat List Styles */
+        .root-header { padding: calc(20px + var(--safe-top)) 20px 10px 20px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); z-index: 10; }
+        .root-header h1 { font-size: 28px; font-weight: 700; }
+        
+        .search-wrap { padding: 10px 20px; }
+        .search-bar { display: flex; align-items: center; background: var(--bg-input); padding: 10px 16px; border-radius: 24px; gap: 10px; }
+        .search-bar input { flex: 1; border: none; background: transparent; outline: none; font-size: 15px; color: var(--text-main); }
+        
+        .user-item { display: flex; align-items: center; gap: 16px; padding: 12px 20px; cursor: pointer; transition: background 0.2s; position: relative; }
         .user-item:hover { background: var(--bg-hover); }
         .user-info { flex: 1; overflow: hidden; }
-        .user-name { font-weight: 600; font-size: 16px; display: flex; justify-content: space-between; margin-bottom: 4px; color: var(--text-main); }
-        .user-last-msg { font-size: 14px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400; }
+        .user-name { font-weight: 600; font-size: 16px; display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center; }
+        .user-last-msg { font-size: 14px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 20px; }
         
-        /* Badges matching Image */
-        .badge { background: var(--primary); color: var(--bg-base); padding: 2px 7px; border-radius: 12px; font-size: 12px; font-weight: 600; min-width: 20px; text-align: center; display: inline-block; }
-        .call-badge { background: var(--success); color: white; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(16,185,129,0.3); animation: pulse 2s infinite; cursor: pointer; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        .badge { background: var(--primary); color: var(--bg-base); padding: 0; min-width: 22px; height: 22px; border-radius: 50%; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+        
+        /* Floating Action Button */
+        .fab { position: absolute; bottom: calc(30px + var(--safe-bottom)); right: 24px; width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: var(--bg-base); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); z-index: 100; transition: transform 0.2s; }
+        .fab:active { transform: scale(0.92); }
+        .fab svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; }
 
-        /* Chat Area Styling */
-        .chat-area { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; background-size: cover; background-position: center; background-color: var(--bg-base); }
-        .messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-        .msg-row { display: flex; gap: 8px; max-width: 80%; width: fit-content; position: relative; margin-top: 4px; }
-        .msg-row.sent { align-self: flex-end; flex-direction: row-reverse; }
-        .msg-row.received { align-self: flex-start; }
+        /* Chat Area */
+        .chat-area { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; background-color: var(--chat-bg); background-size: cover; background-position: center; }
+        .date-divider { text-align: center; margin: 16px 0; }
+        .date-divider span { background: var(--bg-input); color: var(--text-muted); padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; }
         
-        .msg-bubble { padding: 12px 16px; font-size: var(--msg-size); border-radius: 20px; position: relative; word-break: break-word; line-height: 1.4; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .msg-row.sent .msg-bubble { background: var(--msg-sent); color: var(--msg-sent-text); border-bottom-right-radius: 4px; }
-        .msg-row.received .msg-bubble { background: var(--msg-recv); color: var(--msg-recv-text); border-bottom-left-radius: 4px; }
-        .msg-media { max-width: 100%; border-radius: 12px; margin-top: 4px; cursor: pointer; object-fit: cover; max-height: 300px; }
-        .msg-caption { font-size: 14px; margin-top: 6px; }
+        .messages { flex: 1; padding: 20px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+        .msg-row { display: flex; width: 100%; position: relative; margin-bottom: 12px; }
+        .msg-row.sent { justify-content: flex-end; }
+        .msg-row.received { justify-content: flex-start; }
+        
+        .msg-bubble { max-width: 75%; padding: 12px 16px; font-size: var(--msg-size); position: relative; word-break: break-word; line-height: 1.4; border-radius: 20px; }
+        .msg-row.sent .msg-bubble { background: var(--msg-sent); color: var(--msg-sent-txt); border-bottom-right-radius: 4px; }
+        .msg-row.received .msg-bubble { background: var(--msg-recv); color: var(--msg-recv-txt); border-bottom-left-radius: 4px; }
+        
+        /* Injecting timestamp outside via CSS trick */
+        .msg-bubble > div:last-child { position: absolute; bottom: -20px; font-size: 11px !important; color: var(--text-muted) !important; opacity: 1 !important; width: max-content; }
+        .msg-row.sent .msg-bubble > div:last-child { right: 4px; text-align: right; }
+        .msg-row.received .msg-bubble > div:last-child { left: 4px; text-align: left; }
+        .msg-tick { font-size: 11px; margin-left: 4px; letter-spacing: -2px; }
+        .msg-tick.read { color: var(--success) !important; }
 
-        /* Modern Input Bar */
-        .input-bar { flex-shrink: 0; background: var(--bg-panel); padding: 10px 16px calc(10px + var(--safe-bottom)); display: flex; align-items: flex-end; gap: 10px; z-index: 10; }
-        .msg-input { flex: 1; resize: none; min-height: 44px; max-height: 120px; padding: 12px 18px; border-radius: 24px; background: var(--bg-input); border: none; color: var(--text-main); font-size: 16px; outline: none; transition: 0.2s; }
-        .msg-input::-webkit-scrollbar { display: none; }
+        .msg-media { max-width: 100%; border-radius: 12px; margin-top: 4px; cursor: pointer; object-fit: cover; max-height: 250px; }
+
+        /* Input Bar */
+        .input-bar { flex-shrink: 0; background: transparent; padding: 12px 20px calc(12px + var(--safe-bottom)); display: flex; align-items: flex-end; gap: 12px; z-index: 10; }
+        .input-wrapper { flex: 1; background: var(--bg-input); border-radius: 24px; display: flex; align-items: center; padding: 4px 6px 4px 16px; min-height: 48px; }
+        .msg-input { flex: 1; resize: none; border: none; background: transparent; color: var(--text-main); font-size: 15px; outline: none; padding: 10px 0; max-height: 100px; }
+        .msg-input::placeholder { color: var(--text-muted); }
+        .send-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: var(--bg-base); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         
-        /* Settings Headers */
-        h3 { padding: 20px 20px 10px 20px !important; color: var(--text-muted) !important; font-size: 12px !important; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+        /* Settings Elements (Matching 2nd Image) */
+        .settings-card { background: var(--bg-panel); border-radius: 16px; margin-bottom: 24px; }
+        .settings-header { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin: 24px 20px 8px; letter-spacing: 0.5px; }
+        .settings-input { width: 100%; background: var(--bg-input); border: none; padding: 16px; border-radius: 12px; color: var(--text-main); font-size: 15px; outline: none; margin-bottom: 12px; transition: 0.2s; }
+        .settings-input:focus { box-shadow: 0 0 0 2px var(--primary); }
+        .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--bg-input); border-radius: 12px; margin-bottom: 12px; font-size: 15px; font-weight: 500; }
         
-        /* Modals & Components */
-        .toast { position: fixed; top: calc(20px + var(--safe-top)); left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--text-main); color: var(--bg-base); padding: 12px 24px; border-radius: 30px; z-index: 10000; font-weight: 600; font-size: 14px; transition: 0.4s; opacity: 0; box-shadow: var(--shadow); }
+        .profile-av-wrap { width: 100px; height: 100px; margin: 20px auto; position: relative; border-radius: 50%; overflow: hidden; background: var(--bg-input); }
+        .profile-av-wrap .avatar { width: 100%; height: 100%; border-radius: 0; }
+        .profile-av-edit { position: absolute; bottom: 0; left: 0; right: 0; height: 35%; background: rgba(0,0,0,0.6); color: white; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: 600; cursor: pointer; }
+
+        .call-badge { background: var(--bg-input); color: var(--danger); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+        .online-dot { width: 12px; height: 12px; background: var(--success); border-radius: 50%; border: 2px solid var(--bg-panel); position: absolute; bottom: 2px; right: 2px; }
+
+        .toast { position: fixed; top: calc(20px + var(--safe-top)); left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--primary); color: var(--bg-base); padding: 12px 24px; border-radius: 30px; z-index: 10000; font-weight: 600; font-size: 14px; transition: 0.4s; opacity: 0; box-shadow: var(--shadow); }
         .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-        
-        /* Calls UI unchanged for integrity, adjusted colors mildly */
-        #panel-call { z-index: 9999; background: #000; color: white; display: flex; flex-direction: column; }
-        .call-bg { position: absolute; inset:0; background-size: cover; background-position: center; filter: blur(25px) brightness(0.4); z-index: 1; }
-        .call-content { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; align-items: center; padding: calc(60px + var(--safe-top)) 20px 40px; }
-        .call-avatar-lg { width: 140px; height: 140px; border-radius: 50%; box-shadow: 0 10px 40px rgba(0,0,0,0.5); object-fit: cover; }
-        .call-status { font-size: 16px; color: var(--success); margin-top: 24px; font-weight: 500; }
-        .call-name-lg { font-size: 32px; font-weight: 700; margin-top: 8px; letter-spacing: -0.5px; }
-        .call-timer { font-size: 18px; color: rgba(255,255,255,0.7); margin-top: 8px; font-variant-numeric: tabular-nums; }
-        .call-controls { margin-top: auto; display: flex; gap: 32px; align-items: center; background: rgba(255,255,255,0.1); padding: 20px 30px; border-radius: 40px; backdrop-filter: blur(20px); }
-        .call-btn { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; border: none; cursor: pointer; color: white; background: rgba(255,255,255,0.15); transition: 0.2s; }
-        .call-btn.end { background: var(--danger); }
-        .call-btn.active { background: #fff; color: #000; }
-        .conf-header { width:100%; display:flex; align-items:center; margin-bottom: 24px; font-size: 20px; font-weight: 600; padding: 0 10px; }
-        .conf-list { width: 100%; display: flex; flex-direction: column; gap: 16px; flex: 1; overflow-y:auto; }
-        .conf-item { display: flex; align-items: center; gap: 16px; background: rgba(255,255,255,0.05); padding: 12px 16px; border-radius: 20px; backdrop-filter: blur(10px); }
 
-        /* Modals & Overlays */
-        #ctx-menu { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bg-panel); border-top-left-radius: 24px; border-top-right-radius: 24px; transform: translateY(100%); transition: 0.3s cubic-bezier(0.25, 1, 0.25, 1); z-index: 9000; padding: 20px 20px calc(20px + var(--safe-bottom)); box-shadow: 0 -10px 40px rgba(0,0,0,0.1); }
-        .ctx-item { padding: 16px; display: flex; align-items: center; gap: 16px; font-size: 16px; cursor: pointer; border-radius: 16px; transition: 0.2s; font-weight: 500; }
-        .ctx-item:hover { background: var(--bg-input); }
+        /* Custom UI fixes for original JS structures */
+        .reply-bar-active, .pinned-bar { background: var(--bg-input); padding: 12px 20px; font-size: 14px; border-radius: 12px; margin: 10px 20px 0; display: flex; align-items: center; justify-content: space-between; }
+        .reply-block { background: rgba(0,0,0,0.05); padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; border-left: 3px solid var(--primary); opacity: 0.8; }
+        [data-theme="dark"] .reply-block { background: rgba(255,255,255,0.1); }
 
-        /* Small utilities */
-        .online-dot { width: 14px; height: 14px; background: var(--success); border-radius: 50%; border: 2px solid var(--bg-panel); position: absolute; bottom: 0; right: 0; }
-        .msg-tick { font-size: 11px; margin-left: 6px; display: inline-block; opacity: 0.8; }
-        .msg-tick.read { color: #3b82f6; }
-        .link-preview { background: var(--bg-input); padding: 10px; border-radius: 10px; margin-top: 6px; font-size: 13px; border-left: 3px solid var(--text-muted); color: var(--text-main); }
-        .link-preview a { color: var(--text-main); text-decoration: none; word-break: break-all; }
-        .reply-block { background: rgba(128,128,128,0.1); border-left: 3px solid var(--text-main); padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; cursor: pointer; }
-        .pinned-bar { background: var(--bg-panel); padding: 12px 20px; border-bottom: 1px solid var(--border); font-size: 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.02); z-index: 5; }
-        .reply-bar-active { background: var(--bg-panel); padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-
-        .skeleton { background: linear-gradient(90deg, var(--bg-input) 25%, var(--border) 50%, var(--bg-input) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 16px; }
+        /* Skeletons */
+        .skeleton { background: linear-gradient(90deg, var(--bg-input) 25%, var(--border) 50%, var(--bg-input) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 12px; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        .skel-av { width: 48px; height: 48px; border-radius: 50%; }
-        .skel-text { height: 14px; margin-bottom: 8px; width: 60%; border-radius: 8px; }
-        .skel-text.short { width: 40%; }
 
-        /* === DESKTOP MODE (Split Screen) === */
+        /* CALL UI OVERLAY */
+        #panel-call { z-index: 9999; background: var(--bg-base); color: var(--text-main); }
+        .call-bg { position: absolute; inset:0; background-size: cover; background-position: center; filter: blur(40px) brightness(0.8); z-index: 1; opacity: 0.5; }
+        .call-content { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; align-items: center; padding: calc(80px + var(--safe-top)) 20px 40px; }
+        .call-controls { margin-top: auto; display: flex; gap: 24px; align-items: center; background: var(--bg-panel); padding: 20px 32px; border-radius: 40px; box-shadow: var(--shadow); }
+        .call-btn { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; border: none; background: var(--bg-input); color: var(--text-main); }
+        .call-btn.end { background: var(--danger); color: white; }
+
+        /* Desktop Mode Layout */
         @media (min-width: 768px) {
-            body { flex-direction: row; background: var(--bg-input); }
+            body { flex-direction: row; }
+            .panel { position: static; height: 100dvh; transform: none !important; transition: none !important; }
+            .panel.root { width: 360px; flex-shrink: 0; border-right: 1px solid var(--border); z-index: 1; }
+            #panel-chat { flex: 1; z-index: 0; }
             
-            /* Root List permanently docked on left */
-            #panel-root {
-                width: 350px !important;
-                max-width: 350px !important;
-                border-right: 1px solid var(--border);
-                transform: translateX(0) !important;
-                z-index: 10;
-                position: relative;
-            }
+            /* Hide the back button in Chat on Desktop */
+            #panel-chat .panel-header .icon-btn[onclick="Router.pop()"] { display: none; }
             
-            /* Other panels act as the Right Content View */
-            .panel {
-                position: absolute;
-                width: calc(100vw - 350px);
-                left: 350px;
+            /* Modal panels (Settings, Profile, New Chat) overlay only the right side */
+            #panel-settings, #panel-profile, #panel-new, #panel-sessions, #panel-auth {
+                position: absolute; width: calc(100% - 360px); left: 360px; z-index: 10;
+                transform: translateX(100%) !important; transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
             }
+            #panel-auth { width: 100%; left: 0; z-index: 9999; }
+            #panel-settings.active, #panel-profile.active, #panel-new.active, #panel-sessions.active, #panel-auth.active { transform: translateX(0) !important; }
             
-            /* Prevent back button display on right pane headers since the list is always visible */
-            #panel-chat .panel-header > .icon-btn:first-child,
-            #panel-settings .panel-header > .icon-btn:first-child,
-            #panel-profile .panel-header > .icon-btn:first-child,
-            #panel-new .panel-header > .icon-btn:first-child,
-            #panel-sessions .panel-header > .icon-btn:first-child {
-                display: none;
-            }
-            
-            /* Fix floating button position for desktop */
-            #panel-root .panel-header button[onclick="Router.push('panel-new')"] {
-                right: max(20px, calc(100vw - 330px)); /* Keeps it nicely aligned inside left panel */
-            }
+            .fab { bottom: 30px; right: calc(100vw - 330px); }
         }
     </style>
 </head>
@@ -178,25 +173,23 @@
     <div class="toast" id="toast">Message</div>
 
     <!-- AUTH PANEL -->
-    <!-- AUTH PANEL -->
-    <div id="panel-auth" class="panel active" style="z-index: 100; justify-content: center; padding: 32px; overflow-y: auto;">
-        <div style="max-width: 400px; width: 100%; margin: auto; text-align: center;">
-            <h1 style="font-size: 36px; font-weight: 800; margin-bottom: 30px;">YukiChat <span style="color:var(--primary)">Pro</span></h1>
+    <div id="panel-auth" class="panel active" style="justify-content: center; padding: 32px; overflow-y: auto;">
+        <div style="max-width: 360px; width: 100%; margin: auto; text-align: center;">
+            <h1 style="font-size: 32px; font-weight: 800; margin-bottom: 40px;">YukiChat</h1>
             
-            <div id="auth-reg-fields" style="display:none; margin-bottom: 20px;">
-                <label style="position:relative; display:inline-block; margin-bottom:16px;">
-                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzMzNDE1NSI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==" id="auth-av-preview" class="avatar" style="width:90px;height:90px; border:2px dashed var(--primary)">
-                    <div style="position:absolute; bottom:0; right:-5px; background:var(--primary); padding:6px; border-radius:50%; font-size:12px">📷</div>
+            <div id="auth-reg-fields" style="display:none; margin-bottom: 24px;">
+                <label style="position:relative; display:inline-block; margin-bottom:12px; cursor:pointer;">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOTRhM2I4IiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PHBhdGggZD0iTTEyIDh2OG0tNCA0aDgiLz48L3N2Zz4=" id="auth-av-preview" class="avatar" style="width:80px;height:80px; border:2px solid var(--border)">
                     <input type="file" hidden accept="image/*" onchange="App.authAv(event)">
                 </label>
-                <div style="color:var(--text-muted); font-size:13px;">Add a Profile Photo (Optional)</div>
+                <div style="color:var(--text-muted); font-size:13px;">Upload Photo</div>
             </div>
 
-            <input type="text" id="auth-u" class="input-field" placeholder="Username" style="margin-bottom: 16px;">
-            <input type="password" id="auth-p" class="input-field" placeholder="Password" style="margin-bottom: 24px;">
+            <input type="text" id="auth-u" class="settings-input" placeholder="Username">
+            <input type="password" id="auth-p" class="settings-input" placeholder="Password" style="margin-bottom: 24px;">
             
-            <button class="btn" id="btn-auth-main" style="width: 100%; margin-bottom: 16px;" onclick="App.submitAuth()">Log In</button>
-            <div style="color:var(--text-muted); font-size:14px;">
+            <button class="btn" id="btn-auth-main" onclick="App.submitAuth()">Log In</button>
+            <div style="margin-top: 24px; color:var(--text-muted); font-size:14px;">
                 <span id="auth-toggle-txt">Don't have an account?</span> 
                 <span style="color:var(--primary); cursor:pointer; font-weight:600;" onclick="App.toggleAuthMode()">Sign Up</span>
             </div>
@@ -205,163 +198,262 @@
 
     <!-- ROOT CHAT LIST -->
     <div id="panel-root" class="panel root">
-        <div class="panel-header" style="border-bottom:none">
-            <h1 class="panel-title" style="font-size: 28px;">Chats</h1>
-            <button class="icon-btn" onclick="Router.push('panel-new')" style="background: var(--bg-input);">✏️</button>
-            <img src="" id="my-avatar" class="avatar" style="width:40px;height:40px;cursor:pointer" onclick="Router.push('panel-settings')">
+        <div class="root-header">
+            <h1>Messages</h1>
+            <button class="icon-btn" onclick="Router.push('panel-settings')">
+                <img src="" id="my-avatar" class="avatar" style="width:36px;height:36px;">
+            </button>
         </div>
-        <div style="padding: 12px 16px;"><input type="text" class="input-field" placeholder="Search users & channels..." oninput="App.searchGlobal(this.value)"></div>
-        <div class="panel-body" id="chat-list"></div>
+        <div class="search-wrap">
+            <div class="search-bar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" placeholder="Search" oninput="App.searchGlobal(this.value)">
+            </div>
+        </div>
+        
+        <div class="panel-body" id="chat-list" style="padding-top: 8px;"></div>
+        
+        <button class="fab" onclick="Router.push('panel-new')">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
     </div>
 
     <!-- ACTIVE CHAT -->
     <div id="panel-chat" class="panel">
-        <div class="panel-header">
-            <button class="icon-btn" onclick="Router.pop()" style="margin-left:-8px">←</button>
-            <img src="" id="chat-av" class="avatar" style="width:42px;height:42px; cursor:pointer" onclick="App.viewProfile(State.chat)">
-            <div style="flex:1; cursor:pointer;" onclick="App.viewProfile(State.chat)">
-                <div class="panel-title" id="chat-title" style="font-size: 18px;">Chat</div>
-                <div style="font-size: 13px; color: var(--primary); font-weight: 500;" id="chat-status">Connecting...</div>
+        <div class="panel-header" style="justify-content: space-between;">
+            <div style="display:flex; align-items:center; gap:12px; cursor:pointer;" onclick="App.viewProfile(State.chat)">
+                <button class="icon-btn" onclick="event.stopPropagation(); Router.pop()" style="margin-left:-8px">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <img src="" id="chat-av" class="avatar" style="width:40px;height:40px;">
+                <div>
+                    <div class="panel-title" id="chat-title" style="text-align:left; font-size:16px;">Chat</div>
+                    <div style="font-size: 12px; color: var(--text-muted); font-weight: 500;" id="chat-status">Connecting...</div>
+                </div>
             </div>
-            <button class="icon-btn" id="call-btn" onclick="RTC.startCall()" style="display:none">📞</button>
+            <div style="display:flex; gap:16px;">
+                <button class="icon-btn" style="width:auto; color:var(--text-muted)">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                </button>
+                <button class="icon-btn" id="call-btn" onclick="RTC.startCall()" style="display:none; width:auto; color:var(--text-muted)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </button>
+            </div>
         </div>
         
-        <!-- Replace only the .chat-area div inside #panel-chat -->
         <div class="chat-area" id="chat-area-bg">
             <div id="pinned-msg" class="pinned-bar" style="display:none;" onclick="App.scrollToPin()">
-                <div>📌</div><div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" id="pinned-text"></div>
+                <div style="font-weight:600; font-size:12px; color:var(--primary)">📌 Pinned</div>
+                <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-left:12px; color:var(--text-muted)" id="pinned-text"></div>
             </div>
-            <div class="messages" id="msgs"></div>
+            
+            <div class="messages" id="msgs">
+                <!-- Messages populate here -->
+            </div>
+            
             <div id="reply-preview" class="reply-bar-active" style="display:none;">
-                <div style="border-left:3px solid var(--primary); padding-left:10px; font-size:14px; color:var(--text-muted)" id="reply-preview-text">Replying...</div>
-                <button class="icon-btn" style="width:30px;height:30px;font-size:14px;" onclick="App.cancelReply()">✕</button>
+                <div style="border-left:3px solid var(--primary); padding-left:10px; font-size:13px; color:var(--text-muted)" id="reply-preview-text">Replying...</div>
+                <button class="icon-btn" style="width:24px;height:24px;" onclick="App.cancelReply()">✕</button>
             </div>
+            
             <div class="input-bar" id="input-bar">
-                <!-- (keep existing input-bar content) -->
-                <button class="icon-btn" onclick="document.getElementById('file-upload').click()">+</button>
+                <button class="icon-btn" onclick="document.getElementById('file-upload').click()" style="color:var(--text-muted)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
                 <input type="file" id="file-upload" hidden onchange="App.prepMedia(event)">
-                <textarea id="msg-input" class="msg-input" placeholder="Message..." rows="1"></textarea>
-                <button class="icon-btn" onclick="App.sendText()" style="background:var(--primary); color:#fff; width:48px; height:48px;">➤</button>
+                
+                <div class="input-wrapper">
+                    <textarea id="msg-input" class="msg-input" placeholder="Type Here..." rows="1"></textarea>
+                    <button class="send-btn" onclick="App.sendText()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 7l-5-5-5 5"/></svg>
+                    </button>
+                </div>
             </div>
             <div id="channel-bar" style="display:none; padding:16px; text-align:center; background:var(--bg-panel); color:var(--text-muted); font-weight:500;">Only admins can broadcast here.</div>
         </div>
     </div>
 
-    <!-- PROFILE PANEL -->
-    <div id="panel-profile" class="panel">
-        <div class="panel-header"><button class="icon-btn" onclick="Router.pop()">←</button><div class="panel-title">Profile Info</div></div>
-        <div class="panel-body" style="padding: 32px 20px; text-align:center;">
-            <img id="prof-av" class="avatar" style="width:120px;height:120px; margin-bottom:16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-            <h2 id="prof-name" style="font-size:24px; margin-bottom:4px;">Name</h2>
-            <div id="prof-handle" style="color:var(--primary); font-weight:600; margin-bottom:16px;"></div>
-            <p id="prof-bio" style="color:var(--text-muted); margin-bottom:24px; line-height:1.5;"></p>
-            <div id="prof-actions" style="display:flex; flex-direction:column; gap:12px;"></div>
-        </div>
-    </div>
-
-    <!-- MEDIA CAPTION PANEL -->
-    <div id="panel-caption" class="panel" style="z-index: 50; background: rgba(0,0,0,0.9);">
-        <div class="panel-header" style="background:transparent; border:none;"><button class="icon-btn" onclick="document.getElementById('panel-caption').classList.remove('active')">✕</button></div>
-        <div class="panel-body" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
-            <img id="cap-preview" style="max-width:100%; max-height:60vh; border-radius:16px; margin-bottom:20px; object-fit:contain;">
-            <input type="text" id="cap-input" class="input-field" placeholder="Add a caption..." style="max-width: 400px; margin-bottom: 20px;">
-            <button class="btn" style="width: 100%; max-width: 400px;" onclick="App.sendMedia()">Send Media ➤</button>
-        </div>
-    </div>
-
-    <!-- CALL UI PANEL -->
-    <div id="panel-call" class="panel" style="transform:translateY(100%); transition: 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);">
-        <div class="call-bg" id="call-bg"></div>
-        
-        <!-- 1-on-1 Call View -->
-        <div class="call-content" id="call-view-single">
-            <img id="call-av" class="call-avatar-lg" src="">
-            <div class="call-status" id="call-status-txt">Calling...</div>
-            <div class="call-name-lg" id="call-name">User Name</div>
-            <div class="call-timer" id="call-time">00:00</div>
-            
-            <div class="call-controls">
-                <button class="call-btn" id="btn-speaker" onclick="RTC.toggleSpeaker()">🔊</button>
-                <button class="call-btn end" onclick="RTC.endCall()">☎</button>
-                <button class="call-btn" id="btn-mute" onclick="RTC.toggleMute()">🎤</button>
-            </div>
-        </div>
-
-        <!-- Group Conference View -->
-        <div class="call-content" id="call-view-conf" style="display:none; padding: calc(30px + var(--safe-top)) 20px;">
-            <div class="conf-header" onclick="RTC.toggleView()"><span style="margin-right:16px;cursor:pointer">←</span> Conference</div>
-            <div class="conf-list" id="conf-list"></div>
-            <button class="btn" style="background:var(--danger); margin-top:20px; width:100%; padding: 20px; font-size:18px; border-radius:24px;" onclick="RTC.endCall()">End Group Call</button>
-        </div>
-    </div>
-
     <!-- SETTINGS PANEL -->
     <div id="panel-settings" class="panel">
-        <div class="panel-header"><button class="icon-btn" onclick="Router.pop()">←</button><div class="panel-title">Settings</div></div>
-        <div class="panel-body">
-            <div style="text-align:center; padding: 32px 16px;">
-                <label style="position:relative; display:inline-block">
-                    <img src="" id="set-av" class="avatar" style="width:120px;height:120px; margin-bottom:16px;">
-                    <div style="position:absolute; bottom:20px; right:0; background:var(--primary); padding:10px; border-radius:50%; cursor:pointer;">📷</div>
+        <div class="panel-header">
+            <button class="icon-btn" onclick="Router.pop()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <div class="panel-title">Settings</div>
+            <div style="width:40px"></div>
+        </div>
+        <div class="panel-body" style="padding: 0 20px;">
+            
+            <div class="settings-header">Profile</div>
+            <div class="settings-card" style="padding: 1px 20px 20px;">
+                <label class="profile-av-wrap" style="display:block; cursor:pointer;">
+                    <img src="" id="set-av" class="avatar">
+                    <div class="profile-av-edit">Edit</div>
                     <input type="file" hidden accept="image/*" onchange="App.updateProfile(event, 'avatar')">
                 </label>
-                <div style="margin-bottom:8px; display:flex; justify-content:center; align-items:center; gap:8px;">
-                    <input type="text" id="set-name" class="input-field" style="text-align:center; border:none; background:transparent; font-size:24px; font-weight:700; padding:0; width:auto;" onblur="App.updateProfile(null, 'username')">
-                    <span style="font-size:14px; color:var(--text-muted)">✏️</span>
-                </div>
-                <input type="text" id="set-bio" class="input-field" style="text-align:center; border:none; background:transparent;" placeholder="Bio..." onblur="App.updateProfile(null, 'bio')">
+                
+                <div style="font-size:13px; color:var(--text-muted); margin-bottom:6px; font-weight:500;">Username</div>
+                <input type="text" id="set-name" class="settings-input" onblur="App.updateProfile(null, 'username')">
+                
+                <div style="font-size:13px; color:var(--text-muted); margin-bottom:6px; font-weight:500;">Bio</div>
+                <textarea id="set-bio" class="settings-input" rows="2" style="resize:none;" onblur="App.updateProfile(null, 'bio')"></textarea>
             </div>
             
-            <h3 style="padding: 16px; color:var(--primary); font-size:13px; text-transform:uppercase;">Appearance</h3>
-            <div class="user-item"><span>Theme</span>
-                <select id="set-theme" class="input-field" style="width:140px; padding:8px" onchange="App.setTheme(this.value)">
-                    <option value="dark">Dark</option><option value="light">Light</option><option value="oled">OLED</option>
-                    <option value="dracula">Dracula</option><option value="cyberpunk">Cyberpunk</option><option value="forest">Forest</option><option value="synthwave">Synthwave</option>
-                </select>
-            </div>
-            <div class="user-item"><span>Chat Wallpaper</span>
-                <input type="file" id="set-wall-file" accept="image/*" class="input-field" style="width:150px; padding:8px; font-size:12px; background:transparent; cursor:pointer;" onchange="App.setWallpaperFile(event)">
+            <div class="settings-header">Appearance</div>
+            <div class="settings-card">
+                <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
+                    <span>Wallpaper</span>
+                    <!-- Replaced text input with file input to match user request -->
+                    <label style="cursor:pointer; width:60px; height:36px; background:var(--bg-input); border-radius:8px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                        <span style="font-size:12px; color:var(--text-muted);">Upload</span>
+                        <input type="file" id="set-wall-file" hidden accept="image/*" onchange="App.setWallpaperFile(event)">
+                    </label>
+                </div>
+                <div class="settings-row" style="margin:0; background:transparent;">
+                    <span>Color Theme</span>
+                    <select id="set-theme" style="background:transparent; border:none; outline:none; font-weight:600; color:var(--primary); font-size:14px; text-align:right;" onchange="App.setTheme(this.value)">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="oled">OLED</option>
+                        <option value="dracula">Dracula</option>
+                    </select>
+                </div>
             </div>
 
-            <h3 style="padding: 16px; color:var(--primary); font-size:13px; text-transform:uppercase;">Privacy</h3>
-            <div class="user-item"><span>Who can call me</span><select id="set-call" class="input-field" style="width:140px; padding:8px" onchange="App.updateProfile(null,'privacy')"><option value="everyone">Everyone</option><option value="noone">No One</option></select></div>
-            <div class="user-item"><span>Profile Photo</span><select id="set-pfp" class="input-field" style="width:140px; padding:8px" onchange="App.updateProfile(null,'privacy')"><option value="everyone">Everyone</option><option value="noone">No One</option></select></div>
+            <div class="settings-header">Privacy</div>
+            <div class="settings-card" style="padding: 16px;">
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size:14px; margin-bottom:8px; font-weight:500;">Who can call me</div>
+                    <select id="set-call" class="settings-input" style="padding:12px; margin:0;" onchange="App.updateProfile(null,'privacy')">
+                        <option value="everyone">Everyone</option><option value="noone">No One</option>
+                    </select>
+                </div>
+                <div>
+                    <div style="font-size:14px; margin-bottom:8px; font-weight:500;">Who can view my profile</div>
+                    <select id="set-pfp" class="settings-input" style="padding:12px; margin:0;" onchange="App.updateProfile(null,'privacy')">
+                        <option value="everyone">Everyone</option><option value="noone">No One</option>
+                    </select>
+                </div>
+            </div>
             
-            <h3 style="padding: 16px; color:var(--primary); font-size:13px; text-transform:uppercase;">App</h3>
-            <div class="user-item" onclick="App.loadSessions()"><span>Devices & Sessions</span></div>
-            <div class="user-item" id="install-btn" style="display:none; color:var(--primary)" onclick="App.installPWA()"><span>⬇️ Install App</span></div>
-            <div class="user-item" style="color:var(--danger);" onclick="App.logout()"><span>Log Out</span></div>
+            <div class="settings-card">
+                <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0; cursor:pointer;" onclick="App.loadSessions()">
+                    <span>Active Sessions</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </div>
+                <div class="settings-row" style="margin:0; background:transparent; color:var(--danger); cursor:pointer;" onclick="App.logout()">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                        Log Out
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- PROFILE PANEL -->
+    <div id="panel-profile" class="panel">
+        <div class="panel-header">
+            <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+            <div class="panel-title">Contact Info</div>
+            <div style="width:40px"></div>
+        </div>
+        <div class="panel-body" style="padding: 32px 20px; text-align:center;">
+            <img id="prof-av" class="avatar" style="width:120px;height:120px; margin-bottom:16px;">
+            <h2 id="prof-name" style="font-size:24px; margin-bottom:4px;">Name</h2>
+            <div id="prof-handle" style="color:var(--text-muted); font-size:15px; margin-bottom:16px;"></div>
+            <p id="prof-bio" style="font-size:15px; background:var(--bg-input); padding:16px; border-radius:16px; margin-bottom:24px; line-height:1.5;"></p>
+            <div id="prof-actions" style="display:flex; flex-direction:column; gap:12px;"></div>
         </div>
     </div>
 
     <!-- SESSIONS PANEL -->
     <div id="panel-sessions" class="panel">
-        <div class="panel-header"><button class="icon-btn" onclick="Router.pop()">←</button><div class="panel-title">Active Sessions</div></div>
-        <div class="panel-body" id="sessions-list" style="padding: 10px;"></div>
+        <div class="panel-header">
+            <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+            <div class="panel-title">Active Sessions</div>
+            <div style="width:40px"></div>
+        </div>
+        <div class="panel-body" id="sessions-list" style="padding: 20px;"></div>
     </div>
-    
+
     <!-- NEW CHAT / CHANNELS PANEL -->
     <div id="panel-new" class="panel">
-        <div class="panel-header"><button class="icon-btn" onclick="Router.pop()">←</button><div class="panel-title">New Chat</div></div>
+        <div class="panel-header">
+            <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+            <div class="panel-title">New Message</div>
+            <div style="width:40px"></div>
+        </div>
         <div class="panel-body" style="padding: 20px;">
-            <button class="btn" style="width:100%; margin-bottom:12px" onclick="App.createChat('group')">👥 Create Group</button>
-            <button class="btn btn-outline" style="width:100%; margin-bottom:24px" onclick="App.createChat('channel')">📢 Create Channel</button>
-            <div style="color:var(--text-muted); font-size:14px; margin-bottom:8px">Or Search Global:</div>
-            <input type="text" class="input-field" placeholder="Search users & @channels..." oninput="App.searchGlobal(this.value)">
-            <div id="global-search-res" style="margin-top: 16px;"></div>
+            <div class="search-bar" style="margin-bottom: 24px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" placeholder="Search global users..." oninput="App.searchGlobal(this.value)">
+            </div>
+            <button class="settings-row" style="width:100%; justify-content:flex-start; gap:16px; margin-bottom:12px; border:none;" onclick="App.createChat('group')">
+                <div class="icon-btn" style="background:var(--primary); color:var(--bg-base); width:36px; height:36px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
+                New Group
+            </button>
+            <button class="settings-row" style="width:100%; justify-content:flex-start; gap:16px; border:none;" onclick="App.createChat('channel')">
+                <div class="icon-btn" style="background:var(--primary); color:var(--bg-base); width:36px; height:36px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg></div>
+                New Channel
+            </button>
+            <div id="global-search-res" style="margin-top: 24px;"></div>
+        </div>
+    </div>
+
+    <!-- MEDIA CAPTION PANEL -->
+    <div id="panel-caption" class="panel" style="z-index: 50; background: rgba(0,0,0,0.95);">
+        <div class="panel-header" style="background:transparent; border:none;">
+            <button class="icon-btn" onclick="document.getElementById('panel-caption').classList.remove('active')" style="color:white;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+        </div>
+        <div class="panel-body" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
+            <img id="cap-preview" style="max-width:100%; max-height:60vh; border-radius:16px; margin-bottom:24px; object-fit:contain;">
+            <div class="input-wrapper" style="width:100%; max-width:400px; background:#222;">
+                <input type="text" id="cap-input" style="flex:1; border:none; background:transparent; color:white; font-size:15px; outline:none; padding:10px 0;" placeholder="Add a caption...">
+                <button class="send-btn" style="background:white; color:black;" onclick="App.sendMedia()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 7l-5-5-5 5"/></svg></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CALL UI PANEL -->
+    <div id="panel-call" class="panel" style="transform:translateY(100%); transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);">
+        <div class="call-bg" id="call-bg"></div>
+        <div class="call-content" id="call-view-single">
+            <img id="call-av" class="avatar" style="width:130px;height:130px; box-shadow:var(--shadow);" src="">
+            <div style="font-size:28px; font-weight:700; margin-top:24px; letter-spacing:-0.5px;" id="call-name">User Name</div>
+            <div style="font-size:15px; color:var(--text-muted); margin-top:8px;" id="call-status-txt">Calling...</div>
+            <div style="font-size:18px; font-weight:600; margin-top:8px; font-variant-numeric: tabular-nums;" id="call-time">00:00</div>
+            
+            <div class="call-controls">
+                <button class="call-btn" id="btn-speaker" onclick="RTC.toggleSpeaker()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                </button>
+                <button class="call-btn end" onclick="RTC.endCall()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path><line x1="23" y1="1" x2="1" y2="23"></line></svg>
+                </button>
+                <button class="call-btn" id="btn-mute" onclick="RTC.toggleMute()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                </button>
+            </div>
+        </div>
+        <div class="call-content" id="call-view-conf" style="display:none; padding-top: calc(40px + var(--safe-top));">
+            <div style="width:100%; font-size:20px; font-weight:700; margin-bottom:24px;" onclick="RTC.toggleView()">Conference</div>
+            <div id="conf-list" style="width:100%; display:flex; flex-direction:column; gap:12px; flex:1; overflow-y:auto;"></div>
+            <button class="btn" style="background:var(--danger); width:100%; margin-top:20px;" onclick="RTC.endCall()">End Call</button>
         </div>
     </div>
 
     <!-- CONTEXT MENU -->
-    <div id="ctx-menu" onclick="this.style.transform='translateY(100%)'">
-        <div style="display:flex; justify-content:space-around; margin-bottom:20px; font-size:28px; border-bottom:1px solid var(--border); padding-bottom:20px; flex-wrap:wrap; gap:10px;">
+    <div id="ctx-menu" style="position:fixed; bottom:0; left:0; width:100%; background:var(--bg-panel); border-top-left-radius:24px; border-top-right-radius:24px; transform:translateY(100%); transition:0.3s; z-index:9000; padding:24px 20px calc(24px + var(--safe-bottom)); box-shadow:0 -10px 40px rgba(0,0,0,0.1);" onclick="this.style.transform='translateY(100%)'">
+        <div style="display:flex; justify-content:space-between; margin-bottom:24px; font-size:28px; padding:0 10px;">
             <span onclick="App.msgAct('react','❤️')">❤️</span><span onclick="App.msgAct('react','😂')">😂</span><span onclick="App.msgAct('react','👍')">👍</span>
-            <span onclick="App.msgAct('react','😢')">😢</span><span onclick="App.msgAct('react','🔥')">🔥</span><span onclick="App.msgAct('react','💩')">💩</span>
+            <span onclick="App.msgAct('react','😢')">😢</span><span onclick="App.msgAct('react','🔥')">🔥</span>
         </div>
-        <div class="ctx-item" onclick="App.initReply()">↩️ Reply</div>
-        <div class="ctx-item" onclick="App.msgAct('pin')">📌 Pin / Unpin</div>
-        <div class="ctx-item" onclick="navigator.clipboard.writeText(App.targetTxt); UI.toast('Copied')">📋 Copy Text</div>
-        <div class="ctx-item danger" id="ctx-del" onclick="App.msgAct('delete')">🗑️ Delete Message</div>
+        <div class="settings-row" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; cursor:pointer;" onclick="App.initReply()">↩️ Reply</div>
+        <div class="settings-row" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; cursor:pointer;" onclick="App.msgAct('pin')">📌 Pin / Unpin</div>
+        <div class="settings-row" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; cursor:pointer;" onclick="navigator.clipboard.writeText(App.targetTxt); UI.toast('Copied')">📋 Copy Text</div>
+        <div class="settings-row" id="ctx-del" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; color:var(--danger); cursor:pointer;" onclick="App.msgAct('delete')">🗑️ Delete Message</div>
     </div>
 
     <script>
@@ -558,17 +650,8 @@
 
             // --- APPEARANCE ---
             setTheme(t) { document.documentElement.setAttribute('data-theme', t); localStorage.setItem('y_theme', t); document.getElementById('set-theme').value=t; },
-            setWallpaper(w) {
-                // Apply the wallpaper to the chat background
-                document.getElementById('chat-area-bg').style.backgroundImage = w ? `url(${w})` : 'none';
-                localStorage.setItem('y_wall', w);
-                
-                // Only try to update the input field if it exists in the DOM
-                const wallInput = document.getElementById('set-wall');
-                if (wallInput) {
-                    wallInput.value = w;
-                }
-            },
+            setWallpaper(w) { document.getElementById('chat-area-bg').style.backgroundImage = w ? `url(${w})` : 'none'; localStorage.setItem('y_wall', w); document.getElementById('set-wall').value=w; },
+
             // --- INITIALIZATION ---
             start() {
                 document.getElementById('my-avatar').src = State.u.avatar||defAv; document.getElementById('set-av').src = State.u.avatar||defAv;
@@ -597,20 +680,29 @@
                 this.requestNotifyPerms();
             },
 
-            setWallpaperFile(e) {
-                const f = e.target.files[0]; if(!f) return;
-                const r = new FileReader();
-                r.onload = ev => { this.setWallpaper(ev.target.result); };
-                r.readAsDataURL(f);
-            },
-            
             // --- NOTIFICATIONS ---
             requestNotifyPerms() {
                 if ('Notification' in window && Notification.permission === 'default') {
                     Notification.requestPermission();
                 }
             },
-            
+
+            // Add this inside the const App = { ... } object
+            setWallpaperFile(e) {
+                const f = e.target.files[0];
+                if(!f) return;
+                const r = new FileReader();
+                r.onload = ev => {
+                    const dataUrl = ev.target.result;
+                    // Apply it directly to the chat background
+                    document.getElementById('chat-area-bg').style.backgroundImage = `url(${dataUrl})`;
+                    // Save to localStorage just like the original logic did
+                    localStorage.setItem('y_wall', dataUrl);
+                    UI.toast('Wallpaper Updated');
+                };
+                r.readAsDataURL(f);
+            },
+        
             showPush(title, body, icon, isCall = false) {
                 if (!('Notification' in window) || Notification.permission !== 'granted') {
                     if(isCall) UI.toast(`📞 Incoming Call: ${title}`);
