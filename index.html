@@ -650,7 +650,17 @@
 
             // --- APPEARANCE ---
             setTheme(t) { document.documentElement.setAttribute('data-theme', t); localStorage.setItem('y_theme', t); document.getElementById('set-theme').value=t; },
-            setWallpaper(w) { document.getElementById('chat-area-bg').style.backgroundImage = w ? `url(${w})` : 'none'; localStorage.setItem('y_wall', w); document.getElementById('set-wall').value=w; },
+            // Change your existing setWallpaper function to this:
+            setWallpaper(w) { 
+                document.getElementById('chat-area-bg').style.backgroundImage = w ? `url(${w})` : 'none'; 
+                localStorage.setItem('y_wall', w); 
+                
+                // Check if the element exists before trying to set its value
+                const wallInput = document.getElementById('set-wall');
+                if(wallInput) {
+                    wallInput.value = w;
+                }
+            },
 
             // --- INITIALIZATION ---
             start() {
