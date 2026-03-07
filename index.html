@@ -555,14 +555,6 @@
             }
         };
         window.addEventListener('popstate', () => { if(Router.stack.length>1) Router.pop(); });
-
-        // Add this to your UI object
-        UI.getLetterAvatar = (name) => {
-            const char = (name || '?').charAt(0).toUpperCase();
-            // Simple way to get a color class based on the char code
-            const colorIdx = (name.charCodeAt(0) % 12) + 1; 
-            return `<div class="avatar-letter bg-letter-${colorIdx}" style="background-color: hsl(${(name.charCodeAt(0) * 37) % 360}, 60%, 60%)">${char}</div>`;
-        };
         
         const UI = {
             toast(m) { const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3000); },
@@ -575,8 +567,20 @@
                 if(privStr==='noone') return false;
                 return privStr.split(',').map(x=>x.trim().toLowerCase()).includes(myHandle.toLowerCase());
             }
+            
         };
-
+        // Add this inside your UI object, or just globally in the script
+        UI.getLetterAvatar = (name) => {
+            // Get the first character and make it uppercase
+            const char = (name || '?').charAt(0).toUpperCase();
+            
+            // Check if it's a letter from A-Z. If not (like a number or symbol), use default gray.
+            const isLetter = /[A-Z]/.test(char);
+            const className = isLetter ? `bg-${char.toLowerCase()}` : 'bg-default';
+            
+            // Return the HTML string for the avatar
+            return `<div class="avatar-letter ${className}">${char}</div>`;
+        };
         /* MESH WebRTC ENGINE */
         const RTC = {
             activeCall: null, stream: null, peers: {}, pcConfig: {iceServers:[{urls: 'stun:stun.l.google.com:19302'}]},
@@ -1059,18 +1063,7 @@
                 try { await req('/api/sessions/revoke', 'POST', {tokenToRevoke: t}); this.loadSessions(); UI.toast('Revoked'); } catch(e){} 
             }
         };
-        // Add this inside your UI object, or just globally in the script
-        UI.getLetterAvatar = (name) => {
-            // Get the first character and make it uppercase
-            const char = (name || '?').charAt(0).toUpperCase();
-            
-            // Check if it's a letter from A-Z. If not (like a number or symbol), use default gray.
-            const isLetter = /[A-Z]/.test(char);
-            const className = isLetter ? `bg-${char.toLowerCase()}` : 'bg-default';
-            
-            // Return the HTML string for the avatar
-            return `<div class="avatar-letter ${className}">${char}</div>`;
-        };
+
         window.onload = () => { if(State.t) { document.getElementById('panel-auth').classList.remove('active'); App.start(); } };
     </script>
 </body>
