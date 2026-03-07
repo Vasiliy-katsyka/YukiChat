@@ -3,292 +3,317 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#0b1120" id="meta-theme-color">
+    <meta name="theme-color" content="#0f172a" id="meta-theme-color">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>YukiChat Pro</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
         :root {
-            /* Midnight (Default) */
             --bg-base: #0f172a; --bg-panel: #1e293b; --bg-input: #0f172a; --bg-hover: rgba(255,255,255,0.05);
-            --border: #334155; --primary: #3b82f6; --primary-hover: #2563eb; 
-            --text-main: #f8fafc; --text-muted: #94a3b8; --msg-sent: #3b82f6; --msg-recv: #334155; 
-            --danger: #ef4444; --shadow: 0 10px 40px rgba(0,0,0,0.5); --radius: 18px;
-            --font-size: 16px;
-        }[data-theme="light"] { --bg-base: #f8fafc; --bg-panel: #ffffff; --bg-input: #f1f5f9; --bg-hover: rgba(0,0,0,0.05); --border: #e2e8f0; --primary: #0ea5e9; --text-main: #0f172a; --text-muted: #64748b; --msg-sent: #0ea5e9; --msg-recv: #f1f5f9; --shadow: 0 4px 20px rgba(0,0,0,0.05); }
-        [data-theme="oled"] { --bg-base: #000000; --bg-panel: #000000; --bg-input: #111111; --bg-hover: #222; --border: #222222; --primary: #8b5cf6; --msg-recv: #111111; --msg-sent: #8b5cf6; }
-        [data-theme="dracula"] { --bg-base: #282a36; --bg-panel: #44475a; --bg-input: #282a36; --border: #6272a4; --primary: #ff79c6; --text-main: #f8f8f2; --text-muted: #bfbfbf; --msg-sent: #ff79c6; --msg-recv: #6272a4; }
-        [data-theme="nord"] { --bg-base: #2e3440; --bg-panel: #3b4252; --bg-input: #2e3440; --border: #4c566a; --primary: #88c0d0; --text-main: #eceff4; --text-muted: #d8dee9; --msg-sent: #88c0d0; --msg-recv: #4c566a; }
-    
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+            --border: #334155; --primary: #3b82f6; --text-main: #f8fafc; --text-muted: #94a3b8; 
+            --msg-sent: #3b82f6; --msg-recv: #334155; --danger: #ef4444; 
+            --shadow: 0 10px 40px rgba(0,0,0,0.5); --radius: 20px; --msg-size: 16px;
+            --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        /* Premium Themes */
+        [data-theme="light"] { --bg-base: #f8fafc; --bg-panel: #ffffff; --bg-input: #f1f5f9; --bg-hover: rgba(0,0,0,0.05); --border: #e2e8f0; --primary: #0ea5e9; --text-main: #0f172a; --text-muted: #64748b; --msg-sent: #0ea5e9; --msg-recv: #f1f5f9; --shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        [data-theme="oled"] { --bg-base: #000; --bg-panel: #000; --bg-input: #111; --border: #222; --primary: #8b5cf6; --msg-recv: #111; }
+        [data-theme="dracula"] { --bg-base: #282a36; --bg-panel: #44475a; --bg-input: #282a36; --border: #6272a4; --primary: #bd93f9; --text-main: #f8f8f2; --text-muted: #6272a4; --msg-sent: #bd93f9; --msg-recv: #6272a4; }
+        [data-theme="cyberpunk"] { --bg-base: #fcee0a; --bg-panel: #000; --bg-input: #111; --border: #ff003c; --primary: #00f0ff; --text-main: #fff; --text-muted: #ccc; --msg-sent: #ff003c; --msg-recv: #111; }
+        [data-theme="midnight"] { --bg-base: #020617; --bg-panel: #0f172a; --bg-input: #020617; --border: #1e293b; --primary: #eab308; --text-main: #f8fafc; --text-muted: #94a3b8; --msg-sent: #eab308; --msg-recv: #1e293b; }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg-base); color: var(--text-main); height: 100dvh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; }
         
-        /* Layout Fix: Absolute constraints to stop squishing */
-        body { font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-main); height: 100dvh; width: 100vw; overflow: hidden; position: fixed; inset: 0; }
-        #app-wrapper { width: 100%; height: 100%; position: relative; overflow: hidden; }
-
-        .btn { padding: 16px 24px; border: none; border-radius: 16px; background: var(--primary); color: #fff; font-weight: 600; font-size: 16px; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
-        .btn:active { transform: scale(0.97); }
-        .input-field { width: 100%; padding: 16px; background: var(--bg-input); border: 1px solid var(--border); color: var(--text-main); border-radius: 16px; outline: none; font-size: 16px; transition: 0.2s; }
+        /* Core UI */
+        .btn { padding: 16px 24px; border: none; border-radius: 16px; background: var(--primary); color: #fff; font-weight: 600; font-size: 16px; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 10px; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .btn:active { transform: scale(0.96); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .input-field { width: 100%; padding: 16px 20px; background: var(--bg-input); border: 1px solid var(--border); color: var(--text-main); border-radius: 16px; outline: none; font-size: 16px; transition: border 0.2s; }
         .input-field:focus { border-color: var(--primary); }
-        .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: var(--bg-input); flex-shrink: 0; border: 1px solid var(--border); }
-        .icon-btn { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; border: none; font-size: 22px; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
-        .icon-btn:hover { background: var(--bg-hover); color: var(--primary); }
-
-        /* Panels */
-        .panel { position: absolute; inset: 0; background: var(--bg-panel); z-index: 10; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); height: 100%; overflow: hidden; }
-        .panel.active { transform: translateX(0); box-shadow: -10px 0 30px rgba(0,0,0,0.15); }
+        .avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: var(--bg-input); flex-shrink: 0; }
+        .icon-btn { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; border: none; font-size: 24px; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
+        
+        /* Panel Architecture (Unbreakable Fullscreen) */
+        .panel { position: absolute; inset: 0; background: var(--bg-panel); z-index: 10; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.3, 1, 0.3, 1); height: 100%; }
+        .panel.active { transform: translateX(0); box-shadow: -10px 0 30px rgba(0,0,0,0.2); }
         .panel.root { transform: translateX(0); z-index: 5; }
-        .panel-header { height: 70px; padding: 0 16px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--border); background: var(--bg-panel); flex-shrink: 0; z-index: 20; }
-        .panel-title { font-size: 20px; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .panel-body { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; min-height: 0; display: flex; flex-direction: column; }
+        .panel-header { flex-shrink: 0; height: calc(70px + var(--safe-top)); padding-top: var(--safe-top); display: flex; align-items: center; padding-left: 16px; padding-right: 16px; border-bottom: 1px solid var(--border); gap: 16px; background: var(--bg-panel); }
+        .panel-title { font-size: 22px; font-weight: 700; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .panel-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: var(--safe-bottom); position: relative; }
 
-        /* Root List */
+        /* Chat List Elements */
         .search-bar { padding: 12px 16px; background: var(--bg-panel); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-        .user-item { display: flex; align-items: center; gap: 14px; padding: 16px; cursor: pointer; transition: 0.2s; border-bottom: 1px solid rgba(0,0,0,0.02); }
+        .user-item { display: flex; align-items: center; gap: 16px; padding: 16px; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid rgba(0,0,0,0.02); }
         .user-item:hover { background: var(--bg-hover); }
         .user-info { flex: 1; overflow: hidden; }
-        .user-name { font-weight: 600; font-size: 16px; display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .user-name { font-weight: 600; font-size: 17px; display: flex; justify-content: space-between; margin-bottom: 4px; }
         .user-last-msg { font-size: 14px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .badge { background: var(--primary); color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
-        .online-dot { position: absolute; bottom: 0; right: 0; width: 14px; height: 14px; background: #10b981; border-radius: 50%; border: 3px solid var(--bg-panel); }
+        .online-dot { position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background: #10b981; border-radius: 50%; border: 3px solid var(--bg-panel); }
 
-        /* Chat Layout */
-        .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; background-size: cover; background-position: center; position: relative; min-height: 0; }
-        .messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; min-height: 0; scroll-behavior: smooth; }
+        /* Chat Layout specifically formatted to never hide inputs */
+        .chat-area { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; background-size: cover; background-position: center; }
+        .messages { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .input-bar { flex-shrink: 0; background: var(--bg-panel); border-top: 1px solid var(--border); padding: 12px 16px calc(12px + var(--safe-bottom)); display: flex; align-items: flex-end; gap: 12px; position: relative; z-index: 10; }
         
-        .msg-row { display: flex; gap: 8px; max-width: 85%; width: fit-content; position: relative; margin-bottom: 4px; }
+        .msg-row { display: flex; gap: 12px; max-width: 90%; width: fit-content; position: relative; margin-top: 4px; }
         .msg-row.sent { align-self: flex-end; flex-direction: row-reverse; }
         .msg-row.received { align-self: flex-start; }
+        .msg-bubble { padding: 12px 16px; font-size: var(--msg-size); line-height: 1.5; border-radius: var(--radius); position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.1); min-width: 60px; word-break: break-word; }
+        .msg-row.sent .msg-bubble { background: var(--msg-sent); color: #fff; border-top-right-radius: 4px; }
+        .msg-row.received .msg-bubble { background: var(--msg-recv); border-top-left-radius: 4px; }
         
-        .msg-bubble { padding: 10px 14px; font-size: var(--font-size); line-height: 1.4; border-radius: var(--radius); position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-wrap: break-word; }
-        .msg-row.sent .msg-bubble { background: var(--msg-sent); color: #fff; border-bottom-right-radius: 4px; }
-        .msg-row.received .msg-bubble { background: var(--msg-recv); border-bottom-left-radius: 4px; }
-        .msg-media { max-width: 100%; border-radius: 12px; cursor: pointer; max-height: 300px; object-fit: cover; }
-        .msg-meta { font-size: 11px; opacity: 0.65; margin-top: 4px; display: flex; justify-content: flex-end; gap: 4px; align-items: center; }
-        .msg-row.received .msg-meta { justify-content: flex-start; }
-
-        /* Input Bar & Drawer */
-        .input-bar { flex-shrink: 0; padding: 10px 16px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); background: var(--bg-panel); border-top: 1px solid var(--border); display: flex; align-items: flex-end; gap: 10px; position: relative; z-index: 100; }
-        .msg-input { flex: 1; resize: none; min-height: 48px; max-height: 120px; padding: 14px 16px; border-radius: 24px; background: var(--bg-input); border: 1px solid var(--border); color: var(--text-main); font-size: var(--font-size); outline: none; font-family: inherit; transition: 0.2s; }
+        .msg-media { max-width: 100%; border-radius: 12px; margin-top: 6px; cursor: pointer; }
+        .secure-media { filter: blur(25px); cursor: pointer; }
+        .secure-media.revealed { filter: blur(0); }
+        .msg-meta { font-size: 11px; opacity: 0.6; margin-top: 6px; display: flex; justify-content: flex-end; gap: 6px; align-items: center; }
+        
+        /* Attachment Drawer */
+        .attach-drawer { position: absolute; bottom: calc(100% + 10px); left: 16px; right: 16px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 24px; display: flex; padding: 24px; gap: 24px; justify-content: center; transform: translateY(20px) scale(0.95); opacity: 0; pointer-events: none; transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 100; }
+        .attach-drawer.active { transform: translateY(0) scale(1); opacity: 1; pointer-events: all; }
+        .attach-item { display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--text-muted); cursor: pointer; font-size: 14px; }
+        .attach-icon { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; background: var(--bg-input); transition: 0.2s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+        .attach-item:hover .attach-icon { background: var(--primary); color: #fff; transform: translateY(-5px); }
+        
+        /* Input Field styling */
+        .msg-input { flex: 1; resize: none; min-height: 52px; max-height: 150px; padding: 14px 20px; border-radius: 26px; background: var(--bg-input); border: 1px solid var(--border); color: var(--text-main); font-size: 16px; outline: none; line-height: 1.4; }
         .msg-input::-webkit-scrollbar { display: none; }
-        .msg-input:focus { border-color: var(--primary); }
 
-        .attach-drawer { position: absolute; bottom: 100%; left: 0; width: 100%; background: var(--bg-panel); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); display: flex; padding: 20px; gap: 30px; justify-content: center; transform: translateY(20px); opacity: 0; pointer-events: none; transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: -1; }
-        .attach-drawer.active { transform: translateY(0); opacity: 1; pointer-events: all; z-index: 101; }
-        .attach-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; background: var(--bg-input); transition: 0.2s; cursor: pointer; margin-bottom: 8px; }
-        .attach-icon:hover { background: var(--primary); color: #fff; transform: translateY(-3px); }
-
-        /* Modals & Settings */
-        .setting-group { padding: 16px 20px; }
-        .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--border); font-size: 16px; cursor: pointer; }
-        .setting-row:last-child { border-bottom: none; }
-        .setting-row.danger { color: var(--danger); font-weight: 600; }
+        /* Modals & Menus */
+        #ctx-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 8999; display: none; opacity: 0; transition: 0.3s; }
+        #ctx-menu { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(30, 41, 59, 0.9); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.1); border-top-left-radius: 30px; border-top-right-radius: 30px; transform: translateY(100%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 9000; padding: 24px 24px calc(24px + var(--safe-bottom)); box-shadow: 0 -10px 40px rgba(0,0,0,0.5); }
+        .ctx-item { padding: 16px 20px; display: flex; align-items: center; gap: 16px; font-size: 17px; cursor: pointer; border-radius: 16px; transition: 0.2s; font-weight: 500; }
+        .ctx-item:hover { background: rgba(255,255,255,0.1); }
+        .ctx-item.danger { color: var(--danger); }
         
-        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--primary); color: #fff; padding: 12px 24px; border-radius: 30px; z-index: 10000; font-weight: 600; transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); opacity: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        /* Skeleton & PWA */
+        .skeleton { background: linear-gradient(90deg, var(--bg-input) 25%, var(--bg-hover) 50%, var(--bg-input) 75%); background-size: 200% 100%; animation: load 1.5s infinite; border-radius: 8px; }
+        @keyframes load { to { background-position: -200% 0; } }
+        
+        .pwa-card { background: linear-gradient(135deg, #8b5cf6, #3b82f6); padding: 20px; border-radius: 20px; color: white; text-align: center; margin: 16px; font-weight: 600; cursor: pointer; display: none; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); }
+        
+        .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 20px 16px; border-bottom: 1px solid var(--border); font-size: 17px; }
+        .toast { position: fixed; bottom: calc(20px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(100px); background: var(--text-main); color: var(--bg-base); padding: 14px 28px; border-radius: 30px; z-index: 10000; font-weight: 600; transition: 0.3s; opacity: 0; }
         .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-
-        .install-banner { background: linear-gradient(135deg, var(--primary), #8b5cf6); color: white; padding: 16px; border-radius: 16px; text-align: center; font-weight: bold; cursor: pointer; display: none; margin-bottom: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-
     </style>
 </head>
 <body>
 
     <div class="toast" id="toast">Message</div>
 
-    <div id="app-wrapper">
-        <!-- AUTH PANEL -->
-        <div id="panel-auth" class="panel active" style="z-index: 999; justify-content: center; align-items: center; padding: 32px;">
-            <div style="width: 100%; max-width: 360px; text-align: center;">
-                <div style="font-size: 60px; margin-bottom: 10px;">❄️</div>
-                <h1 style="margin-bottom: 8px;">YukiChat <span style="color:var(--primary)">Pro</span></h1>
-                <p style="color:var(--text-muted); font-size: 15px; margin-bottom: 40px;">Private. Fast. Uncompromising.</p>
-                <input type="text" id="auth-u" class="input-field" placeholder="Username" style="margin-bottom: 16px;">
-                <div style="position: relative; margin-bottom: 24px;">
-                    <input type="password" id="auth-p" class="input-field" placeholder="Password">
-                    <button onclick="UI.togglePass()" class="icon-btn" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px;">👁️</button>
-                </div>
-                <button class="btn" style="width: 100%; margin-bottom: 16px; height: 56px;" onclick="App.auth(true)">Login</button>
-                <button class="btn" style="width: 100%; background: transparent; color: var(--text-main); border: 1px solid var(--border);" onclick="App.auth(false)">Create Account</button>
+    <!-- AUTH PANEL -->
+    <div id="panel-auth" class="panel active" style="z-index: 100; justify-content: center; padding: 32px; background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-base) 100%);">
+        <div style="max-width: 400px; width: 100%; margin: 0 auto; text-align: center;">
+            <div style="font-size: 72px; margin-bottom: 16px; filter: drop-shadow(0 10px 20px rgba(59,130,246,0.3));">❄️</div>
+            <h1 style="margin-bottom: 8px; font-size: 36px; font-weight: 800;">YukiChat <span style="color:var(--primary)">Pro</span></h1>
+            <p style="color:var(--text-muted); font-size: 16px; margin-bottom: 40px;">End-to-end focus. Zero compromise.</p>
+            <input type="text" id="auth-u" class="input-field" placeholder="Username" style="margin-bottom: 16px;">
+            <div style="position:relative; margin-bottom: 24px;">
+                <input type="password" id="auth-p" class="input-field" placeholder="Password">
+                <span onclick="UI.togglePassword()" style="position:absolute; right: 20px; top: 16px; cursor:pointer; font-size: 20px; color:var(--text-muted);">👁️</span>
+            </div>
+            <button class="btn" style="width: 100%; margin-bottom: 16px; padding: 20px;" onclick="App.auth(true)">Log In</button>
+            <button class="btn btn-outline" style="width: 100%; border: none; font-size: 15px;" onclick="App.auth(false)">Create New Account</button>
+        </div>
+    </div>
+
+    <!-- ROOT PANEL: CHAT LIST -->
+    <div id="panel-root" class="panel root">
+        <div class="panel-header" style="border-bottom:none">
+            <h1 class="panel-title" style="font-size: 32px;">Chats</h1>
+            <button class="icon-btn" onclick="Router.push('panel-new')" style="background: var(--bg-input);">✏️</button>
+            <img src="" id="my-avatar" class="avatar" style="width:44px;height:44px;cursor:pointer" onclick="Router.push('panel-settings')">
+        </div>
+        <div class="search-bar"><input type="text" class="input-field" placeholder="Search chats..." style="padding: 12px 16px; border-radius: 12px; background: var(--bg-input);" oninput="App.search(this.value)"></div>
+        <div class="panel-body" id="chat-list">
+            <div class="user-item"><div class="avatar skeleton"></div><div style="flex:1"><div class="skeleton" style="width:50%;height:20px;margin-bottom:8px"></div><div class="skeleton" style="width:80%;height:16px"></div></div></div>
+        </div>
+    </div>
+
+    <!-- PANEL: ACTIVE CHAT -->
+    <div id="panel-chat" class="panel">
+        <div class="panel-header" style="background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(20px); z-index: 20;">
+            <button class="icon-btn" onclick="Router.pop()" style="margin-left:-10px">←</button>
+            <img src="" id="chat-av" class="avatar" style="width:44px;height:44px;">
+            <div style="flex:1;">
+                <div class="panel-title" id="chat-title" style="font-size: 19px;">Chat</div>
+                <div style="font-size: 13px; color: var(--primary); font-weight: 500;" id="chat-status">Connecting...</div>
             </div>
         </div>
-
-        <!-- ROOT LIST PANEL -->
-        <div id="panel-root" class="panel root">
-            <div class="panel-header">
-                <h1 class="panel-title" style="font-size: 26px;">Chats</h1>
-                <button class="icon-btn" onclick="Router.push('panel-new')">✏️</button>
-                <img src="" id="my-avatar" class="avatar" style="width:40px;height:40px;cursor:pointer" onclick="Router.push('panel-settings')">
-            </div>
-            <div class="search-bar"><input type="text" class="input-field" style="padding: 12px; border-radius: 12px;" placeholder="Search..." oninput="App.search(this.value)"></div>
-            <div class="panel-body" id="chat-list">
-                <div style="padding: 40px; text-align: center; color: var(--text-muted);">Loading secure chats...</div>
-            </div>
-        </div>
-
-        <!-- ACTIVE CHAT PANEL -->
-        <div id="panel-chat" class="panel">
-            <div class="panel-header" style="padding-left: 8px;">
-                <button class="icon-btn" onclick="Router.pop()">←</button>
-                <img src="" id="chat-av" class="avatar" style="width:42px;height:42px;cursor:pointer">
-                <div style="flex:1; overflow: hidden;">
-                    <div class="panel-title" id="chat-title" style="font-size: 18px;">Chat</div>
-                    <div style="font-size: 13px; color: var(--primary); font-weight: 500;" id="chat-status">Connecting...</div>
-                </div>
-            </div>
+        
+        <div class="chat-area">
+            <div class="messages" id="msgs"></div>
             
-            <div class="chat-area" id="chat-bg">
-                <div class="messages" id="msgs"></div>
-                
-                <div class="input-bar">
-                    <div class="attach-drawer" id="attach-drawer">
-                        <label style="text-align: center; cursor: pointer;">
-                            <div class="attach-icon">🖼️</div><span style="font-size: 13px; color:var(--text-muted)">Photo</span>
-                            <input type="file" hidden accept="image/*" onchange="App.uploadFile(event, 'photo')">
-                        </label>
-                        <div style="text-align: center; cursor: pointer;" onclick="UI.promptDestruct()">
-                            <div class="attach-icon" style="color:var(--danger)">🔥</div><span style="font-size: 13px; color:var(--text-muted)">Secret</span>
-                        </div>
-                    </div>
-
-                    <button class="icon-btn" id="drawer-btn" onclick="UI.toggleDrawer()" style="transform: rotate(0deg); transition: 0.3s;">+</button>
-                    <textarea id="msg-input" class="msg-input" placeholder="Message..." rows="1"></textarea>
-                    <button class="icon-btn" id="mic-btn" onclick="App.toggleMic()" style="background:var(--primary); color:#fff; border-radius:24px; width:48px; height:48px;">🎤</button>
-                    <button class="icon-btn" id="send-btn" onclick="App.sendText()" style="background:var(--primary); color:#fff; border-radius:24px; width:48px; height:48px; display:none;">➤</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- SETTINGS PANEL -->
-        <div id="panel-settings" class="panel">
-            <div class="panel-header">
-                <button class="icon-btn" onclick="Router.pop()">←</button>
-                <div class="panel-title">Settings</div>
-            </div>
-            <div class="panel-body">
-                <div class="setting-group" style="text-align:center; border-bottom: 8px solid var(--bg-input);">
-                    <label style="position:relative; display:inline-block">
-                        <img src="" id="set-av" class="avatar" style="width:110px;height:110px; margin-bottom:12px">
-                        <div style="position:absolute; bottom:15px; right:0; background:var(--primary); padding:6px; border-radius:50%; font-size:14px;">📷</div>
-                        <input type="file" hidden accept="image/*" onchange="App.updateProfile(event, 'avatar')">
-                    </label>
-                    <h2 id="set-name" style="margin-bottom:6px">Name</h2>
-                    <input type="text" id="set-bio" class="input-field" style="text-align:center; border:none; background:transparent" placeholder="Bio..." onblur="App.updateProfile(null, 'bio')">
+            <div class="input-bar">
+                <div class="attach-drawer" id="attach-drawer">
+                    <label class="attach-item"><div class="attach-icon">🖼️</div><span>Photo</span><input type="file" hidden accept="image/*" onchange="App.uploadFile(event, 'photo')"></label>
+                    <label class="attach-item" onclick="UI.promptDestruct()"><div class="attach-icon" style="color:var(--danger)">🔥</div><span>Secret</span></label>
+                    <label class="attach-item"><div class="attach-icon">📁</div><span>File</span><input type="file" hidden onchange="App.uploadFile(event, 'file')"></label>
                 </div>
 
-                <div class="setting-group">
-                    <div id="pwa-btn-container" class="install-banner" onclick="App.installPWA()">📲 Install YukiChat App to Home Screen</div>
-                    
-                    <h3 style="color:var(--primary); font-size:14px; text-transform:uppercase; margin-bottom: 10px;">Customization</h3>
-                    <div class="setting-row"><span>Theme Palette</span>
-                        <select class="input-field" style="width:150px; padding:10px" onchange="UI.setTheme(this.value)" id="theme-sel">
-                            <option value="dark">Midnight</option><option value="dracula">Dracula</option><option value="nord">Nord</option><option value="oled">Pure OLED</option><option value="light">Light</option>
-                        </select>
-                    </div>
-                    <label class="setting-row">
-                        <span>Chat Wallpaper</span>
-                        <span style="color:var(--primary); font-size: 14px;">Upload Image 🖼️</span>
-                        <input type="file" hidden accept="image/*" onchange="App.uploadWall(event)">
-                    </label>
-                    <div class="setting-row" onclick="App.clearWall()"><span>Remove Wallpaper</span> <span style="font-size:18px">✕</span></div>
-                    <div class="setting-row">
-                        <span>Text Size</span>
-                        <input type="range" min="12" max="22" value="16" oninput="document.documentElement.style.setProperty('--font-size', this.value+'px')">
-                    </div>
-                </div>
-
-                <div class="setting-group">
-                    <h3 style="color:var(--primary); font-size:14px; text-transform:uppercase; margin-bottom: 10px;">Security</h3>
-                    <div class="setting-row" onclick="Router.push('panel-sessions')"><span>Active Sessions & Devices</span> <span>➔</span></div>
-                    <div class="setting-row danger" onclick="App.logout()"><span>Log Out Securely</span></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SESSIONS PANEL -->
-        <div id="panel-sessions" class="panel">
-            <div class="panel-header"><button class="icon-btn" onclick="Router.pop()">←</button><div class="panel-title">Sessions</div></div>
-            <div class="panel-body" style="padding: 20px;" id="sessions-list"></div>
-        </div>
-
-        <!-- NEW CHAT PANEL -->
-        <div id="panel-new" class="panel">
-            <div class="panel-header"><button class="icon-btn" onclick="Router.pop()">←</button><div class="panel-title">New Chat</div></div>
-            <div class="panel-body" style="padding: 20px;">
-                <input type="text" class="input-field" placeholder="Search Global Users..." oninput="App.searchGlobal(this.value)">
-                <div id="global-search-res" style="margin-top: 16px;"></div>
+                <button class="icon-btn" id="drawer-btn" onclick="UI.toggleDrawer()" style="transition: 0.3s; transform-origin: center;">+</button>
+                <textarea id="msg-input" class="msg-input" placeholder="Message..." rows="1"></textarea>
+                <button class="icon-btn" id="mic-btn" onclick="App.toggleMic()" style="background:var(--primary); color:#fff; border-radius:26px; width:52px; height:52px">🎤</button>
+                <button class="icon-btn" id="send-btn" onclick="App.sendText()" style="background:var(--primary); color:#fff; border-radius:26px; width:52px; height:52px; display:none">➤</button>
             </div>
         </div>
     </div>
 
-    <!-- Media Fullscreen -->
-    <div id="media-viewer" style="position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:9999; display:none; flex-direction:column; opacity:0; transition:0.3s">
-        <div style="padding: 20px; display:flex; justify-content:flex-end;"><button class="icon-btn" style="color:#fff;" onclick="UI.closeMedia()">✕</button></div>
-        <div style="flex:1; display:flex; align-items:center; justify-content:center; overflow:hidden;"><img id="media-img" src="" style="max-width:100%; max-height:100%; object-fit:contain;"></div>
+    <!-- PANEL: SETTINGS -->
+    <div id="panel-settings" class="panel">
+        <div class="panel-header"><button class="icon-btn" onclick="Router.pop()">←</button><div class="panel-title">Settings</div></div>
+        <div class="panel-body">
+            
+            <div class="pwa-card" id="pwa-setting" onclick="installPWA()">📲 Install YukiChat to Home Screen</div>
+
+            <div style="text-align:center; padding: 32px 16px; border-bottom: 8px solid var(--bg-input);">
+                <label style="position:relative; display:inline-block">
+                    <img src="" id="set-av" class="avatar" style="width:120px;height:120px; margin-bottom:16px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
+                    <div style="position:absolute; bottom:20px; right:0; background:var(--primary); color: #fff; padding:10px; border-radius:50%; cursor:pointer; font-size: 14px;">📷</div>
+                    <input type="file" hidden accept="image/*" onchange="App.updateProfile(event, 'avatar')">
+                </label>
+                <h2 id="set-name" style="margin-bottom:8px; font-size: 24px;">Name</h2>
+                <input type="text" id="set-bio" class="input-field" style="text-align:center; border:none; background:transparent" placeholder="Add a few words about yourself..." onblur="App.updateProfile(null, 'bio')">
+            </div>
+
+            <h3 style="padding: 24px 16px 8px; color:var(--primary); font-size:13px; text-transform:uppercase; letter-spacing: 1px;">Appearance</h3>
+            <div class="setting-row"><span>Color Theme</span>
+                <select class="input-field" style="width:160px; padding:10px" onchange="UI.setTheme(this.value)" id="theme-sel">
+                    <option value="dark">Dark</option><option value="light">Light</option><option value="oled">OLED</option>
+                    <option value="dracula">Dracula</option><option value="cyberpunk">Cyberpunk</option><option value="midnight">Midnight</option>
+                </select>
+            </div>
+            <div class="setting-row"><span>Custom Wallpaper</span>
+                <label class="btn btn-outline" style="padding: 8px 16px; cursor:pointer">Upload <input type="file" hidden accept="image/*" onchange="UI.uploadWall(event)"></label>
+            </div>
+            <div class="setting-row"><span>Text Size</span>
+                <input type="range" min="14" max="22" value="16" oninput="document.documentElement.style.setProperty('--msg-size', this.value+'px')">
+            </div>
+
+            <h3 style="padding: 24px 16px 8px; color:var(--primary); font-size:13px; text-transform:uppercase; letter-spacing: 1px;">Security & Account</h3>
+            <div class="setting-row" onclick="Router.push('panel-sessions')" style="cursor:pointer"><span>Devices & Sessions</span> <span style="color:var(--text-muted)">➔</span></div>
+            <div class="setting-row" style="color:var(--danger); cursor:pointer" onclick="App.logout()"><span>Log Out</span></div>
+        </div>
+    </div>
+
+    <!-- PANEL: SESSIONS -->
+    <div id="panel-sessions" class="panel">
+        <div class="panel-header"><button class="icon-btn" onclick="Router.pop()">←</button><div class="panel-title">Active Sessions</div></div>
+        <div class="panel-body" style="padding: 24px;" id="sessions-list"></div>
+    </div>
+
+    <!-- PANEL: NEW CHAT -->
+    <div id="panel-new" class="panel">
+        <div class="panel-header"><button class="icon-btn" onclick="Router.pop()">←</button><div class="panel-title">New Message</div></div>
+        <div class="panel-body" style="padding: 24px;">
+            <button class="btn" style="width:100%; margin-bottom:24px" onclick="App.createGroup()">👥 Create Group</button>
+            <input type="text" class="input-field" placeholder="Search global usernames..." oninput="App.searchGlobal(this.value)">
+            <div id="global-search-res" style="margin-top: 16px;"></div>
+        </div>
+    </div>
+
+    <!-- ACTION MENU (Context) -->
+    <div id="ctx-overlay" onclick="UI.closeCtx()"></div>
+    <div id="ctx-menu">
+        <div style="display:flex; justify-content:space-around; margin-bottom:24px; font-size:36px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:24px;">
+            <span style="cursor:pointer; transition:0.2s" onclick="App.msgAct('react','❤️')">❤️</span>
+            <span style="cursor:pointer; transition:0.2s" onclick="App.msgAct('react','😂')">😂</span>
+            <span style="cursor:pointer; transition:0.2s" onclick="App.msgAct('react','🔥')">🔥</span>
+            <span style="cursor:pointer; transition:0.2s" onclick="App.msgAct('react','👍')">👍</span>
+        </div>
+        <div class="ctx-item" onclick="App.prepReply()"><span>↩️</span> Reply to Message</div>
+        <div class="ctx-item" onclick="navigator.clipboard.writeText(App.targetTxt); UI.closeCtx(); UI.toast('Copied to clipboard')"><span>📋</span> Copy Text</div>
+        <div class="ctx-item danger" id="ctx-del" onclick="App.msgAct('delete')"><span>🗑️</span> Completely Delete</div>
     </div>
 
     <script>
-        /* ================= SETUP & PWA ================= */
+        /* ================= PWA SETUP ================= */
         const defAv = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzMzNDE1NSI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==";
+        const manifest = { name:"YukiChat Pro", short_name:"Yuki", display:"standalone", background_color:"#0f172a", theme_color:"#0f172a", icons:[{src:defAv, sizes:"192x192", type:"image/svg+xml"}]};
+        document.head.appendChild(Object.assign(document.createElement("link"), {rel:"manifest", href:URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type:"application/json"}))}));
+        
         let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('pwa-btn-container').style.display='block'; });
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('pwa-setting').style.display='block'; });
+        function installPWA() { if(deferredPrompt) { deferredPrompt.prompt(); deferredPrompt=null; document.getElementById('pwa-setting').style.display='none'; } }
 
+        /* ================= CORE ================= */
         const API = 'https://yukichat.kviappsgames.workers.dev'; 
-        const State = { t: localStorage.getItem('y_t'), u: JSON.parse(localStorage.getItem('y_u')||'{}'), chats: new Map(), msgs: new Map(), chat: null };
+        const State = { t: localStorage.getItem('y_t'), u: JSON.parse(localStorage.getItem('y_u')||'{}'), chats: new Map(), chat: null, targetId: null, targetTxt: '', rec: null, chunks:[] };
 
         const req = async (path, m='GET', b=null) => {
             const opt = { method:m, headers:{} };
             if(State.t) opt.headers['Authorization'] = `Bearer ${State.t}`;
             if(b) { opt.headers['Content-Type']='application/json'; opt.body=JSON.stringify(b); }
             const res = await fetch(API+path, opt);
-            if(res.status===401) App.logout();
+            if(res.status===401) { App.logout(); throw new Error('Auth'); }
             const d = await res.json();
             if(!res.ok) throw new Error(d.error||'Err');
             return d;
         };
 
-        /* ================= UI CONTROLLER ================= */
         const Router = {
-            stack: ['panel-root'],
-            push(id) { this.stack.push(id); document.getElementById(id).classList.add('active'); history.pushState({id}, '', `#${id}`); if(id==='panel-sessions') App.loadSessions(); },
-            pop() { if(this.stack.length<=1) return; const id = this.stack.pop(); document.getElementById(id).classList.remove('active'); if(id==='panel-chat') App.closeChat(); }
+            stack:['panel-root'],
+            push(id) {
+                this.stack.push(id); document.getElementById(id).classList.add('active');
+                history.pushState({id}, '', `#${id}`);
+                if(id==='panel-sessions') App.loadSessions();
+            },
+            pop() {
+                if(this.stack.length<=1) return;
+                const id = this.stack.pop(); document.getElementById(id).classList.remove('active');
+                if(id==='panel-chat') App.closeChat();
+            }
         };
-        window.addEventListener('popstate', () => { if(Router.stack.length>1) Router.pop(); });
+        window.addEventListener('popstate', e => { if(Router.stack.length>1) Router.pop(); });
 
+        /* ================= UI CONTROLLER ================= */
         const UI = {
             init() {
                 this.setTheme(localStorage.getItem('y_th')||'dark');
-                this.setWall(localStorage.getItem('y_wall')||'');
-                document.getElementById('theme-sel').value = localStorage.getItem('y_th')||'dark';
-                
+                this.applyWall(localStorage.getItem('y_wall'));
                 if(State.t) { document.getElementById('panel-auth').classList.remove('active'); App.start(); }
                 
                 const inp = document.getElementById('msg-input');
                 inp.addEventListener('input', function() {
-                    this.style.height = '48px'; this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+                    this.style.height = '52px'; this.style.height = (this.scrollHeight) + 'px';
                     const v = this.value.trim();
                     document.getElementById('mic-btn').style.display = v ? 'none' : 'flex';
                     document.getElementById('send-btn').style.display = v ? 'flex' : 'none';
                     if(State.chat) App.typing();
                 });
             },
-            setTheme(t) { localStorage.setItem('y_th', t); document.documentElement.setAttribute('data-theme', t); },
-            setWall(w) { localStorage.setItem('y_wall', w); document.getElementById('chat-bg').style.backgroundImage = w ? `url(${w})` : 'none'; },
+            togglePassword() { const p = document.getElementById('auth-p'); p.type = p.type==='password'?'text':'password'; },
+            setTheme(t) { localStorage.setItem('y_th', t); document.documentElement.setAttribute('data-theme', t); document.getElementById('theme-sel').value = t; },
+            uploadWall(e) {
+                const f = e.target.files[0]; if(!f) return;
+                const r = new FileReader(); r.onload = ev => { localStorage.setItem('y_wall', ev.target.result); UI.applyWall(ev.target.result); UI.toast('Wallpaper Applied'); }; r.readAsDataURL(f);
+            },
+            applyWall(w) { if(w) document.querySelector('.chat-area').style.backgroundImage = `url(${w})`; },
             toast(m) { const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3000); },
-            togglePass() { const p=document.getElementById('auth-p'); p.type = p.type==='password'?'text':'password'; },
             toggleDrawer() { 
                 const d = document.getElementById('attach-drawer'); const b = document.getElementById('drawer-btn');
-                const isOp = d.classList.contains('active');
-                if(isOp) { d.classList.remove('active'); b.style.transform='rotate(0deg)'; b.style.color=''; } 
-                else { d.classList.add('active'); b.style.transform='rotate(45deg)'; b.style.color='var(--primary)'; }
+                d.classList.toggle('active'); b.style.transform = d.classList.contains('active') ? 'rotate(45deg)' : 'rotate(0)'; b.style.color = d.classList.contains('active') ? 'var(--primary)' : 'var(--text-muted)';
             },
-            closeDrawer() { document.getElementById('attach-drawer').classList.remove('active'); document.getElementById('drawer-btn').style.transform='rotate(0deg)'; },
+            closeDrawer() { document.getElementById('attach-drawer').classList.remove('active'); document.getElementById('drawer-btn').style.transform='rotate(0)'; document.getElementById('drawer-btn').style.color='var(--text-muted)'; },
+            openCtx(id, isMine, txt) {
+                State.targetId=id; State.targetTxt=txt;
+                document.getElementById('ctx-overlay').style.display='block';
+                document.getElementById('ctx-del').style.display=isMine?'flex':'none';
+                setTimeout(()=> { document.getElementById('ctx-overlay').style.opacity='1'; document.getElementById('ctx-menu').style.transform='translateY(0)'; }, 10);
+            },
+            closeCtx() {
+                document.getElementById('ctx-menu').style.transform='translateY(100%)';
+                document.getElementById('ctx-overlay').style.opacity='0';
+                setTimeout(()=>document.getElementById('ctx-overlay').style.display='none', 300);
+            },
             promptDestruct() {
-                this.closeDrawer(); const sec = prompt("Self-destruct timer in seconds (e.g. 10):", "10");
-                if(sec) { const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.onchange=e=>App.uploadFile(e, 'photo', parseInt(sec)); inp.click(); }
-            },
-            openMedia(src) { const v=document.getElementById('media-viewer'); document.getElementById('media-img').src=src; v.style.display='flex'; setTimeout(()=>v.style.opacity='1',10); },
-            closeMedia() { const v=document.getElementById('media-viewer'); v.style.opacity='0'; setTimeout(()=>v.style.display='none',300); }
+                this.closeDrawer(); const sec = prompt("Self-destruct timer (seconds):", "10");
+                if(sec) { const inp = document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.onchange = e => App.uploadFile(e, 'photo', parseInt(sec)); inp.click(); }
+            }
         };
 
         /* ================= APP LOGIC ================= */
@@ -298,7 +323,7 @@
                 if(!u||!p) return UI.toast('Fill all fields');
                 try {
                     const d = await req(`/api/${isLog?'login':'register'}`, 'POST', {username:u, password:p, device: navigator.userAgent.split(') ')[0]+')'});
-                    State.t=d.token; State.u=d; localStorage.setItem('y_t', d.token); localStorage.setItem('y_u', JSON.stringify(d));
+                    State.t = d.token; State.u = d; localStorage.setItem('y_t', d.token); localStorage.setItem('y_u', JSON.stringify(d));
                     document.getElementById('panel-auth').classList.remove('active'); this.start();
                 } catch(e) { UI.toast(e.message); }
             },
@@ -310,43 +335,40 @@
                 this.poll(); setInterval(() => this.poll(), 4000);
             },
 
-            installPWA() { if(deferredPrompt) { deferredPrompt.prompt(); deferredPrompt=null; document.getElementById('pwa-btn-container').style.display='none'; } },
-
             async poll() {
                 try {
                     await req('/api/presence', 'POST', {typingIn: State.chat && document.getElementById('msg-input').value ? State.chat : null});
                     const chats = await req('/api/chats');
                     const cList = document.getElementById('chat-list');
-                    if(chats.length===0) cList.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)">No chats found. Use the Pencil icon!</div>';
+                    if(chats.length===0) cList.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)">No chats yet. Search for users!</div>';
                     else {
                         cList.innerHTML = '';
                         chats.forEach(c => {
                             State.chats.set(c.id, c);
-                            const isDM=c.type==='dm'; const n=isDM?c.dm_username:c.name; const av=isDM?(c.dm_avatar||defAv):(c.avatar||defAv);
+                            const isDM = c.type==='dm'; const n = isDM?c.dm_username:c.name; const av = isDM?(c.dm_avatar||defAv):(c.avatar||defAv);
                             
-                            // Accurate Offline/Online (Parse Server UTC safely)
+                            // Accurate Timezone handling for Presence
                             let isOnline = false;
-                            if (isDM && c.dm_last_seen) {
-                                let ls = c.dm_last_seen; if(!ls.endsWith('Z')) ls += 'Z';
-                                isOnline = (new Date() - new Date(ls)) < 45000;
+                            if(isDM && c.dm_last_seen) {
+                                const lsd = new Date(c.dm_last_seen + (c.dm_last_seen.includes('Z') ? '' : 'Z'));
+                                isOnline = (new Date() - lsd) < 40000; // 40 seconds threshold
                             }
-                            const ty = isDM && c.dm_typing == c.id ? '<span style="color:var(--primary)">typing...</span>' : null;
-                            const onlHtml = isOnline ? '<div class="online-dot"></div>' : '';
                             
-                            // Last Message Formatting
-                            let msgTxt = c.last_msg || 'New chat';
-                            if (c.last_msg_type === 'photo') msgTxt = '📷 Photo';
-                            if (c.last_msg_type === 'audio') msgTxt = '🎤 Voice Note';
+                            const ty = isDM && c.dm_typing == c.id ? '<span style="color:var(--primary)">typing...</span>' : null;
+                            const onl = isOnline ? '<div class="online-dot"></div>' : '';
+                            
+                            let msgPrev = c.last_msg || 'New chat';
+                            if(c.last_msg_type === 'photo' || msgPrev.startsWith('data:image')) msgPrev = '🖼️ Photo';
+                            if(c.last_msg_type === 'audio' || msgPrev.startsWith('data:audio')) msgPrev = '🎤 Voice Message';
 
                             cList.innerHTML += `
                                 <div class="user-item" onclick="App.openChat(${c.id})">
-                                    <div style="position:relative"><img src="${av}" class="avatar">${onlHtml}</div>
+                                    <div style="position:relative"><img src="${av}" class="avatar">${onl}</div>
                                     <div class="user-info">
                                         <div class="user-name"><span>${n}</span> ${c.unread>0?`<span class="badge">${c.unread}</span>`:''}</div>
-                                        <div class="user-last-msg">${ty || msgTxt}</div>
+                                        <div class="user-last-msg">${ty || msgPrev}</div>
                                     </div>
                                 </div>`;
-                                
                             if(State.chat === c.id) document.getElementById('chat-status').textContent = ty ? 'typing...' : (isDM ? (isOnline ? 'online' : 'offline') : c.unread+' unread');
                         });
                     }
@@ -357,14 +379,13 @@
             async searchGlobal(q) {
                 if(!q) return document.getElementById('global-search-res').innerHTML='';
                 const u = await req(`/api/users/search?q=${q}`);
-                let h=''; u.forEach(x => h+=`
-                    <div class="user-item" onclick="App.startDM(${x.id})" style="background:var(--bg-input); border-radius:12px; margin-bottom:8px">
-                        <img src="${x.avatar||defAv}" class="avatar">
-                        <div class="user-info"><div class="user-name">${x.username}</div><div class="user-last-msg">${x.bio||'Say hi!'}</div></div>
-                    </div>`);
+                let h = '';
+                u.forEach(x => h+=`<div class="user-item" style="background:var(--bg-input); border-radius:16px; margin-bottom:8px" onclick="App.startDM(${x.id})"><img src="${x.avatar||defAv}" class="avatar"><div class="user-info"><div class="user-name">${x.username}</div><div class="user-last-msg">${x.bio||''}</div></div></div>`);
                 document.getElementById('global-search-res').innerHTML = h;
             },
+
             async startDM(id) { const d = await req('/api/chats', 'POST', {type:'dm', target_user_id:id}); Router.pop(); this.openChat(d.chat_id); },
+            async createGroup() { const n = prompt("Group Name:"); if(!n) return; const d = await req('/api/chats', 'POST', {type:'group', name:n}); Router.pop(); this.openChat(d.chat_id); },
 
             openChat(id) {
                 State.chat = id; const c = State.chats.get(id); Router.push('panel-chat');
@@ -373,8 +394,7 @@
                 document.getElementById('chat-av').src = isDM ? (c.dm_avatar||defAv) : (c.avatar||defAv);
                 this.loadMsgs(id);
             },
-            closeChat() { State.chat=null; },
-            typing() {},
+            closeChat() { State.chat=null; }, typing() { },
 
             async loadMsgs(id) {
                 if(State.chat !== id) return;
@@ -384,20 +404,23 @@
                     const isBtm = cont.scrollHeight - cont.scrollTop <= cont.clientHeight + 100;
                     
                     let html = '';
-                    msgs.forEach(m => {
+                    for(let m of msgs) {
                         const isMine = m.sender_id === State.u.userId;
                         let inner = '';
                         if(m.type === 'photo') {
-                            if(m.expires_at) inner += `<img src="${m.content}" class="msg-media" style="filter:blur(25px)" onpointerdown="App.reveal(this, ${m.id})">`;
-                            else inner += `<img src="${m.content}" class="msg-media" onclick="UI.openMedia(this.src)">`;
-                        } else inner += m.content.replace(/</g,'&lt;').replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:inherit;text-decoration:underline">$1</a>');
+                            if(m.expires_at) inner += `<img src="${m.content}" class="msg-media secure-media" onpointerdown="App.reveal(this, ${m.id})">`;
+                            else inner += `<img src="${m.content}" class="msg-media" onclick="window.open(this.src)">`;
+                        } else inner += m.content.replace(/</g,'&lt;').replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:inherit; text-decoration:underline">$1</a>');
 
-                        const time = new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-                        html += `
-                            <div class="msg-row ${isMine?'sent':'received'}" ondblclick="App.msgAct(${m.id}, 'delete', ${isMine})">
-                                <div class="msg-bubble">${inner}<div class="msg-meta">${time}</div></div>
-                            </div>`;
-                    });
+                        let rxs = JSON.parse(m.reactions||'{}'); let rxH = '';
+                        for(let k in rxs) rxH += rxs[k];
+                        if(rxH) inner += `<div style="position:absolute; bottom:-12px; right:10px; background:var(--bg-panel); border-radius:12px; padding:2px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.2); font-size:14px; border:1px solid var(--border)">${rxH}</div>`;
+
+                        const time = new Date(m.created_at + (m.created_at.includes('Z')?'':'Z')).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                        const ticks = isMine ? (m.is_read ? '<span style="color:#10b981">✓✓</span>' : '✓') : '';
+                        
+                        html += `<div class="msg-row ${isMine?'sent':'received'}" oncontextmenu="event.preventDefault(); UI.openCtx(${m.id}, ${isMine}, '${m.type==='text'?m.content.replace(/'/g,"\\'"):''}')"><div class="msg-bubble">${inner}<div class="msg-meta">${time} ${ticks}</div></div></div>`;
+                    }
                     cont.innerHTML = html;
                     if(isBtm) cont.scrollTop = cont.scrollHeight;
                 } catch(e){}
@@ -406,65 +429,58 @@
             async sendText() {
                 const inp = document.getElementById('msg-input'); let txt = inp.value.trim();
                 if(!txt || !State.chat) return;
-                inp.value=''; inp.style.height='48px'; inp.dispatchEvent(new Event('input'));
-                try { await req(`/api/messages/${State.chat}`, 'POST', {content:txt, type:'text'}); this.poll(); } 
-                catch(e) { UI.toast('Failed'); }
+                inp.value=''; inp.dispatchEvent(new Event('input')); UI.closeDrawer();
+                try { await req(`/api/messages/${State.chat}`, 'POST', {content:txt, type:'text'}); this.poll(); } catch(e) { UI.toast('Failed'); }
             },
 
-            uploadFile(e, type, exp=null) {
-                const f=e.target.files[0]; if(!f) return; UI.closeDrawer();
-                const r=new FileReader(); r.onload=async ev=>{
-                    UI.toast('Sending...');
-                    try { await req(`/api/messages/${State.chat}`, 'POST', {content:ev.target.result, type, expires_in:exp}); this.poll(); } catch(e){ UI.toast('Error'); }
-                }; r.readAsDataURL(f);
+            uploadFile(e, type, expires_in=null) {
+                const f = e.target.files[0]; if(!f) return;
+                if(f.size>2000000) return UI.toast('File > 2MB');
+                UI.closeDrawer(); const r = new FileReader();
+                r.onload = async ev => { UI.toast('Uploading...'); try { await req(`/api/messages/${State.chat}`, 'POST', {content:ev.target.result, type, expires_in}); this.poll(); } catch(e){ UI.toast('Upload Error'); } }; r.readAsDataURL(f);
             },
-
-            uploadWall(e) {
-                const f=e.target.files[0]; if(!f) return;
-                const r=new FileReader(); r.onload=ev=>{ UI.setWall(ev.target.result); UI.toast('Wallpaper Applied!'); }; r.readAsDataURL(f);
-            },
-            clearWall() { UI.setWall(''); UI.toast('Wallpaper Removed'); },
 
             async reveal(el, id) {
-                if(el.style.filter === 'blur(0px)') return;
-                el.style.filter = 'blur(0px)'; req(`/api/messages/${id}/action`, 'POST', {action:'reveal'});
-                setTimeout(()=>{ el.src=''; el.alt='Destroyed'; }, 10000);
+                if(el.classList.contains('revealed')) return;
+                el.classList.add('revealed'); req(`/api/messages/${id}/action`, 'POST', {action:'reveal'});
+                let s = 10; const int = setInterval(()=>{ s--; if(s<=0) { el.src=''; el.alt='Destroyed'; clearInterval(int); } }, 1000);
             },
 
-            async msgAct(id, act, isMine) {
-                if(act==='delete' && isMine && confirm("Delete message?")) { await req(`/api/messages/${id}/action`, 'POST', {action:'delete'}); this.poll(); }
+            async msgAct(act, emoji=null) {
+                try { await req(`/api/messages/${State.targetId}/action`, 'POST', {action:act, emoji}); UI.closeCtx(); this.poll(); } catch(e) {}
             },
+            prepReply() { document.getElementById('msg-input').value = `> ${State.targetTxt}\n\n`; document.getElementById('msg-input').focus(); UI.closeCtx(); },
 
             updateProfile(e, type) {
                 if(type === 'avatar') {
-                    const f=e.target.files[0]; if(!f) return;
-                    const r=new FileReader(); r.onload=async ev=>{
-                        const img=new Image(); img.onload=async()=>{
+                    const f = e.target.files[0]; if(!f) return;
+                    const r = new FileReader(); r.onload = async ev => {
+                        const img=new Image(); img.onload = async () => {
                             const cv=document.createElement('canvas'); cv.width=200; cv.height=200; const ctx=cv.getContext('2d');
-                            const sc=Math.max(200/img.width, 200/img.height); ctx.drawImage(img, (200-img.width*sc)/2, (200-img.height*sc)/2, img.width*sc, img.height*sc);
+                            const sc=Math.max(200/img.width, 200/img.height);
+                            ctx.drawImage(img, (200-img.width*sc)/2, (200-img.height*sc)/2, img.width*sc, img.height*sc);
                             const b64 = cv.toDataURL('image/jpeg', 0.8);
                             await req('/api/user/profile', 'PUT', {avatar:b64});
                             document.getElementById('set-av').src=b64; document.getElementById('my-avatar').src=b64;
                             State.u.avatar=b64; localStorage.setItem('y_u', JSON.stringify(State.u));
                         }; img.src=ev.target.result;
                     }; r.readAsDataURL(f);
-                } else req('/api/user/profile', 'PUT', {bio: document.getElementById('set-bio').value});
+                } else { req('/api/user/profile', 'PUT', {bio: document.getElementById('set-bio').value}); }
             },
 
             async loadSessions() {
                 try {
                     const s = await req('/api/sessions'); let h = '';
                     s.forEach(x => {
-                        h += `<div style="background:var(--bg-input); padding:16px; border-radius:16px; margin-bottom:12px; border:1px solid var(--border)">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-weight:600"><span>${x.device.substring(0,25)}</span> ${x.is_current?'<span class="badge" style="background:#10b981">Current</span>':''}</div>
-                            <div style="font-size:13px; color:var(--text-muted); margin-bottom:12px">📍 ${x.location} • 🌐 ${x.ip}</div>
-                            ${!x.is_current ? `<button class="btn" style="padding:8px 16px; background:var(--danger); width:100%; font-size:14px" onclick="App.revokeSession('${x.token}')">Revoke</button>` : ''}
+                        h += `<div style="background:var(--bg-input); padding:16px; border-radius:16px; margin-bottom:16px; border:1px solid var(--border)">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-weight:600"><span>${x.device.substring(0,25)}</span> ${x.is_current?'<span class="badge" style="background:#10b981">This Device</span>':''}</div>
+                            <div style="font-size:14px; color:var(--text-muted); margin-bottom:12px">📍 ${x.location} • 🌐 ${x.ip}</div>
+                            ${!x.is_current ? `<button class="btn" style="padding:8px 16px; background:var(--danger); width:100%" onclick="App.revokeSession('${x.token}')">Revoke Access</button>` : ''}
                         </div>`;
-                    });
-                    document.getElementById('sessions-list').innerHTML = h;
+                    }); document.getElementById('sessions-list').innerHTML = h;
                 } catch(e){}
             },
-            async revokeSession(t) { if(confirm("Revoke?")) { await req('/api/sessions/revoke', 'POST', {tokenToRevoke: t}); this.loadSessions(); } }
+            async revokeSession(t) { if(!confirm("Revoke this device?")) return; await req('/api/sessions/revoke', 'POST', {tokenToRevoke: t}); this.loadSessions(); UI.toast('Session Revoked'); }
         };
 
         window.onload = () => UI.init();
