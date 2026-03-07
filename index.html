@@ -572,31 +572,8 @@
                         const isDM = c.type==='dm'; const n = isDM?c.dm_username:c.name; 
                         const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
                         const av = canSeePfp ? (isDM?(c.dm_avatar||defAv):(c.avatar||defAv)) : defAv;
-                        // Active call banner
-                        const hasCall = d.calls.find(x => x.chat_id === c.id);
-                        const callBtn = hasCall ? `<span class="call-badge" onclick="event.stopPropagation(); RTC.joinCall(${hasCall.id}); App.openChat(${c.id})">📞 Join Call</span>` : '';
-                        // --- NOTIFICATION LOGIC ---
-                        // 1. New Messages
-                        if (c.unread > 0 && c.last_msg_id) {
-                            // If we haven't notified for this msg, AND we are not currently looking at this chat
-                            if (!State.notifiedMsgs.has(c.last_msg_id) && State.chat !== c.id) {
-                                State.notifiedMsgs.add(c.last_msg_id);
-                                
-                                // Don't notify on the very first sync load
-                                if (State.notifiedMsgs.size > 1) {
-                                    App.showPush(n, prevH, av, false);
-                                }
-                            }
-                        }
 
-                        // 2. Incoming Calls
-                        if (hasCall && hasCall.caller_id !== State.u.userId) {
-                            if (!State.notifiedCalls.has(hasCall.id)) {
-                                State.notifiedCalls.add(hasCall.id);
-                                App.showPush(`📞 Call from ${n}`, "Tap to answer", av, true);
-                            }
-                        }
-                        // --------------------------
+                        // 1. Define message previews first (so notifications can use them)
                         let prevH = c.last_msg ? c.last_msg.replace(/</g,'&lt;') : 'Start chatting...';
                         if(c.last_msg_type === 'photo') prevH = '🖼️ Photo';
                         if(c.last_msg_type === 'file') prevH = '📁 File';
@@ -606,21 +583,40 @@
 
                         const bage = c.unread > 0 ? `<span class="badge">${c.unread}</span>` : '';
                         
-                        // Active call banner
+                        // 2. Define active calls once
                         const hasCall = d.calls.find(x => x.chat_id === c.id);
                         const callBtn = hasCall ? `<span class="call-badge" onclick="event.stopPropagation(); RTC.joinCall(${hasCall.id}); App.openChat(${c.id})">📞 Join Call</span>` : '';
 
-                        // Online Dot Indicator
+                        // 3. --- NOTIFICATION LOGIC ---
+                        if (c.unread > 0 && c.last_msg_id) {
+                            if (!State.notifiedMsgs.has(c.last_msg_id) && State.chat !== c.id) {
+                                State.notifiedMsgs.add(c.last_msg_id);
+                                if (State.notifiedMsgs.size > 1) {
+                                    App.showPush(n, prevH, av, false);
+                                }
+                            }
+                        }
+
+                        if (hasCall && hasCall.caller_id !== State.u.userId) {
+                            if (!State.notifiedCalls.has(hasCall.id)) {
+                                State.notifiedCalls.add(hasCall.id);
+                                App.showPush(`📞 Call from ${n}`, "Tap to answer", av, true);
+                            }
+                        }
+                        // -----------------------------
+
+                        // 4. Online Dot Indicator
                         const isOnline = isDM && c.dm_last_seen && (new Date() - new Date(c.dm_last_seen + (c.dm_last_seen.includes('Z')?'':'Z')) < 60000);
                         const onlineDot = isOnline ? `<div class="online-dot"></div>` : '';
 
+                        // 5. Generate HTML
                         html += `<div class="user-item" onclick="App.openChat(${c.id})">
                                 <div style="position:relative"><img src="${av}" class="avatar">${onlineDot}</div>
                                 <div class="user-info"><div class="user-name"><span>${n}</span> ${bage}</div><div class="user-last-msg">${prevH}</div></div>
                                 ${callBtn}
                             </div>`;
 
-                        // Active Chat specific updates
+                        // 6. Active Chat specific updates
                         if(State.chat === c.id) {
                             if(isDM && c.dm_typing == c.id) document.getElementById('chat-status').innerHTML = 'typing...';
                             else if(!isDM && c.is_typing == c.id) document.getElementById('chat-status').innerHTML = 'typing...';
@@ -628,7 +624,6 @@
                             
                             document.getElementById('call-btn').style.display = (c.type==='dm' && UI.checkPriv(c.dm_call_privacy, State.u.username)===false) ? 'none' : 'flex';
                             
-                            // Smart MSGS update: only fetch if there's a new message
                             if(c.last_msg_id > State.lastMsgId) { State.lastMsgId = c.last_msg_id; this.loadMsgs(c.id); }
                         }
                     });
