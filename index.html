@@ -33,7 +33,54 @@
             --safe-bottom: env(safe-area-inset-bottom, 0px);
             --chat-bg: #ffffff;
         }
-
+        
+        /* Base style for the letter avatar */
+        .avatar-letter {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 20px;
+            color: #ffffff; /* White text looks best on these vibrant backgrounds */
+            flex-shrink: 0;
+            text-transform: uppercase;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        /* Fallback color for numbers/symbols */
+        .bg-default { background-color: #94a3b8; } /* Slate */
+        
+        /* The Whole Alphabet A-Z */
+        .bg-a { background-color: #ef4444; } /* Red */
+        .bg-b { background-color: #f97316; } /* Orange */
+        .bg-c { background-color: #f59e0b; } /* Amber */
+        .bg-d { background-color: #84cc16; } /* Lime */
+        .bg-e { background-color: #22c55e; } /* Green */
+        .bg-f { background-color: #10b981; } /* Emerald */
+        .bg-g { background-color: #14b8a6; } /* Teal */
+        .bg-h { background-color: #06b6d4; } /* Cyan */
+        .bg-i { background-color: #0ea5e9; } /* Light Blue */
+        .bg-j { background-color: #3b82f6; } /* Blue */
+        .bg-k { background-color: #6366f1; } /* Indigo */
+        .bg-l { background-color: #8b5cf6; } /* Violet */
+        .bg-m { background-color: #a855f7; } /* Purple */
+        .bg-n { background-color: #d946ef; } /* Fuchsia */
+        .bg-o { background-color: #ec4899; } /* Pink */
+        .bg-p { background-color: #f43f5e; } /* Rose */
+        .bg-q { background-color: #dc143c; } /* Crimson */
+        .bg-r { background-color: #ff6347; } /* Tomato */
+        .bg-s { background-color: #ff7f50; } /* Coral */
+        .bg-t { background-color: #4682b4; } /* Steel Blue */
+        .bg-u { background-color: #3cb371; } /* Medium Sea Green */
+        .bg-v { background-color: #6a5acd; } /* Slate Blue */
+        .bg-w { background-color: #da70d6; } /* Orchid */
+        .bg-x { background-color: #db7093; } /* Pale Violet Red */
+        .bg-y { background-color: #daa520; } /* Goldenrod */
+        .bg-z { background-color: #00ced1; } /* Dark Turquoise */
+        
         /* Keep existing themes working, modifying core elements */
         [data-theme="dark"] { --bg-base: #0f172a; --bg-panel: #1e293b; --bg-input: #334155; --bg-hover: rgba(255,255,255,0.05); --border: #334155; --primary: #ffffff; --text-main: #f8fafc; --text-muted: #94a3b8; --msg-sent: #ffffff; --msg-sent-txt: #000000; --msg-recv: #334155; --msg-recv-txt: #ffffff; --chat-bg: #0f172a; }
         [data-theme="oled"] { --bg-base: #000000; --bg-panel: #000000; --bg-input: #111111; --border: #222222; --primary: #ffffff; --text-main: #ffffff; --text-muted: #666666; --msg-sent: #ffffff; --msg-sent-txt: #000000; --msg-recv: #111111; --msg-recv-txt: #ffffff; --chat-bg: #000000; }
@@ -509,6 +556,14 @@
         };
         window.addEventListener('popstate', () => { if(Router.stack.length>1) Router.pop(); });
 
+        // Add this to your UI object
+        UI.getLetterAvatar = (name) => {
+            const char = (name || '?').charAt(0).toUpperCase();
+            // Simple way to get a color class based on the char code
+            const colorIdx = (name.charCodeAt(0) % 12) + 1; 
+            return `<div class="avatar-letter bg-letter-${colorIdx}" style="background-color: hsl(${(name.charCodeAt(0) * 37) % 360}, 60%, 60%)">${char}</div>`;
+        };
+        
         const UI = {
             toast(m) { const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3000); },
             formatTime(dStr) {
@@ -752,7 +807,20 @@
                         State.chats.set(c.id, c);
                         const isDM = c.type==='dm'; const n = isDM?c.dm_username:c.name; 
                         const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
-                        const av = canSeePfp ? (isDM?(c.dm_avatar||defAv):(c.avatar||defAv)) : defAv;
+                        // Example inside your App.sync() loop:
+                        const displayName = isDM ? c.dm_username : c.name;
+                        const avUrl = canSeePfp ? (isDM ? (c.dm_avatar || defAv) : (c.avatar || defAv)) : defAv;
+                        
+                        // If the avatar is the default SVG, render the letter avatar instead
+                        const avHtml = (avUrl === defAv || !avUrl) 
+                            ? UI.getLetterAvatar(displayName) 
+                            : `<img src="${avUrl}" class="avatar">`;
+                        
+                        // Then just drop ${avHtml} into your HTML template:
+                        html += `<div class="user-item" onclick="App.openChat(${c.id})">
+                                    <div style="position:relative">${avHtml}${onlineDot}</div>
+                                    <div class="user-info">...</div>
+                                </div>`;
 
                         // 1. Define message previews first (so notifications can use them)
                         let prevH = c.last_msg ? c.last_msg.replace(/</g,'&lt;') : 'Start chatting...';
@@ -991,7 +1059,18 @@
                 try { await req('/api/sessions/revoke', 'POST', {tokenToRevoke: t}); this.loadSessions(); UI.toast('Revoked'); } catch(e){} 
             }
         };
-
+        // Add this inside your UI object, or just globally in the script
+        UI.getLetterAvatar = (name) => {
+            // Get the first character and make it uppercase
+            const char = (name || '?').charAt(0).toUpperCase();
+            
+            // Check if it's a letter from A-Z. If not (like a number or symbol), use default gray.
+            const isLetter = /[A-Z]/.test(char);
+            const className = isLetter ? `bg-${char.toLowerCase()}` : 'bg-default';
+            
+            // Return the HTML string for the avatar
+            return `<div class="avatar-letter ${className}">${char}</div>`;
+        };
         window.onload = () => { if(State.t) { document.getElementById('panel-auth').classList.remove('active'); App.start(); } };
     </script>
 </body>
