@@ -1,4 +1,3 @@
-frontend:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -584,10 +583,12 @@ frontend:
                 const {users, chats} = await req(`/api/search?q=${q}`);
                 let h = '';
                 users.forEach(x => { h+=`<div class="user-item" onclick="App.startDM(${x.id})"><img src="${UI.checkPriv(x.pfp_privacy, State.u.username)?(x.avatar||defAv):defAv}" class="avatar"><div class="user-info"><div class="user-name">${x.username}</div></div></div>`; });
-                chats.forEach(x => { h+=`<div class="user-item" onclick="App.joinChat('${x.handle}')"><img src="${x.avatar||defAv}" class="avatar"><div class="user-info"><div class="user-name">${x.name} <span style="font-size:12px;color:var(--primary)">@${x.handle}</span></div></div></div>`; });
+                
+                // FIXED: Changed x.handle to x.username below
+                chats.forEach(x => { h+=`<div class="user-item" onclick="App.joinChat('${x.username}')"><img src="${x.avatar||defAv}" class="avatar"><div class="user-info"><div class="user-name">${x.name} <span style="font-size:12px;color:var(--primary)">@${x.username}</span></div></div></div>`; });
+                
                 resEl.innerHTML = h || '<div style="padding:20px; text-align:center; color:var(--text-muted)">No results found.</div>';
             },
-
             async startDM(id) { const d = await req('/api/chats', 'POST', {type:'dm', target_user_id:id}); Router.pop(); this.openChat(d.chat_id); },
             async joinChat(handle) { const d = await req('/api/chats/join', 'POST', {handle}); Router.pop(); this.openChat(d.chat_id); },
             async createChat(type) { 
