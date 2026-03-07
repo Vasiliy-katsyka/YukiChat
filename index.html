@@ -323,7 +323,10 @@
         const State = { 
             t: localStorage.getItem('y_t'), u: JSON.parse(localStorage.getItem('y_u')||'{}'), 
             chats: new Map(), chat: null, syncLoop: null, lastMsgId: 0,
-            capMedia: null, capType: null, authMode: 'login', regAv: null, replyTo: null
+            capMedia: null, capType: null, authMode: 'login', regAv: null, replyTo: null,
+            // ADD THESE TWO LINES:
+            notifiedMsgs: new Set(),
+            notifiedCalls: new Set()
         };
 
         const req = async (path, m='GET', b=null) => {
@@ -519,8 +522,41 @@
                 }
                 
                 this.sync(); State.syncLoop = setInterval(() => this.sync(), 3000);
+                this.requestNotifyPerms();
             },
 
+            // --- NOTIFICATIONS ---
+            requestNotifyPerms() {
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            },
+            
+            showPush(title, body, icon, isCall = false) {
+                if (!('Notification' in window) || Notification.permission !== 'granted') {
+                    if(isCall) UI.toast(`📞 Incoming Call: ${title}`);
+                    return;
+                }
+
+                // Clean up HTML tags from the message preview
+                const cleanBody = body ? body.replace(/&lt;/g, '<').replace(/<[^>]*>?/gm, '') : 'New message';
+                
+                const opts = {
+                    body: cleanBody,
+                    icon: icon !== defAv ? icon : null, // Use their avatar
+                    tag: isCall ? 'call' : 'msg', // Prevents spamming, groups notifications
+                    vibrate: isCall ?[500, 1000, 500, 1000, 500] :[200, 100, 200], // Long buzz for calls
+                    requireInteraction: isCall // Keeps call notification on screen until clicked
+                };
+
+                // Use Service Worker to show notification so it works properly on Android/iOS
+                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.ready.then(sw => sw.showNotification(title, opts));
+                } else {
+                    new Notification(title, opts);
+                }
+            },
+            
             // --- REAL-TIME SYNC ---
             async sync() {
                 try {
@@ -536,7 +572,31 @@
                         const isDM = c.type==='dm'; const n = isDM?c.dm_username:c.name; 
                         const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
                         const av = canSeePfp ? (isDM?(c.dm_avatar||defAv):(c.avatar||defAv)) : defAv;
-                        
+                        // Active call banner
+                        const hasCall = d.calls.find(x => x.chat_id === c.id);
+                        const callBtn = hasCall ? `<span class="call-badge" onclick="event.stopPropagation(); RTC.joinCall(${hasCall.id}); App.openChat(${c.id})">📞 Join Call</span>` : '';
+                        // --- NOTIFICATION LOGIC ---
+                        // 1. New Messages
+                        if (c.unread > 0 && c.last_msg_id) {
+                            // If we haven't notified for this msg, AND we are not currently looking at this chat
+                            if (!State.notifiedMsgs.has(c.last_msg_id) && State.chat !== c.id) {
+                                State.notifiedMsgs.add(c.last_msg_id);
+                                
+                                // Don't notify on the very first sync load
+                                if (State.notifiedMsgs.size > 1) {
+                                    App.showPush(n, prevH, av, false);
+                                }
+                            }
+                        }
+
+                        // 2. Incoming Calls
+                        if (hasCall && hasCall.caller_id !== State.u.userId) {
+                            if (!State.notifiedCalls.has(hasCall.id)) {
+                                State.notifiedCalls.add(hasCall.id);
+                                App.showPush(`📞 Call from ${n}`, "Tap to answer", av, true);
+                            }
+                        }
+                        // --------------------------
                         let prevH = c.last_msg ? c.last_msg.replace(/</g,'&lt;') : 'Start chatting...';
                         if(c.last_msg_type === 'photo') prevH = '🖼️ Photo';
                         if(c.last_msg_type === 'file') prevH = '📁 File';
