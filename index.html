@@ -146,7 +146,17 @@
         .call-controls { margin-top: auto; display: flex; gap: 24px; align-items: center; background: var(--bg-panel); padding: 20px 32px; border-radius: 40px; box-shadow: var(--shadow); }
         .call-btn { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; border: none; background: var(--bg-input); color: var(--text-main); }
         .call-btn.end { background: var(--danger); color: white; }
-
+        /* Add inside your <style> block */
+        .msg-bubble { 
+            white-space: pre-wrap; /* This fixes the line spacing issue! */
+        }
+        
+        /* AI Typing Animation */
+        .typing-dots { display: inline-flex; gap: 4px; align-items: center; height: 20px; padding: 0 4px; }
+        .typing-dots span { width: 6px; height: 6px; background-color: currentColor; border-radius: 50%; animation: blink 1.4s infinite both; opacity: 0.4; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
         /* Desktop Mode Layout */
         @media (min-width: 768px) {
             body { flex-direction: row; }
@@ -167,6 +177,7 @@
             
             .fab { bottom: 30px; right: calc(100vw - 330px); }
         }
+        
     </style>
 </head>
 <body>
@@ -699,12 +710,37 @@
             logout() { localStorage.clear(); location.reload(); },
             installPWA() { if(deferredPrompt) deferredPrompt.prompt(); },
             async sendToAI(text, type, mediaData) {
+                const msgsCont = document.getElementById('msgs');
+                
+                // 1. Instantly display the user's message on screen (Optimistic UI)
+                const displayTxt = type === 'text' ? text.replace(/</g,'&lt;') : '🖼️ Photo Sent';
+                msgsCont.innerHTML += `
+                    <div class="msg-row sent">
+                        <div class="msg-bubble">${displayTxt}
+                            <div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px">Just now ✓</div>
+                        </div>
+                    </div>`;
+                
+                // 2. Instantly display the AI's animated generating dots
+                const typingId = 'ai-typing-' + Date.now();
+                msgsCont.innerHTML += `
+                    <div class="msg-row received" id="${typingId}">
+                        <div class="msg-bubble" style="padding: 14px 16px;">
+                            <div class="typing-dots"><span></span><span></span><span></span></div>
+                        </div>
+                    </div>`;
+                
+                msgsCont.scrollTop = msgsCont.scrollHeight; // Scroll to bottom
+            
+                // 3. Actually send the request to the server in the background
                 try {
-                    // Optimistically add an "AI is typing..." indicator if desired
                     await req('/api/ai/chat', 'POST', { text, type, media_data: mediaData });
                     State.lastMsgId = 0; 
-                    this.loadMsgs('ai');
-                } catch(e) { UI.toast(e.message); }
+                    this.loadMsgs('ai'); // This will reload the chat, replacing the dots with the real answer!
+                } catch(e) { 
+                    document.getElementById(typingId)?.remove(); // Remove dots on error
+                    UI.toast(e.message); 
+                }
             },
             
             async clearAI() {
@@ -995,11 +1031,28 @@
                         }
 
                         // Link parsing & HTML escape
+                        // HTML escape first
                         let cleanTxt = m.content.replace(/</g,'&lt;');
-                        const urlMatch = cleanTxt.match(/(https?:\/\/[^\s]+)/g);
-                        if(urlMatch && m.type==='text') {
-                            cleanTxt = cleanTxt.replace(urlMatch[0], `<a href="${urlMatch[0]}" target="_blank" style="color:inherit; text-decoration:underline;">${urlMatch[0]}</a>`);
-                            cleanTxt += `<div class="link-preview"><a href="${urlMatch[0]}" target="_blank">🔗 View Link Preview</a></div>`;
+                        
+                        // Simple Markdown Parser
+                        if (m.type === 'text') {
+                            // Code blocks: ```code```
+                            cleanTxt = cleanTxt.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;">$1</pre>');
+                            // Inline code: `code`
+                            cleanTxt = cleanTxt.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
+                            // Bold: **text**
+                            cleanTxt = cleanTxt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                            // Italic: *text*
+                            cleanTxt = cleanTxt.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                            // Headers: ### Header
+                            cleanTxt = cleanTxt.replace(/^### (.*$)/gim, '<h3 style="margin:16px 0 8px;font-size:16px;">$1</h3>');
+                            cleanTxt = cleanTxt.replace(/^## (.*$)/gim, '<h2 style="margin:18px 0 8px;font-size:18px;">$1</h2>');
+                            
+                            // Link parsing
+                            const urlMatch = cleanTxt.match(/(https?:\/\/[^\s]+)/g);
+                            if(urlMatch) {
+                                cleanTxt = cleanTxt.replace(urlMatch[0], `<a href="${urlMatch[0]}" target="_blank" style="color:#0088cc; text-decoration:underline;">${urlMatch[0]}</a>`);
+                            }
                         }
 
                         if(m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="window.open(this.src)">`;
