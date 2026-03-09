@@ -232,6 +232,10 @@
                 </div>
             </div>
             <div style="display:flex; gap:16px;">
+                <!-- Add this button inside the <div style="display:flex; gap:16px;"> in the panel-chat header -->
+                <button class="icon-btn" id="ai-clear-btn" onclick="App.clearAI()" style="display:none; width:auto; color:var(--danger)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>
+                </button>
                 <button class="icon-btn" style="width:auto; color:var(--text-muted)">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
                 </button>
@@ -694,7 +698,24 @@
 
             logout() { localStorage.clear(); location.reload(); },
             installPWA() { if(deferredPrompt) deferredPrompt.prompt(); },
-
+            async sendToAI(text, type, mediaData) {
+                try {
+                    // Optimistically add an "AI is typing..." indicator if desired
+                    await req('/api/ai/chat', 'POST', { text, type, media_data: mediaData });
+                    State.lastMsgId = 0; 
+                    this.loadMsgs('ai');
+                } catch(e) { UI.toast(e.message); }
+            },
+            
+            async clearAI() {
+                if(!confirm("Clear AI chat history?")) return;
+                try {
+                    await req('/api/ai/clear', 'POST');
+                    State.lastMsgId = 0;
+                    this.loadMsgs('ai');
+                    UI.toast('Memory Cleared');
+                } catch(e) {}
+            },
             // --- APPEARANCE ---
             setTheme(t) { document.documentElement.setAttribute('data-theme', t); localStorage.setItem('y_theme', t); document.getElementById('set-theme').value=t; },
             // Change your existing setWallpaper function to this:
@@ -792,7 +813,12 @@
                     const d = await req('/api/sync', 'POST', {typingIn: isTyping ? State.chat : null});
                     
                     // Sort chats by last message time (descending)
-                    d.chats.sort((a,b) => new Date(b.last_msg_time || 0) - new Date(a.last_msg_time || 0));
+                    // REPLACE your current d.chats.sort(...) in App.sync() with this:
+                    d.chats.sort((a, b) => {
+                        if (a.id === 'ai') return -1;
+                        if (b.id === 'ai') return 1;
+                        return new Date(b.last_msg_time || 0) - new Date(a.last_msg_time || 0);
+                    });
 
                     let html = '';
                     d.chats.forEach(c => {
@@ -919,6 +945,12 @@
                 } else {
                     document.getElementById('input-bar').style.display='flex'; document.getElementById('channel-bar').style.display='none';
                 }
+                if (id === 'ai') {
+                    document.getElementById('call-btn').style.display = 'none';
+                    document.getElementById('ai-clear-btn').style.display = 'flex';
+                } else {
+                    document.getElementById('ai-clear-btn').style.display = 'none';
+                }
                 
                 State.lastMsgId = 0; this.loadMsgs(id);
             },
@@ -980,6 +1012,13 @@
             scrollToPin() { const c = document.getElementById('msgs'); if(c) c.scrollTop = 0; },
 
             async sendText() {
+                // AT THE TOP OF App.sendText():
+                if (State.chat === 'ai') {
+                    const txt = document.getElementById('msg-input').value.trim();
+                    if (!txt) return;
+                    document.getElementById('msg-input').value = '';
+                    return this.sendToAI(txt, 'text', null);
+                }
                 const inp = document.getElementById('msg-input'); const txt = inp.value.trim();
                 if(!txt || !State.chat) return; inp.value='';
                 try { 
@@ -1000,6 +1039,12 @@
                 r.readAsDataURL(f);
             },
             async sendMedia() {
+                // AT THE TOP OF App.sendMedia():
+                if (State.chat === 'ai') {
+                    const cap = document.getElementById('cap-input').value.trim();
+                    document.getElementById('panel-caption').classList.remove('active');
+                    return this.sendToAI(cap, State.capType, State.capMedia);
+                }
                 const cap = document.getElementById('cap-input').value.trim();
                 document.getElementById('panel-caption').classList.remove('active');
                 try { await req(`/api/messages/${State.chat}`, 'POST', {content: State.capMedia, caption: cap, type: State.capType}); State.lastMsgId=0; this.sync(); } catch(e){}
