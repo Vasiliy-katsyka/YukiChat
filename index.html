@@ -934,25 +934,47 @@
 
             // --- CHAT INTERFACE ---
             openChat(id) {
-                State.chat = id; const c = State.chats.get(id); Router.push('panel-chat');
-                const isDM = c.type==='dm'; const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
+                // 1. Fix the String vs Number mismatch for the Map lookup
+                if (id !== 'ai') id = Number(id);
+                
+                State.chat = id; 
+                const c = State.chats.get(id); 
+                
+                if (!c) return; // Safety fallback
+                
+                Router.push('panel-chat');
+                
+                const isDM = c.type === 'dm'; 
+                const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
+                
                 document.getElementById('chat-title').textContent = isDM ? c.dm_username : c.name;
-                document.getElementById('chat-av').src = canSeePfp ? (isDM?(c.dm_avatar||defAv):(c.avatar||defAv)) : defAv;
+                document.getElementById('chat-av').src = canSeePfp ? (isDM ? (c.dm_avatar||defAv) : (c.avatar||defAv)) : defAv;
                 
                 // Channel Admin Check
-                if(c.type === 'channel' && c.my_role !== 'admin') {
-                    document.getElementById('input-bar').style.display='none'; document.getElementById('channel-bar').style.display='block';
+                if (c.type === 'channel' && c.my_role !== 'admin') {
+                    document.getElementById('input-bar').style.display = 'none'; 
+                    document.getElementById('channel-bar').style.display = 'block';
                 } else {
-                    document.getElementById('input-bar').style.display='flex'; document.getElementById('channel-bar').style.display='none';
-                }
-                if (id === 'ai') {
-                    document.getElementById('call-btn').style.display = 'none';
-                    document.getElementById('ai-clear-btn').style.display = 'flex';
-                } else {
-                    document.getElementById('ai-clear-btn').style.display = 'none';
+                    document.getElementById('input-bar').style.display = 'flex'; 
+                    document.getElementById('channel-bar').style.display = 'none';
                 }
                 
-                State.lastMsgId = 0; this.loadMsgs(id);
+                // AI & Call Button Logic
+                if (id === 'ai') {
+                    document.getElementById('call-btn').style.display = 'none';
+                    
+                    // Check if ai-clear-btn exists (safety check)
+                    const clearBtn = document.getElementById('ai-clear-btn');
+                    if (clearBtn) clearBtn.style.display = 'flex';
+                } else {
+                    document.getElementById('call-btn').style.display = (c.type==='dm' && UI.checkPriv(c.dm_call_privacy, State.u.username)===false) ? 'none' : 'flex';
+                    
+                    const clearBtn = document.getElementById('ai-clear-btn');
+                    if (clearBtn) clearBtn.style.display = 'none';
+                }
+                
+                State.lastMsgId = 0; 
+                this.loadMsgs(id);
             },
 
             async loadMsgs(id) {
