@@ -170,6 +170,28 @@
             object-fit: contain;
             transform: scale(1.1); /* Makes the star pop a bit more */
         }
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: calc(60px + var(--safe-bottom));
+            background: var(--bg-panel); border-top: 1px solid var(--border);
+            display: flex; justify-content: space-around; align-items: center; padding-bottom: var(--safe-bottom);
+            z-index: 100;
+        }
+        .bottom-nav .nav-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: var(--text-muted); font-size: 11px; font-weight: 600; gap: 4px; padding: 8px 24px; cursor: pointer; transition: 0.2s;
+        }
+        .bottom-nav .nav-item.active { color: var(--primary); }
+        .bottom-nav .nav-item svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; }
+        
+        /* Offset panels for bottom nav */
+        #panel-root .panel-body, #panel-settings .panel-body { padding-bottom: calc(80px + var(--safe-bottom)) !important; }
+        .fab { bottom: calc(80px + var(--safe-bottom)); }
+        
+        @media (min-width: 768px) {
+            .bottom-nav { display: none; }
+            #panel-root .panel-body, #panel-settings .panel-body { padding-bottom: var(--safe-bottom) !important; }
+            .fab { bottom: 30px; }
+        }
         /* Desktop Mode Layout */
         @media (min-width: 768px) {
             body { flex-direction: row; }
@@ -224,8 +246,9 @@
     <div id="panel-root" class="panel root">
         <div class="root-header">
             <h1>Messages</h1>
-            <button class="icon-btn" onclick="Router.push('panel-settings')">
-                <img src="" id="my-avatar" class="avatar" style="width:36px;height:36px;">
+            <button class="icon-btn" onclick="App.toggleTheme()">
+                <!-- Day/Night icon -->
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
             </button>
         </div>
         <div class="search-wrap">
@@ -412,6 +435,34 @@
         <div class="panel-body" id="sessions-list" style="padding: 20px;"></div>
     </div>
 
+    <div id="panel-create-channel" class="panel">
+        <div class="panel-header">
+            <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+            <div class="panel-title">New Channel</div>
+            <div style="width:40px"></div>
+        </div>
+        <div class="panel-body" style="padding: 20px;">
+            <label class="profile-av-wrap" style="display:block; cursor:pointer;">
+                <img src="" id="new-chan-av" class="avatar" style="background:var(--bg-input);">
+                <div class="profile-av-edit">Upload</div>
+                <input type="file" hidden accept="image/*" onchange="App.prepChanAv(event)">
+            </label>
+            <input type="text" id="new-chan-name" class="settings-input" placeholder="Channel Name">
+            <textarea id="new-chan-desc" class="settings-input" placeholder="Description (Optional)" rows="2"></textarea>
+            
+            <div class="settings-row" style="background:transparent; padding:16px 0;">
+                <span>Private Channel</span>
+                <input type="checkbox" id="new-chan-private" style="width:20px;height:20px;" onchange="document.getElementById('new-chan-handle-box').style.display = this.checked ? 'none' : 'block'">
+            </div>
+            
+            <div id="new-chan-handle-box">
+                <input type="text" id="new-chan-handle" class="settings-input" placeholder="Public @handle (e.g. mychannel)">
+            </div>
+            
+            <button class="btn" style="margin-top: 24px;" onclick="App.submitChannel()">Create Channel</button>
+        </div>
+    </div>
+    
     <!-- NEW CHAT / CHANNELS PANEL -->
     <div id="panel-new" class="panel">
         <div class="panel-header">
@@ -428,7 +479,7 @@
                 <div class="icon-btn" style="background:var(--primary); color:var(--bg-base); width:36px; height:36px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
                 New Group
             </button>
-            <button class="settings-row" style="width:100%; justify-content:flex-start; gap:16px; border:none;" onclick="App.createChat('channel')">
+            <button class="settings-row" style="width:100%; justify-content:flex-start; gap:16px; border:none;" onclick="App.createChannelUI()">
                 <div class="icon-btn" style="background:var(--primary); color:var(--bg-base); width:36px; height:36px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg></div>
                 New Channel
             </button>
@@ -505,6 +556,17 @@
         <div class="settings-row" id="ctx-del" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; color:var(--danger); cursor:pointer;" onclick="App.msgAct('delete')">🗑️ Delete Message</div>
     </div>
 
+    <!-- ADD THIS AT THE VERY BOTTOM, BEFORE <script> -->
+    <div class="bottom-nav" id="bottom-nav">
+        <div class="nav-item active" id="nav-chats" onclick="App.switchTab('chats')">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            <span>Chats</span>
+        </div>
+        <div class="nav-item" id="nav-profile" onclick="App.switchTab('profile')">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span>Profile</span>
+        </div>
+    </div>
     <script>
         /* SETUP & PWA Injection */
         const defAv = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzMzNDE1NSI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==";
@@ -703,6 +765,19 @@
                 r.onload = ev => { State.regAv = ev.target.result; document.getElementById('auth-av-preview').src = State.regAv; };
                 r.readAsDataURL(f);
             },
+            toggleTheme() { 
+                const t = document.documentElement.getAttribute('data-theme') === 'oled' ? 'light' : 'oled'; 
+                this.setTheme(t); 
+            },
+            switchTab(tab) {
+                if (tab === 'chats') {
+                    while(Router.stack.length > 1) Router.pop();
+                } else if (tab === 'profile') {
+                    if (!Router.stack.includes('panel-settings')) Router.push('panel-settings');
+                }
+                document.querySelectorAll('.bottom-nav .nav-item').forEach(el => el.classList.remove('active'));
+                document.getElementById('nav-' + tab).classList.add('active');
+            },
             async submitAuth() {
                 const u = document.getElementById('auth-u').value.trim(); const p = document.getElementById('auth-p').value.trim();
                 const isLog = State.authMode === 'login';
@@ -752,7 +827,33 @@
                     UI.toast(e.message); 
                 }
             },
-            
+            async toggleMute(id) {
+                try { await req(`/api/chats/${id}/mute`, 'POST'); this.sync(); } catch(e){}
+            },
+            createChannelUI() {
+                document.getElementById('new-chan-name').value = '';
+                document.getElementById('new-chan-desc').value = '';
+                document.getElementById('new-chan-handle').value = '';
+                document.getElementById('new-chan-private').checked = false;
+                document.getElementById('new-chan-handle-box').style.display = 'block';
+                State.tmpChanAv = null; document.getElementById('new-chan-av').src = defAv;
+                Router.push('panel-create-channel');
+            },
+            prepChanAv(e) {
+                const f = e.target.files[0]; if(!f) return; const r = new FileReader();
+                r.onload = ev => { State.tmpChanAv = ev.target.result; document.getElementById('new-chan-av').src = State.tmpChanAv; }; r.readAsDataURL(f);
+            },
+            async submitChannel() {
+                const name = document.getElementById('new-chan-name').value.trim();
+                const desc = document.getElementById('new-chan-desc').value.trim();
+                const isPriv = document.getElementById('new-chan-private').checked;
+                const handle = document.getElementById('new-chan-handle').value.trim();
+                if(!name) return UI.toast('Name required');
+                try {
+                    const d = await req('/api/chats', 'POST', { type:'channel', name, description:desc, is_private:isPriv, handle: isPriv?'':handle, avatar: State.tmpChanAv });
+                    Router.pop(); Router.pop(); this.openChat(d.chat_id);
+                } catch(e) { UI.toast(e.message); }
+            },
             async clearAI() {
                 if(!confirm("Clear AI chat history?")) return;
                 try {
@@ -946,12 +1047,16 @@
                                 ${callBtn}
                             </div>`;
 
-                        // 6. Active Chat specific updates
+                        // Inside App.sync() where HTML is generated
+                        // Replace the "Active Chat specific updates" block with this:
                         if(State.chat === c.id) {
-                            if(isDM && c.dm_typing == c.id) document.getElementById('chat-status').innerHTML = 'typing...';
-                            else if(!isDM && c.is_typing == c.id) document.getElementById('chat-status').innerHTML = 'typing...';
-                            else if(isDM) document.getElementById('chat-status').innerHTML = isOnline ? '<span style="color:var(--success)">Online</span>' : UI.formatTime(c.dm_last_seen);
-                            
+                            if (c.type === 'channel') {
+                                document.getElementById('chat-status').innerHTML = `${c.sub_count} subscribers`;
+                            } else {
+                                if(isDM && c.dm_typing == c.id) document.getElementById('chat-status').innerHTML = 'typing...';
+                                else if(!isDM && c.is_typing == c.id) document.getElementById('chat-status').innerHTML = 'typing...';
+                                else if(isDM) document.getElementById('chat-status').innerHTML = isOnline ? '<span style="color:var(--success)">Online</span>' : UI.formatTime(c.dm_last_seen);
+                            }
                             if(c.last_msg_id > State.lastMsgId) { State.lastMsgId = c.last_msg_id; this.loadMsgs(c.id); }
                         }
                     });
@@ -1000,8 +1105,11 @@
                 document.getElementById('chat-av').src = canSeePfp ? (isDM ? (c.dm_avatar||defAv) : (c.avatar||defAv)) : defAv;
                 
                 // Channel Admin Check
+                // Inside App.openChat(id)
+                // Replace Channel Admin Check block with this:
                 if (c.type === 'channel' && c.my_role !== 'admin') {
                     document.getElementById('input-bar').style.display = 'none'; 
+                    document.getElementById('channel-bar').innerHTML = `<button class="btn btn-outline" style="border-radius:12px; padding:10px; width:100%" onclick="App.toggleMute(${c.id})">${c.muted ? '🔇 Unmute Channel' : '🔊 Mute Channel'}</button>`;
                     document.getElementById('channel-bar').style.display = 'block';
                 } else {
                     document.getElementById('input-bar').style.display = 'flex'; 
@@ -1070,10 +1178,18 @@
                         if(rxH) inner += `<div style="position:absolute; bottom:-10px; right:8px; background:var(--bg-base); border-radius:12px; padding:2px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:14px; border:1px solid var(--border); z-index:2;">${rxH}</div>`;
 
                         // Read/Sent Ticks
+                        // Inside loadMsgs, replace the tick definition logic with this:
+                        let viewsH = '';
+                        // Render eye icon and views if it's a channel (or in groups if desired, but primarily channels)
+                        const c = State.chats.get(id);
+                        if (c && c.type === 'channel' && m.views) {
+                             viewsH = `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>`;
+                        }
                         const tick = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
 
-                        html += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" oncontextmenu="event.preventDefault(); App.targetTxt='${m.type==='text'?m.content:''}'; State.targetId=${m.id}; document.getElementById('ctx-menu').style.transform='translateY(0)'; document.getElementById('ctx-del').style.display='${isMine?'flex':'none'}'">
-                            <div class="msg-bubble">${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px">${UI.formatTime(m.created_at)}${tick}</div></div></div>`;
+                        // And then adjust the bottom info div:
+                        html += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" oncontextmenu="...">
+                            <div class="msg-bubble">${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px">${UI.formatTime(m.created_at)}${viewsH}${tick}</div></div></div>`;
                     });
                     
                     // Display Pin Bar if something is pinned
@@ -1139,17 +1255,63 @@
             viewProfile(chatId) {
                 const c = State.chats.get(chatId); if(!c) return;
                 const isDM = c.type==='dm'; const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
-                document.getElementById('prof-av').src = canSeePfp ? (isDM?(c.dm_avatar||defAv):(c.avatar||defAv)) : defAv;
-                document.getElementById('prof-name').innerText = isDM ? c.dm_username : c.name;
-                document.getElementById('prof-handle').innerText = c.handle ? `@${c.handle}` : (isDM ? `@${c.dm_username}` : '');
-                document.getElementById('prof-bio').innerText = isDM ? (c.dm_bio||'No bio') : (c.type.toUpperCase() + ' - Created by admin');
+                const av = canSeePfp ? (isDM?(c.dm_avatar||defAv):(c.avatar||defAv)) : defAv;
+                const name = isDM ? c.dm_username : c.name;
+                const handleText = c.username ? `@${c.username}` : (isDM ? `@${c.dm_username}` : '');
+                
+                document.getElementById('prof-av').src = av;
+                document.getElementById('prof-name').innerText = name;
+                document.getElementById('prof-handle').innerText = handleText;
+                document.getElementById('prof-bio').innerText = isDM ? (c.dm_bio||'No bio') : (c.description||'No description');
                 
                 let acts = '';
-                if(c.type === 'group' || c.type === 'channel') {
-                    acts += `<button class="btn" onclick="App.addMember(${chatId})">➕ Add Member by Username</button>`;
+                
+                if (c.type === 'channel') {
+                    const link = c.is_private ? `${window.location.origin}${window.location.pathname}?channel=${c.invite_hash}` : `${window.location.origin}${window.location.pathname}?channel=${c.username}`;
+                    acts += `<button class="btn btn-outline" onclick="navigator.clipboard.writeText('${link}'); UI.toast('Link Copied!')">🔗 Copy Link</button>`;
+                    
+                    if (c.my_role === 'admin') {
+                        acts += `<div class="settings-card" style="padding:16px; text-align:left; margin-top:16px;">
+                            <div style="font-size:14px; font-weight:600; margin-bottom:12px;">Admin Tools</div>
+                            <input type="text" id="edit-chan-name" class="settings-input" value="${name}" placeholder="Name">
+                            <input type="text" id="edit-chan-handle" class="settings-input" value="${c.username||''}" placeholder="Handle" ${c.is_private?'disabled':''}>
+                            <textarea id="edit-chan-desc" class="settings-input" rows="2" placeholder="Description">${c.description||''}</textarea>
+                            <button class="btn" onclick="App.updateChanProfile(${chatId})">Save Changes</button>
+                        </div>
+                        <div style="text-align:left; font-size:14px; font-weight:600; margin:16px 0 8px;">Subscribers</div>
+                        <div id="prof-subs-list" style="text-align:left; max-height:200px; overflow-y:auto;">Loading...</div>`;
+                        this.loadChatMembers(chatId);
+                    }
+                } else if(c.type === 'group') {
+                    acts += `<button class="btn" onclick="App.addMember(${chatId})">➕ Add Member</button>`;
                 }
+                
                 document.getElementById('prof-actions').innerHTML = acts;
                 Router.push('panel-profile');
+            },
+            async updateChanProfile(id) {
+                const name = document.getElementById('edit-chan-name').value;
+                const handle = document.getElementById('edit-chan-handle').value;
+                const desc = document.getElementById('edit-chan-desc').value;
+                try { await req(`/api/chats/${id}`, 'PUT', {name, handle, description:desc}); UI.toast('Updated'); this.sync(); } catch(e){}
+            },
+            async loadChatMembers(id) {
+                try {
+                    const mems = await req(`/api/chats/${id}/members`);
+                    let h = '';
+                    mems.forEach(m => {
+                        h += `<div class="user-item" style="padding:8px 0;">
+                            <img src="${m.avatar||defAv}" class="avatar" style="width:36px;height:36px;">
+                            <div class="user-info" style="font-size:14px;"><b>${m.username}</b> <span style="font-size:11px; color:var(--text-muted)">${m.role}</span></div>
+                            ${m.role !== 'admin' ? `<button class="icon-btn" style="width:auto; font-size:12px; color:var(--primary)" onclick="App.promoteMem(${id}, ${m.id})">Promote</button>` : ''}
+                        </div>`;
+                    });
+                    document.getElementById('prof-subs-list').innerHTML = h;
+                } catch(e) {}
+            },
+            async promoteMem(chatId, targetId) {
+                if(!confirm('Make admin?')) return;
+                try { await req(`/api/chats/${chatId}/members/${targetId}`, 'PUT', {role:'admin'}); this.loadChatMembers(chatId); } catch(e){}
             },
             async addMember(chatId) {
                 const u = prompt("Enter username to add:"); if(!u) return;
