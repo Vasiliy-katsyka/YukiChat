@@ -157,6 +157,19 @@
         .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
         .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
         @keyframes blink { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
+        /* AI Chat Special Styling */
+        .user-item.ai-chat {
+            background: linear-gradient(90deg, rgba(0, 122, 255, 0.15) 0%, transparent 100%);
+        }
+        .user-item.ai-chat:hover {
+            background: linear-gradient(90deg, rgba(0, 122, 255, 0.25) 0%, var(--bg-hover) 100%);
+        }
+        img.avatar.ai-avatar {
+            background: transparent !important;
+            border-radius: 0 !important;
+            object-fit: contain;
+            transform: scale(1.1); /* Makes the star pop a bit more */
+        }
         /* Desktop Mode Layout */
         @media (min-width: 768px) {
             body { flex-direction: row; }
@@ -922,8 +935,13 @@
                         const onlineDot = isOnline ? `<div class="online-dot"></div>` : '';
 
                         // 5. Generate HTML
-                        html += `<div class="user-item" onclick="App.openChat('${c.id}')">
-                                <div style="position:relative"><img src="${av}" class="avatar">${onlineDot}</div>
+                        // 5. Generate HTML
+                        // 5. Generate HTML
+                        const aiItemClass = c.id === 'ai' ? ' ai-chat' : '';
+                        const aiAvClass = c.id === 'ai' ? ' ai-avatar' : '';
+                    
+                        html += `<div class="user-item${aiItemClass}" onclick="App.openChat('${c.id}')">
+                                <div style="position:relative"><img src="${av}" class="avatar${aiAvClass}">${onlineDot}</div>
                                 <div class="user-info"><div class="user-name"><span>${n}</span> ${bage}</div><div class="user-last-msg">${prevH}</div></div>
                                 ${callBtn}
                             </div>`;
