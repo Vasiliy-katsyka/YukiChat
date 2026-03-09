@@ -556,12 +556,17 @@
                 try { this.stream = await navigator.mediaDevices.getUserMedia({audio:true}); } 
                 catch(e) { UI.toast("Microphone access required"); throw e; }
             },
+            // Inside RTC.startCall()
             async startCall() {
                 if(this.activeCall) return;
                 await this.initMedia();
                 try {
                     const res = await req('/api/calls/start', 'POST', {chat_id: State.chat});
-                    this.activeCall = res.call_id; this.showUI(); this.startSigLoop();
+                    this.activeCall = res.call_id; 
+                    
+                    // This function sets the UI to 'Calling...' and does NOT display the 'incoming' div
+                    this.showUI(); 
+                    this.startSigLoop();
                 } catch(e) { UI.toast(e.message); }
             },
             async joinCall(callId) {
@@ -824,7 +829,7 @@
                                 State.notifiedCalls.add(hasCall.id);
                                 App.showPush(`📞 Call from ${n}`, "Tap to answer", av, true);
                                 
-                                // SHOW INCOMING FULLSCREEN OVERLAY
+                                // --- ONLY SHOW INCOMING UI IF I AM NOT THE CALLER ---
                                 RTC.incomingCallId = hasCall.id;
                                 RTC.incomingChat = c.id;
                                 
@@ -837,9 +842,9 @@
                                 document.getElementById('call-view-incoming').style.display = 'flex';
                                 document.getElementById('panel-call').style.transform = 'translateY(0)';
                                 
-                                // Play ringtone
                                 if(!RTC.ringtone) { RTC.ringtone = new Audio('https://actions.google.com/sounds/v1/alarms/phone_ringing.ogg'); RTC.ringtone.loop = true; }
                                 RTC.ringtone.play().catch(e=>{});
+                                // ----------------------------------------------------
                             }
                         } else if (!hasCall && RTC.incomingChat === c.id) {
                             // Call ended by caller before we picked up
