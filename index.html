@@ -170,27 +170,76 @@
             object-fit: contain;
             transform: scale(1.1); /* Makes the star pop a bit more */
         }
+        /* Floating Bottom Nav (Glassmorphic Island) */
         .bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: calc(60px + var(--safe-bottom));
-            background: var(--bg-panel); border-top: 1px solid var(--border);
-            display: flex; justify-content: space-around; align-items: center; padding-bottom: var(--safe-bottom);
+            position: fixed; 
+            bottom: calc(24px + var(--safe-bottom)); 
+            left: 50%; 
+            transform: translateX(-50%);
+            width: calc(100% - 48px);
+            max-width: 360px;
+            height: 72px;
+            background: rgba(30, 41, 59, 0.7); 
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 36px;
+            display: flex; justify-content: space-around; align-items: center; 
             z-index: 100;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s;
+        }[data-theme="light"] .bottom-nav {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
         }
+        
+        /* Hides the island smoothly */
+        .bottom-nav.hidden {
+            transform: translate(-50%, 150%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
         .bottom-nav .nav-item {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: var(--text-muted); font-size: 11px; font-weight: 600; gap: 4px; padding: 8px 24px; cursor: pointer; transition: 0.2s;
+            color: #94a3b8; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s;
+            flex: 1;
         }
-        .bottom-nav .nav-item.active { color: var(--primary); }
-        .bottom-nav .nav-item svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; }
+        [data-theme="light"] .bottom-nav .nav-item { color: #6b7280; }
         
-        /* Offset panels for bottom nav */
-        #panel-root .panel-body, #panel-settings .panel-body { padding-bottom: calc(80px + var(--safe-bottom)) !important; }
-        .fab { bottom: calc(80px + var(--safe-bottom)); }
+        .bottom-nav .nav-item .icon-wrap {
+            position: relative;
+            display: flex; justify-content: center; align-items: center;
+            width: 64px; height: 32px;
+            border-radius: 16px;
+            margin-bottom: 4px;
+            transition: 0.2s;
+        }
+
+        .bottom-nav .nav-item svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2.2; }
+        
+        /* Active Purple State */
+        .bottom-nav .nav-item.active { color: #a855f7; }
+        .bottom-nav .nav-item.active .icon-wrap { background: rgba(168, 85, 247, 0.15); }
+        
+        /* Nav Badge */
+        .nav-badge {
+            position: absolute; top: -6px; right: 2px;
+            background: #a855f7; color: #fff;
+            font-size: 11px; font-weight: 700;
+            padding: 2px 6px; border-radius: 10px;
+            border: 2px solid #1e293b;
+        }[data-theme="light"] .nav-badge { border-color: #ffffff; }
+
+        /* Fix Fab and Panel padding so nothing hides behind the island */
+        .fab { bottom: calc(110px + var(--safe-bottom)); }
+        #panel-root .panel-body, #panel-settings .panel-body { padding-bottom: calc(120px + var(--safe-bottom)) !important; }
         
         @media (min-width: 768px) {
             .bottom-nav { display: none; }
-            #panel-root .panel-body, #panel-settings .panel-body { padding-bottom: var(--safe-bottom) !important; }
             .fab { bottom: 30px; }
+            #panel-root .panel-body, #panel-settings .panel-body { padding-bottom: var(--safe-bottom) !important; }
         }
         /* Desktop Mode Layout */
         @media (min-width: 768px) {
@@ -557,13 +606,20 @@
     </div>
 
     <!-- ADD THIS AT THE VERY BOTTOM, BEFORE <script> -->
+    <!-- BOTTOM FLOATING NAV -->
     <div class="bottom-nav" id="bottom-nav">
         <div class="nav-item active" id="nav-chats" onclick="App.switchTab('chats')">
-            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            <div class="icon-wrap">
+                <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                <div class="nav-badge" id="nav-badge" style="display:none;">0</div>
+            </div>
             <span>Chats</span>
         </div>
         <div class="nav-item" id="nav-profile" onclick="App.switchTab('profile')">
-            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <div class="icon-wrap">
+                <!-- Uses actual user profile picture! -->
+                <img src="" id="nav-av" style="width:26px; height:26px; border-radius:50%; object-fit:cover;">
+            </div>
             <span>Profile</span>
         </div>
     </div>
@@ -607,17 +663,40 @@
 
         const Router = {
             stack:['panel-root'],
+            updateNav() {
+                const current = this.stack[this.stack.length-1];
+                const nav = document.getElementById('bottom-nav');
+                if (nav) {
+                    // Hide if not on home or settings
+                    if (current === 'panel-root' || current === 'panel-settings') {
+                        nav.classList.remove('hidden');
+                    } else {
+                        nav.classList.add('hidden');
+                    }
+                    
+                    // Update active styling
+                    document.querySelectorAll('.bottom-nav .nav-item').forEach(el => el.classList.remove('active'));
+                    if (current === 'panel-settings') {
+                        document.getElementById('nav-profile').classList.add('active');
+                    } else if (current === 'panel-root') {
+                        document.getElementById('nav-chats').classList.add('active');
+                    }
+                }
+            },
             push(id) {
                 if(this.stack[this.stack.length-1]===id) return;
                 this.stack.push(id); document.getElementById(id).classList.add('active');
                 history.pushState({id}, '', `#${id}`);
+                this.updateNav();
             },
             pop() {
                 if(this.stack.length<=1) return;
                 const id = this.stack.pop(); document.getElementById(id).classList.remove('active');
                 if(id==='panel-chat') { State.chat=null; State.lastMsgId=0; }
+                this.updateNav();
             }
         };
+        window.addEventListener('popstate', () => { if(Router.stack.length>1) Router.pop(); else Router.updateNav(); });
         window.addEventListener('popstate', () => { if(Router.stack.length>1) Router.pop(); });
 
         const UI = {
@@ -770,13 +849,11 @@
                 this.setTheme(t); 
             },
             switchTab(tab) {
-                if (tab === 'chats') {
+                if (tab === 'chats' && Router.stack[Router.stack.length-1] !== 'panel-root') {
                     while(Router.stack.length > 1) Router.pop();
-                } else if (tab === 'profile') {
-                    if (!Router.stack.includes('panel-settings')) Router.push('panel-settings');
+                } else if (tab === 'profile' && Router.stack[Router.stack.length-1] !== 'panel-settings') {
+                    Router.push('panel-settings');
                 }
-                document.querySelectorAll('.bottom-nav .nav-item').forEach(el => el.classList.remove('active'));
-                document.getElementById('nav-' + tab).classList.add('active');
             },
             async submitAuth() {
                 const u = document.getElementById('auth-u').value.trim(); const p = document.getElementById('auth-p').value.trim();
@@ -879,9 +956,10 @@
 
             // --- INITIALIZATION ---
             start() {
-                // Removed my-avatar, only setting set-av now
                 document.getElementById('set-av').src = State.u.avatar || defAv;
-                
+                document.getElementById('nav-av').src = State.u.avatar || defAv; // Nav avatar
+                Router.updateNav(); // Fix visibility instantly
+
                 const nameEl = document.getElementById('set-name');
                 if(nameEl.tagName === 'INPUT') nameEl.value = State.u.username; else nameEl.textContent = State.u.username;
                 document.getElementById('set-bio').value = State.u.bio || '';
@@ -968,7 +1046,9 @@
                         return new Date(b.last_msg_time || 0) - new Date(a.last_msg_time || 0);
                     });
 
+                    let totalUnread = 0;
                     let html = '';
+                    
                     d.chats.forEach(c => {
                         State.chats.set(c.id, c);
                         const isDM = c.type==='dm'; const n = isDM?c.dm_username:c.name; 
@@ -1061,6 +1141,12 @@
                             if(c.last_msg_id > State.lastMsgId) { State.lastMsgId = c.last_msg_id; this.loadMsgs(c.id); }
                         }
                     });
+                    const navBadge = document.getElementById('nav-badge');
+                    if (navBadge) {
+                        navBadge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
+                        navBadge.textContent = totalUnread > 99 ? '99+' : totalUnread;
+                    }
+                    
                     document.getElementById('chat-list').innerHTML = html || '<div style="padding:40px;text-align:center;color:var(--text-muted)">No chats found</div>';
                 } catch(e){}
             },
@@ -1324,13 +1410,13 @@
                 if(field==='avatar') {
                     const f = e.target.files[0]; if(!f) return;
                     const r = new FileReader(); 
-                    r.onload=async ev=>{ 
-                        body.avatar=ev.target.result; 
+                    r.onload = async ev => { 
+                        body.avatar = ev.target.result; 
                         await req('/api/user/profile','PUT',body); 
-                        document.getElementById('set-av').src=body.avatar; 
-                        // Removed my-avatar update here!
+                        document.getElementById('set-av').src = body.avatar; 
+                        document.getElementById('nav-av').src = body.avatar; // Updates the bottom nav live!
                         UI.toast('Updated'); 
-                    }; 
+                    };
                     r.readAsDataURL(f); 
                     return;
                 }
