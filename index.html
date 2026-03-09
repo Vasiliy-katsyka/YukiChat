@@ -319,7 +319,15 @@
                     </select>
                 </div>
             </div>
-
+            <div class="settings-header">Notifications</div>
+            <div class="settings-card">
+                <div class="settings-row" style="margin:0; background:transparent; cursor:pointer;" onclick="window.open('https://t.me/yukichat_nots_bot?start=' + State.t, '_blank')">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="2"><path d="M22 2L11 13M22 2L15 22 11 13 2 9 22 2z"/></svg>
+                        Enable Telegram Notifications
+                    </div>
+                </div>
+            </div>
             <div class="settings-header">Privacy</div>
             <div class="settings-card" style="padding: 16px;">
                 <div style="margin-bottom: 16px;">
@@ -348,6 +356,7 @@
                     </div>
                 </div>
             </div>
+            
             
         </div>
     </div>
@@ -419,6 +428,21 @@
     <!-- CALL UI PANEL -->
     <div id="panel-call" class="panel" style="transform:translateY(100%); transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);">
         <div class="call-bg" id="call-bg"></div>
+        <!-- INCOMING CALL OVERLAY -->
+        <div class="call-content" id="call-view-incoming" style="display:none; text-align:center;">
+            <img id="inc-call-av" class="avatar" style="width:130px;height:130px; box-shadow:var(--shadow);" src="">
+            <div style="font-size:28px; font-weight:700; margin-top:24px;" id="inc-call-name">User Name</div>
+            <div style="font-size:15px; color:var(--text-muted); margin-top:8px;">Incoming Call...</div>
+            
+            <div class="call-controls" style="margin-top:auto; background:transparent; box-shadow:none; width:100%; justify-content:center; gap:40px;">
+                <button class="call-btn end" style="width:72px; height:72px;" onclick="RTC.declineCall()">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path><line x1="23" y1="1" x2="1" y2="23"></line></svg>
+                </button>
+                <button class="call-btn" style="width:72px; height:72px; background:var(--success); color:white;" onclick="RTC.acceptCall()">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </button>
+            </div>
+        </div>
         <div class="call-content" id="call-view-single">
             <img id="call-av" class="avatar" style="width:130px;height:130px; box-shadow:var(--shadow);" src="">
             <div style="font-size:28px; font-weight:700; margin-top:24px; letter-spacing:-0.5px;" id="call-name">User Name</div>
@@ -546,7 +570,25 @@
                 // Send join ping so everyone offers
                 req(`/api/calls/${this.activeCall}/signal`, 'POST', {type: 'join', data:{}});
             },
+            acceptCall() {
+                if(this.ringtone) { this.ringtone.pause(); this.ringtone.currentTime = 0; }
+                document.getElementById('call-view-incoming').style.display = 'none';
+                State.chat = this.incomingChat;
+                App.openChat(this.incomingChat); 
+                this.joinCall(this.incomingCallId);
+            },
+
+            declineCall() {
+                if(this.ringtone) { this.ringtone.pause(); this.ringtone.currentTime = 0; }
+                req(`/api/calls/${this.incomingCallId}/end`, 'POST').catch(e=>{});
+                this.incomingCallId = null;
+                this.incomingChat = null;
+                document.getElementById('panel-call').style.transform = 'translateY(100%)';
+            },
+
+            // (Modify endCall slightly to kill the ringtone)
             async endCall() {
+                if(this.ringtone) { this.ringtone.pause(); this.ringtone.currentTime = 0; }
                 if(this.activeCall) req(`/api/calls/${this.activeCall}/end`, 'POST').catch(e=>{});
                 this.activeCall = null; clearInterval(this.sigLoop); clearInterval(this.timerInterval);
                 if(this.stream) { this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; }
@@ -769,12 +811,11 @@
                         const callBtn = hasCall ? `<span class="call-badge" onclick="event.stopPropagation(); RTC.joinCall(${hasCall.id}); App.openChat(${c.id})">📞 Join Call</span>` : '';
 
                         // 3. --- NOTIFICATION LOGIC ---
+                        // 3. --- NOTIFICATION & INCOMING CALL OVERLAY ---
                         if (c.unread > 0 && c.last_msg_id) {
                             if (!State.notifiedMsgs.has(c.last_msg_id) && State.chat !== c.id) {
                                 State.notifiedMsgs.add(c.last_msg_id);
-                                if (State.notifiedMsgs.size > 1) {
-                                    App.showPush(n, prevH, av, false);
-                                }
+                                if (State.notifiedMsgs.size > 1) App.showPush(n, prevH, av, false);
                             }
                         }
 
@@ -782,8 +823,34 @@
                             if (!State.notifiedCalls.has(hasCall.id)) {
                                 State.notifiedCalls.add(hasCall.id);
                                 App.showPush(`📞 Call from ${n}`, "Tap to answer", av, true);
+                                
+                                // SHOW INCOMING FULLSCREEN OVERLAY
+                                RTC.incomingCallId = hasCall.id;
+                                RTC.incomingChat = c.id;
+                                
+                                document.getElementById('call-bg').style.backgroundImage = `url(${av})`;
+                                document.getElementById('inc-call-av').src = av;
+                                document.getElementById('inc-call-name').innerText = n;
+                                
+                                document.getElementById('call-view-single').style.display = 'none';
+                                document.getElementById('call-view-conf').style.display = 'none';
+                                document.getElementById('call-view-incoming').style.display = 'flex';
+                                document.getElementById('panel-call').style.transform = 'translateY(0)';
+                                
+                                // Play ringtone
+                                if(!RTC.ringtone) { RTC.ringtone = new Audio('https://actions.google.com/sounds/v1/alarms/phone_ringing.ogg'); RTC.ringtone.loop = true; }
+                                RTC.ringtone.play().catch(e=>{});
                             }
+                        } else if (!hasCall && RTC.incomingChat === c.id) {
+                            // Call ended by caller before we picked up
+                            if(RTC.ringtone) { RTC.ringtone.pause(); RTC.ringtone.currentTime = 0; }
+                            if(document.getElementById('call-view-incoming').style.display === 'flex') {
+                                document.getElementById('panel-call').style.transform = 'translateY(100%)';
+                            }
+                            RTC.incomingCallId = null;
+                            RTC.incomingChat = null;
                         }
+                        // -----------------------------
                         // -----------------------------
 
                         // 4. Online Dot Indicator
