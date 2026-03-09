@@ -839,7 +839,7 @@
                         
                         // 2. Define active calls once
                         const hasCall = d.calls.find(x => x.chat_id === c.id);
-                        const callBtn = hasCall ? `<span class="call-badge" onclick="event.stopPropagation(); RTC.joinCall(${hasCall.id}); App.openChat(${c.id})">📞 Join Call</span>` : '';
+                        const callBtn = hasCall ? `<span class="call-badge" onclick="event.stopPropagation(); RTC.joinCall(${hasCall.id}); App.openChat('${c.id}')">📞 Join Call</span>` : '';
 
                         // 3. --- NOTIFICATION LOGIC ---
                         // 3. --- NOTIFICATION & INCOMING CALL OVERLAY ---
@@ -889,7 +889,7 @@
                         const onlineDot = isOnline ? `<div class="online-dot"></div>` : '';
 
                         // 5. Generate HTML
-                        html += `<div class="user-item" onclick="App.openChat(${c.id})">
+                        html += `<div class="user-item" onclick="App.openChat('${c.id}')">
                                 <div style="position:relative"><img src="${av}" class="avatar">${onlineDot}</div>
                                 <div class="user-info"><div class="user-name"><span>${n}</span> ${bage}</div><div class="user-last-msg">${prevH}</div></div>
                                 ${callBtn}
