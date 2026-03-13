@@ -184,6 +184,13 @@
         .bottom-nav .nav-item { font-size: 11px; /* Smaller text */ display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-weight: 600; cursor: pointer; transition: 0.2s; flex: 1; }
         .bottom-nav .nav-item .icon-wrap { width: 48px; height: 28px; /* Smaller button background */ border-radius: 14px; margin-bottom: 2px; position: relative; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
         .bottom-nav .nav-item svg { width: 20px; height: 20px; /* Smaller icons */ stroke: currentColor; fill: none; stroke-width: 2.2; }
+        /* Hides the island smoothly and completely */
+        .bottom-nav.hidden {
+            transform: translate(-50%, 150%) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            visibility: hidden !important;
+        }
         #nav-av { width: 22px; height: 22px; /* Smaller avatar */ border-radius: 50%; object-fit: cover; }
         
         /* Nav Badge */
@@ -630,26 +637,28 @@
             updateNav() {
                 const current = this.stack[this.stack.length-1];
                 const nav = document.getElementById('bottom-nav');
-                if (nav) {
-                    // Hide if not logged in
-                    if (!State.t || document.getElementById('panel-auth').classList.contains('active')) {
-                        nav.style.display = 'none';
-                    } else {
-                        nav.style.display = 'flex';
-                    }
-                    
-                    // Show only on root/settings
-                    if (current === 'panel-root' || current === 'panel-settings') {
-                        nav.classList.remove('hidden');
-                    } else {
-                        nav.classList.add('hidden');
-                    }
-                    
-                    // Update active state
-                    document.querySelectorAll('.bottom-nav .nav-item').forEach(el => el.classList.remove('active'));
-                    if (current === 'panel-settings') document.getElementById('nav-profile').classList.add('active');
-                    else if (current === 'panel-root') document.getElementById('nav-chats').classList.add('active');
+                if (!nav) return;
+        
+                // 1. Forcefully remove from DOM on Auth/Login
+                if (!State.t || current === 'panel-auth') {
+                    nav.style.display = 'none';
+                    return;
+                } else {
+                    // Clear the inline style so your CSS rules can properly take over
+                    nav.style.display = ''; 
                 }
+                
+                // 2. Hide smoothly on ANY page that is not root (Chats) or settings (Profile)
+                if (current === 'panel-root' || current === 'panel-settings') {
+                    nav.classList.remove('hidden');
+                } else {
+                    nav.classList.add('hidden');
+                }
+                
+                // 3. Update active icon styling
+                document.querySelectorAll('.bottom-nav .nav-item').forEach(el => el.classList.remove('active'));
+                if (current === 'panel-settings') document.getElementById('nav-profile').classList.add('active');
+                else if (current === 'panel-root') document.getElementById('nav-chats').classList.add('active');
             },
             push(id) {
                 if(this.stack[this.stack.length-1]===id) return;
