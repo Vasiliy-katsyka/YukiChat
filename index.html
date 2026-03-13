@@ -170,37 +170,67 @@
             object-fit: contain;
             transform: scale(1.1); /* Makes the star pop a bit more */
         }
-        /* Update bottom nav styles */
+        /* Floating Bottom Nav (Transparent Glassmorphism) */
         .bottom-nav {
-            position: fixed; bottom: calc(24px + var(--safe-bottom)); left: 50%; transform: translateX(-50%);
-            width: calc(100% - 48px); max-width: 360px;
-            height: 56px; /* Made smaller */
-            background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 28px; /* Adjusted radius */
-            display: flex; justify-content: space-around; align-items: center; z-index: 100;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+            position: fixed; 
+            bottom: calc(24px + var(--safe-bottom)); 
+            left: 50%; 
+            transform: translateX(-50%);
+            width: calc(100% - 48px);
+            max-width: 360px;
+            height: 56px;
+            /* Very sheer dark glass by default for Dark/OLED/Dracula */
+            background: rgba(0, 0, 0, 0.2); 
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 28px;
+            display: flex; justify-content: space-around; align-items: center; 
+            z-index: 100;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s;
+        }[data-theme="light"] .bottom-nav {
+            /* Very sheer light glass for Light theme */
+            background: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
         }
-        .bottom-nav .nav-item { font-size: 11px; /* Smaller text */ display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-weight: 600; cursor: pointer; transition: 0.2s; flex: 1; }
-        .bottom-nav .nav-item .icon-wrap { width: 48px; height: 28px; /* Smaller button background */ border-radius: 14px; margin-bottom: 2px; position: relative; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
-        .bottom-nav .nav-item svg { width: 20px; height: 20px; /* Smaller icons */ stroke: currentColor; fill: none; stroke-width: 2.2; }
-        /* Hides the island smoothly and completely */
+        
+        /* Hides the island smoothly */
         .bottom-nav.hidden {
             transform: translate(-50%, 150%) !important;
             opacity: 0 !important;
             pointer-events: none !important;
             visibility: hidden !important;
         }
-        #nav-av { width: 22px; height: 22px; /* Smaller avatar */ border-radius: 50%; object-fit: cover; }
+        
+        /* Nav Items adapting to theme automatically */
+        .bottom-nav .nav-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: var(--text-muted); /* Automatically changes color based on theme */
+            font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.2s;
+            flex: 1;
+        }
+        
+        .bottom-nav .nav-item .icon-wrap {
+            position: relative; display: flex; justify-content: center; align-items: center;
+            width: 48px; height: 28px; border-radius: 14px; margin-bottom: 2px; transition: 0.2s;
+        }
+        
+        .bottom-nav .nav-item svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2.2; }
+        
+        /* Active State matches the theme's primary color */
+        .bottom-nav .nav-item.active { color: var(--text-main); }
+        .bottom-nav .nav-item.active .icon-wrap { background: var(--bg-hover); }
         
         /* Nav Badge */
         .nav-badge {
-            position: absolute; top: -6px; right: 2px;
-            background: #a855f7; color: #fff;
-            font-size: 11px; font-weight: 700;
-            padding: 2px 6px; border-radius: 10px;
-            border: 2px solid #1e293b;
-        }[data-theme="light"] .nav-badge { border-color: #ffffff; }
+            position: absolute; top: -4px; right: 4px;
+            background: var(--danger); color: #fff;
+            font-size: 10px; font-weight: 700;
+            padding: 2px 5px; border-radius: 10px;
+            border: 2px solid transparent;
+        }
 
         /* Fix Fab and Panel padding so nothing hides behind the island */
         .fab { bottom: calc(110px + var(--safe-bottom)); }
