@@ -170,58 +170,21 @@
             object-fit: contain;
             transform: scale(1.1); /* Makes the star pop a bit more */
         }
-        /* Floating Bottom Nav (Glassmorphic Island) */
+        /* Update bottom nav styles */
         .bottom-nav {
-            position: fixed; 
-            bottom: calc(24px + var(--safe-bottom)); 
-            left: 50%; 
-            transform: translateX(-50%);
-            width: calc(100% - 48px);
-            max-width: 360px;
-            height: 72px;
-            background: rgba(30, 41, 59, 0.7); 
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 36px;
-            display: flex; justify-content: space-around; align-items: center; 
-            z-index: 100;
+            position: fixed; bottom: calc(24px + var(--safe-bottom)); left: 50%; transform: translateX(-50%);
+            width: calc(100% - 48px); max-width: 360px;
+            height: 56px; /* Made smaller */
+            background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 28px; /* Adjusted radius */
+            display: flex; justify-content: space-around; align-items: center; z-index: 100;
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
             transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s;
-        }[data-theme="light"] .bottom-nav {
-            background: rgba(255, 255, 255, 0.85);
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
         }
-        
-        /* Hides the island smoothly */
-        .bottom-nav.hidden {
-            transform: translate(-50%, 150%);
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .bottom-nav .nav-item {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: #94a3b8; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s;
-            flex: 1;
-        }
-        [data-theme="light"] .bottom-nav .nav-item { color: #6b7280; }
-        
-        .bottom-nav .nav-item .icon-wrap {
-            position: relative;
-            display: flex; justify-content: center; align-items: center;
-            width: 64px; height: 32px;
-            border-radius: 16px;
-            margin-bottom: 4px;
-            transition: 0.2s;
-        }
-
-        .bottom-nav .nav-item svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2.2; }
-        
-        /* Active Purple State */
-        .bottom-nav .nav-item.active { color: #a855f7; }
-        .bottom-nav .nav-item.active .icon-wrap { background: rgba(168, 85, 247, 0.15); }
+        .bottom-nav .nav-item { font-size: 11px; /* Smaller text */ display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-weight: 600; cursor: pointer; transition: 0.2s; flex: 1; }
+        .bottom-nav .nav-item .icon-wrap { width: 48px; height: 28px; /* Smaller button background */ border-radius: 14px; margin-bottom: 2px; position: relative; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
+        .bottom-nav .nav-item svg { width: 20px; height: 20px; /* Smaller icons */ stroke: currentColor; fill: none; stroke-width: 2.2; }
+        #nav-av { width: 22px; height: 22px; /* Smaller avatar */ border-radius: 50%; object-fit: cover; }
         
         /* Nav Badge */
         .nav-badge {
@@ -241,23 +204,23 @@
             .fab { bottom: 30px; }
             #panel-root .panel-body, #panel-settings .panel-body { padding-bottom: var(--safe-bottom) !important; }
         }
-        /* Desktop Mode Layout */
+        
+        /* FIX DESKTOP LAYOUT SHIFTING */
         @media (min-width: 768px) {
             body { flex-direction: row; }
             .panel { position: static; height: 100dvh; transform: none !important; transition: none !important; }
             .panel.root { width: 360px; flex-shrink: 0; border-right: 1px solid var(--border); z-index: 1; }
             #panel-chat { flex: 1; z-index: 0; }
-            
-            /* Hide the back button in Chat on Desktop */
             #panel-chat .panel-header .icon-btn[onclick="Router.pop()"] { display: none; }
             
-            /* Modal panels (Settings, Profile, New Chat) overlay only the right side */
-            #panel-settings, #panel-profile, #panel-new, #panel-sessions, #panel-auth {
+            /* Added all missing panels to absolute overlay to prevent side-by-side break */
+            #panel-settings, #panel-profile, #panel-new, #panel-sessions, #panel-create-channel, #panel-caption {
                 position: absolute; width: calc(100% - 360px); left: 360px; z-index: 10;
                 transform: translateX(100%) !important; transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
             }
-            #panel-auth { width: 100%; left: 0; z-index: 9999; }
-            #panel-settings.active, #panel-profile.active, #panel-new.active, #panel-sessions.active, #panel-auth.active { transform: translateX(0) !important; }
+            #panel-auth { position: absolute; width: 100%; left: 0; z-index: 9999; transform: translateX(100%) !important; transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important; }
+            
+            #panel-settings.active, #panel-profile.active, #panel-new.active, #panel-sessions.active, #panel-auth.active, #panel-create-channel.active, #panel-caption.active { transform: translateX(0) !important; }
             
             .fab { bottom: 30px; right: calc(100vw - 330px); }
         }
@@ -332,8 +295,9 @@
                 <button class="icon-btn" id="ai-clear-btn" onclick="App.clearAI()" style="display:none; width:auto; color:var(--danger)">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>
                 </button>
-                <button class="icon-btn" style="width:auto; color:var(--text-muted)">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                <!-- Replace the existing video camera button next to ai-clear-btn with this: -->
+                <button class="icon-btn" style="width:auto; color:var(--text-muted)" onclick="RTC.startCall()">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                 </button>
             </div>
         </div>
@@ -667,20 +631,21 @@
                 const current = this.stack[this.stack.length-1];
                 const nav = document.getElementById('bottom-nav');
                 if (nav) {
-                    // Hide if not on home or settings
+                    if (!State.t || document.getElementById('panel-auth').classList.contains('active')) {
+                        nav.style.display = 'none';
+                        return;
+                    } else {
+                        nav.style.display = 'flex';
+                    }
+                    
                     if (current === 'panel-root' || current === 'panel-settings') {
                         nav.classList.remove('hidden');
                     } else {
                         nav.classList.add('hidden');
                     }
-                    
-                    // Update active styling
                     document.querySelectorAll('.bottom-nav .nav-item').forEach(el => el.classList.remove('active'));
-                    if (current === 'panel-settings') {
-                        document.getElementById('nav-profile').classList.add('active');
-                    } else if (current === 'panel-root') {
-                        document.getElementById('nav-chats').classList.add('active');
-                    }
+                    if (current === 'panel-settings') document.getElementById('nav-profile').classList.add('active');
+                    else if (current === 'panel-root') document.getElementById('nav-chats').classList.add('active');
                 }
             },
             push(id) {
@@ -844,9 +809,24 @@
                 r.onload = ev => { State.regAv = ev.target.result; document.getElementById('auth-av-preview').src = State.regAv; };
                 r.readAsDataURL(f);
             },
+            prepEditChanAv(e) {
+                const f = e.target.files[0]; if(!f) return;
+                const r = new FileReader();
+                r.onload = ev => {
+                    State.tmpEditChanAv = ev.target.result;
+                    document.getElementById('edit-chan-av-preview').src = State.tmpEditChanAv;
+                };
+                r.readAsDataURL(f);
+            },
             toggleTheme() { 
-                const t = document.documentElement.getAttribute('data-theme') === 'oled' ? 'light' : 'oled'; 
-                this.setTheme(t); 
+                const current = document.documentElement.getAttribute('data-theme');
+                if (current === 'light') {
+                    const prefDark = localStorage.getItem('y_pref_dark') || 'dark';
+                    this.setTheme(prefDark);
+                } else {
+                    localStorage.setItem('y_pref_dark', current);
+                    this.setTheme('light');
+                }
             },
             switchTab(tab) {
                 if (tab === 'chats' && Router.stack[Router.stack.length-1] !== 'panel-root') {
@@ -984,6 +964,16 @@
                 this.requestNotifyPerms();
             },
 
+            showCtx(e, id, isMine) {
+                e.preventDefault();
+                State.targetId = id;
+                const msgEl = document.getElementById('msg-'+id);
+                const bubble = msgEl ? msgEl.querySelector('.msg-bubble') : null;
+                State.targetTxt = bubble ? Array.from(bubble.childNodes).filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() : '';
+                document.getElementById('ctx-del').style.display = isMine ? 'flex' : 'none';
+                document.getElementById('ctx-menu').style.transform = 'translateY(0)';
+            },
+            
             // --- NOTIFICATIONS ---
             requestNotifyPerms() {
                 if ('Notification' in window && Notification.permission === 'default') {
@@ -1275,7 +1265,8 @@
                         const tick = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
 
                         // And then adjust the bottom info div:
-                        html += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" oncontextmenu="...">
+                        // Replace the old html += `<div class="msg-row..." oncontextmenu="...">` with this:
+                        html += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">
                             <div class="msg-bubble">${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px">${UI.formatTime(m.created_at)}${viewsH}${tick}</div></div></div>`;
                     });
                     
@@ -1313,12 +1304,31 @@
 
             prepMedia(e) {
                 const f = e.target.files[0]; if(!f) return;
+                e.target.value = ''; // Reset so the same file can be uploaded again
                 const r = new FileReader();
                 r.onload = ev => {
-                    State.capMedia = ev.target.result; State.capType = f.type.startsWith('image/') ? 'photo' : 'file';
-                    document.getElementById('cap-preview').src = f.type.startsWith('image/') ? State.capMedia : 'https://via.placeholder.com/150?text=File';
-                    document.getElementById('cap-input').value = '';
-                    document.getElementById('panel-caption').classList.add('active');
+                    if (f.type.startsWith('image/')) {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const MAX = 1200; let w = img.width; let h = img.height;
+                            if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } 
+                            else { if (h > MAX) { w *= MAX / h; h = MAX; } }
+                            canvas.width = w; canvas.height = h;
+                            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                            State.capMedia = canvas.toDataURL('image/jpeg', 0.85);
+                            State.capType = 'photo';
+                            document.getElementById('cap-preview').src = State.capMedia;
+                            document.getElementById('cap-input').value = '';
+                            document.getElementById('panel-caption').classList.add('active');
+                        };
+                        img.src = ev.target.result;
+                    } else {
+                        State.capMedia = ev.target.result; State.capType = 'file';
+                        document.getElementById('cap-preview').src = 'https://via.placeholder.com/150?text=File';
+                        document.getElementById('cap-input').value = '';
+                        document.getElementById('panel-caption').classList.add('active');
+                    }
                 };
                 r.readAsDataURL(f);
             },
@@ -1360,6 +1370,13 @@
                     if (c.my_role === 'admin') {
                         acts += `<div class="settings-card" style="padding:16px; text-align:left; margin-top:16px;">
                             <div style="font-size:14px; font-weight:600; margin-bottom:12px;">Admin Tools</div>
+                            
+                            <label style="display:block; margin-bottom:16px; cursor:pointer; text-align:center;">
+                                <img id="edit-chan-av-preview" src="${av}" class="avatar" style="width:60px;height:60px;margin:0 auto 8px;">
+                                <div style="font-size:12px; color:var(--primary); font-weight:600;">Change Photo</div>
+                                <input type="file" hidden accept="image/*" onchange="App.prepEditChanAv(event)">
+                            </label>
+                    
                             <input type="text" id="edit-chan-name" class="settings-input" value="${name}" placeholder="Name">
                             <input type="text" id="edit-chan-handle" class="settings-input" value="${c.username||''}" placeholder="Handle" ${c.is_private?'disabled':''}>
                             <textarea id="edit-chan-desc" class="settings-input" rows="2" placeholder="Description">${c.description||''}</textarea>
@@ -1380,7 +1397,9 @@
                 const name = document.getElementById('edit-chan-name').value;
                 const handle = document.getElementById('edit-chan-handle').value;
                 const desc = document.getElementById('edit-chan-desc').value;
-                try { await req(`/api/chats/${id}`, 'PUT', {name, handle, description:desc}); UI.toast('Updated'); this.sync(); } catch(e){}
+                const payload = {name, handle, description:desc};
+                if (State.tmpEditChanAv) payload.avatar = State.tmpEditChanAv; // Include new photo
+                try { await req(`/api/chats/${id}`, 'PUT', payload); UI.toast('Updated'); State.tmpEditChanAv = null; this.sync(); Router.pop(); } catch(e){}
             },
             async loadChatMembers(id) {
                 try {
@@ -1420,7 +1439,12 @@
                     r.readAsDataURL(f); 
                     return;
                 }
-                if(field==='bio') body.bio = document.getElementById('set-bio').value;
+                // Inside App.updateProfile(e, field)
+                if(field==='bio') {
+                    body.bio = document.getElementById('set-bio').value;
+                    State.u.bio = body.bio;
+                    localStorage.setItem('y_u', JSON.stringify(State.u));
+                }
                 if(field==='username') { body.username = document.getElementById('set-name').value; State.u.username = body.username; localStorage.setItem('y_u', JSON.stringify(State.u)); }
                 if(field==='privacy') { body.call_privacy = document.getElementById('set-call').value; body.pfp_privacy = document.getElementById('set-pfp').value; }
                 try { await req('/api/user/profile','PUT',body); UI.toast('Updated'); } catch(e){ UI.toast(e.message); }
