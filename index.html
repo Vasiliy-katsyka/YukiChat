@@ -170,7 +170,7 @@
             object-fit: contain;
             transform: scale(1.1); /* Makes the star pop a bit more */
         }
-        /* Floating Bottom Nav (Transparent Glassmorphism) */
+        /* Floating Bottom Nav (Liquid Glass Effect) */
         .bottom-nav {
             position: fixed; 
             bottom: calc(24px + var(--safe-bottom)); 
@@ -179,21 +179,45 @@
             width: calc(100% - 48px);
             max-width: 360px;
             height: 56px;
-            /* Very sheer dark glass by default for Dark/OLED/Dracula */
-            background: rgba(0, 0, 0, 0.2); 
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 28px;
+            
+            /* Liquid Glass specific styles */
+            border-radius: 28px; /* Perfectly rounds the 56px height */
+            isolation: isolate; /* Ensures pseudo-elements stay behind the nav items */
+            box-shadow: 0px 6px 24px rgba(0, 0, 0, 0.2);
+            background: transparent;
+            border: none;
+            
             display: flex; justify-content: space-around; align-items: center; 
             z-index: 100;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s;
-        }[data-theme="light"] .bottom-nav {
-            /* Very sheer light glass for Light theme */
-            background: rgba(255, 255, 255, 0.3);
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Inner white glow / light reflection */
+        .bottom-nav::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            border-radius: 28px;
+            box-shadow: inset 0 0 23px -5px rgba(255, 255, 255, 0.7); /* Slightly transparent white for better blending */
+            background-color: transparent;
+        }
+
+        /* Distortion filter layer */
+        .bottom-nav::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: -2;
+            border-radius: 28px;
+            backdrop-filter: blur(1px);
+            -webkit-backdrop-filter: blur(1px);
+            filter: url(#glass-distortion);
+            -webkit-filter: url(#glass-distortion);
+        }
+
+        [data-theme="light"] .bottom-nav {
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); /* Lighter drop shadow for light theme */
         }
         
         /* Hides the island smoothly */
@@ -608,6 +632,17 @@
 
     <!-- ADD THIS AT THE VERY BOTTOM, BEFORE <script> -->
     <!-- BOTTOM FLOATING NAV -->
+    <!-- LIQUID GLASS SVG FILTER -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+      <defs>
+        <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.008 0.008" numOctaves="2" seed="92" result="noise" />
+          <feGaussianBlur in="noise" stdDeviation="2" result="blurred" />
+          <feDisplacementMap in="SourceGraphic" in2="blurred" scale="77" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </defs>
+    </svg>
+
     <div class="bottom-nav" id="bottom-nav">
         <div class="nav-item active" id="nav-chats" onclick="App.switchTab('chats')">
             <div class="icon-wrap">
