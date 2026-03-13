@@ -631,18 +631,21 @@
                 const current = this.stack[this.stack.length-1];
                 const nav = document.getElementById('bottom-nav');
                 if (nav) {
+                    // Hide if not logged in
                     if (!State.t || document.getElementById('panel-auth').classList.contains('active')) {
                         nav.style.display = 'none';
-                        return;
                     } else {
                         nav.style.display = 'flex';
                     }
                     
+                    // Show only on root/settings
                     if (current === 'panel-root' || current === 'panel-settings') {
                         nav.classList.remove('hidden');
                     } else {
                         nav.classList.add('hidden');
                     }
+                    
+                    // Update active state
                     document.querySelectorAll('.bottom-nav .nav-item').forEach(el => el.classList.remove('active'));
                     if (current === 'panel-settings') document.getElementById('nav-profile').classList.add('active');
                     else if (current === 'panel-root') document.getElementById('nav-chats').classList.add('active');
@@ -650,13 +653,23 @@
             },
             push(id) {
                 if(this.stack[this.stack.length-1]===id) return;
-                this.stack.push(id); document.getElementById(id).classList.add('active');
+                this.stack.push(id); 
+                
+                const el = document.getElementById(id);
+                el.style.zIndex = 10 + this.stack.length; // FIX: Automatically force the new panel to the front
+                el.classList.add('active');
+                
                 history.pushState({id}, '', `#${id}`);
                 this.updateNav();
             },
             pop() {
                 if(this.stack.length<=1) return;
-                const id = this.stack.pop(); document.getElementById(id).classList.remove('active');
+                const id = this.stack.pop(); 
+                
+                const el = document.getElementById(id);
+                el.classList.remove('active');
+                setTimeout(() => el.style.zIndex = '', 350); // Reset z-index after closing animation finishes
+                
                 if(id==='panel-chat') { State.chat=null; State.lastMsgId=0; }
                 this.updateNav();
             }
