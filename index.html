@@ -472,7 +472,29 @@
                     </select>
                 </div>
             </div>
-            
+            <!-- CACHE SETTINGS -->
+            <div class="settings-header">Storage & Data</div>
+            <div class="settings-card">
+                <div class="settings-row" style="margin:0; background:transparent; cursor:pointer;" onclick="App.clearCache()">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        Clear Local Cache
+                    </div>
+                    <span id="cache-size" style="font-size:12px; color:var(--text-muted); font-weight:700;">Calculating...</span>
+                </div>
+            </div>
+
+            <!-- ADMIN PANEL (Hidden by default, shown via JS) -->
+            <div id="admin-panel" style="display: none;">
+                <div class="settings-header" style="color:#0088cc;">Administrator Tools</div>
+                <div class="settings-card" style="padding: 16px;">
+                    <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px; font-weight:500;">Grant Verification Tick</div>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="admin-verify-user" class="settings-input" style="margin:0; flex:1;" placeholder="@username">
+                        <button class="btn" style="width:auto; padding:0 20px; background:#0088cc;" onclick="App.verifyUser()">Verify</button>
+                    </div>
+                </div>
+            </div>
             <div class="settings-card">
                 <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0; cursor:pointer;" onclick="App.loadSessions()">
                     <span>Active Sessions</span>
@@ -670,7 +692,7 @@
         /* SETUP & PWA Injection */
         const defAv = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzMzNDE1NSI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==";
         const API = 'https://yukichat.kviappsgames.workers.dev'; 
-        
+        const verifiedTick = `<svg style="width:16px; height:16px; vertical-align:text-bottom; fill:#0088cc; margin-left:4px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M23,12L20.56,9.22L20.9,5.54L17.29,4.72L15.4,1.54L12,3L8.6,1.54L6.71,4.72L3.1,5.53L3.44,9.21L1,12L3.44,14.78L3.1,18.47L6.71,19.29L8.6,22.47L12,21L15.4,22.46L17.29,19.28L20.9,18.46L20.56,14.78L23,12M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z" /></svg>`;
         // Dynamic PWA Manifest Generation for Installation
 
         
@@ -929,6 +951,28 @@
                     Router.push('panel-settings');
                 }
             },
+            async verifyUser() {
+                const username = document.getElementById('admin-verify-user').value.trim();
+                if(!username) return;
+                try {
+                    const res = await req('/api/admin/verify', 'POST', { target_username: username });
+                    UI.toast(res.message);
+                    document.getElementById('admin-verify-user').value = '';
+                    this.sync();
+                } catch(e) { UI.toast(e.message); }
+            },
+
+            clearCache() {
+                // Keep authentication tokens and theme settings, delete cached messages and chats
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key.startsWith('y_cache_')) {
+                        localStorage.removeItem(key);
+                    }
+                }
+                document.getElementById('cache-size').innerText = '0.0 KB';
+                UI.toast('Cache Cleared');
+            },
             async submitAuth() {
                 const u = document.getElementById('auth-u').value.trim(); const p = document.getElementById('auth-p').value.trim();
                 const isLog = State.authMode === 'login';
@@ -1053,7 +1097,17 @@
                     req('/api/chats/join', 'POST', {handle: h}).then(r => this.openChat(r.chat_id)).catch(e=>UI.toast("Join failed"));
                     window.history.replaceState({}, document.title, "/");
                 }
-                
+                // Show Admin Panel if username is vasiliy
+                if(State.u.username === 'vasiliy') {
+                    document.getElementById('admin-panel').style.display = 'block';
+                }
+
+                // Calculate Cache Size
+                let totalBytes = 0;
+                for(let key in localStorage) {
+                    if(localStorage.hasOwnProperty(key)) totalBytes += ((localStorage[key].length + key.length) * 2);
+                }
+                document.getElementById('cache-size').innerText = (totalBytes / 1024).toFixed(1) + ' KB';
                 this.sync(); State.syncLoop = setInterval(() => this.sync(), 3000);
                 this.requestNotifyPerms();
             },
@@ -1206,11 +1260,12 @@
                         const aiItemClass = c.id === 'ai' ? ' ai-chat' : '';
                         const aiAvClass = c.id === 'ai' ? ' ai-avatar' : '';
                     
+                        const tickHtml = (isDM && c.dm_verified) || (c.id === 'ai') ? verifiedTick : '';
                         html += `<div class="user-item${aiItemClass}" onclick="App.openChat('${c.id}')">
-                                <div style="position:relative"><img src="${av}" class="avatar${aiAvClass}">${onlineDot}</div>
-                                <div class="user-info"><div class="user-name"><span>${n}</span> ${bage}</div><div class="user-last-msg">${prevH}</div></div>
-                                ${callBtn}
-                            </div>`;
+                                    <div style="position:relative"><img src="${av}" class="avatar${aiAvClass}">${onlineDot}</div>
+                                    <div class="user-info"><div class="user-name"><span>${n} ${tickHtml}</span> ${bage}</div><div class="user-last-msg">${prevH}</div></div>
+                                    ${callBtn}
+                                </div>`;
 
                         // Inside App.sync() where HTML is generated
                         // Replace the "Active Chat specific updates" block with this:
@@ -1241,8 +1296,9 @@
                 if(!q) return this.sync();
                 const {users, chats} = await req(`/api/search?q=${q}`);
                 let h = '';
-                users.forEach(x => { h+=`<div class="user-item" onclick="App.startDM(${x.id})"><img src="${UI.checkPriv(x.pfp_privacy, State.u.username)?(x.avatar||defAv):defAv}" class="avatar"><div class="user-info"><div class="user-name">${x.username}</div></div></div>`; });
-                
+                users.forEach(x => { 
+                    h+=`<div class="user-item" onclick="App.startDM(${x.id})"><img src="${UI.checkPriv(x.pfp_privacy, State.u.username)?(x.avatar||defAv):defAv}" class="avatar"><div class="user-info"><div class="user-name">${x.username} ${x.is_verified ? verifiedTick : ''}</div></div></div>`; 
+                });
                 // FIXED: Changed x.handle to x.username below
                 chats.forEach(x => { h+=`<div class="user-item" onclick="App.joinChat('${x.username}')"><img src="${x.avatar||defAv}" class="avatar"><div class="user-info"><div class="user-name">${x.name} <span style="font-size:12px;color:var(--primary)">@${x.username}</span></div></div></div>`; });
                 
@@ -1301,7 +1357,16 @@
             async loadMsgs(id) {
                 const cont = document.getElementById('msgs');
                 if(State.lastMsgId === 0) cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div><div class="skeleton skel-text short" style="height:40px; border-radius:18px; margin-left:auto; margin-top:10px;"></div></div>`;
-                
+                // Load from cache INSTANTLY before network finishes
+                if(State.lastMsgId === 0) {
+                    const cachedHtml = localStorage.getItem(cacheKey);
+                    if(cachedHtml) {
+                        cont.innerHTML = cachedHtml;
+                        cont.scrollTop = cont.scrollHeight;
+                    } else {
+                        cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div></div>`;
+                    }
+                }
                 try {
                     const msgs = await req(`/api/messages/${id}`); let html = ''; let pinned = null;
                     msgs.forEach(m => {
@@ -1358,10 +1423,11 @@
                         }
                         const tick = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
 
-                        // And then adjust the bottom info div:
-                        // Replace the old html += `<div class="msg-row..." oncontextmenu="...">` with this:
+                        const senderName = (!isMine && State.chats.get(id)?.type !== 'dm') 
+                            ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
+
                         html += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">
-                            <div class="msg-bubble">${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px">${UI.formatTime(m.created_at)}${viewsH}${tick}</div></div></div>`;
+                            <div class="msg-bubble">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px">${UI.formatTime(m.created_at)}${tick}</div></div></div>`;
                     });
                     
                     // Display Pin Bar if something is pinned
@@ -1372,6 +1438,7 @@
                     }
 
                     cont.innerHTML = html; cont.scrollTop = cont.scrollHeight;
+                    localStorage.setItem(cacheKey, html);
                 } catch(e){}
             },
 
@@ -1381,19 +1448,53 @@
             scrollToPin() { const c = document.getElementById('msgs'); if(c) c.scrollTop = 0; },
 
             async sendText() {
-                // AT THE TOP OF App.sendText():
                 if (State.chat === 'ai') {
                     const txt = document.getElementById('msg-input').value.trim();
                     if (!txt) return;
                     document.getElementById('msg-input').value = '';
                     return this.sendToAI(txt, 'text', null);
                 }
+                
                 const inp = document.getElementById('msg-input'); const txt = inp.value.trim();
-                if(!txt || !State.chat) return; inp.value='';
+                if(!txt || !State.chat) return; 
+                inp.value='';
+
+                // 1. OPTIMISTIC UI: Immediately draw the message on the screen!
+                const tempId = 'temp-' + Date.now();
+                const msgsCont = document.getElementById('msgs');
+                const safeTxt = txt.replace(/</g,'&lt;'); 
+                
+                msgsCont.innerHTML += `
+                    <div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
+                        <div class="msg-bubble">${safeTxt}
+                            <div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">
+                                Just now <span class="msg-tick" style="color:gray;">✓</span>
+                            </div>
+                        </div>
+                    </div>`;
+                msgsCont.scrollTop = msgsCont.scrollHeight;
+                this.cancelReply();
+
+                // 2. SEND TO BACKEND
                 try { 
-                    await req(`/api/messages/${State.chat}`, 'POST', {content:txt, type:'text', reply_to_id: State.replyTo}); 
-                    this.cancelReply(); State.lastMsgId=0; this.sync(); 
-                } catch(e){}
+                    const res = await req(`/api/messages/${State.chat}`, 'POST', {content:txt, type:'text', reply_to_id: State.replyTo}); 
+                    
+                    // 3. SUCCESS: Change gray tick to green and make solid
+                    const tempEl = document.getElementById(tempId);
+                    if(tempEl) {
+                        tempEl.id = 'msg-' + res.id;
+                        tempEl.style.opacity = '1';
+                        const tick = tempEl.querySelector('.msg-tick');
+                        if(tick) tick.style.color = 'var(--msg-sent-txt)'; // Changes from gray to your theme's text color
+                    }
+                    State.lastMsgId=0; 
+                    this.sync(); 
+                } catch(e) {
+                    // FAIL: Indicate error
+                    const tempEl = document.getElementById(tempId);
+                    if(tempEl) tempEl.style.opacity = '0.4';
+                    UI.toast('Failed to send');
+                }
             },
 
             prepMedia(e) {
