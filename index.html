@@ -1356,6 +1356,7 @@
 
             async loadMsgs(id) {
                 const cont = document.getElementById('msgs');
+                const cacheKey = `y_cache_msgs_${id}`;
                 if(State.lastMsgId === 0) cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div><div class="skeleton skel-text short" style="height:40px; border-radius:18px; margin-left:auto; margin-top:10px;"></div></div>`;
                 // Load from cache INSTANTLY before network finishes
                 if(State.lastMsgId === 0) {
