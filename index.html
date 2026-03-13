@@ -170,7 +170,40 @@
             object-fit: contain;
             transform: scale(1.1); /* Makes the star pop a bit more */
         }
-        /* Floating Bottom Nav (Liquid Glass Effect) */
+        /* 1. Theme-Aware Glass Glow Colors */
+        :root { --glass-glow: rgba(255, 255, 255, 0.7); }[data-theme="dark"] { --glass-glow: var(--border); }[data-theme="oled"] { --glass-glow: var(--border); }
+        [data-theme="dracula"] { --glass-glow: var(--border); }
+
+        /* 2. Reusable Liquid Glass Utility */
+        .liquid-glass {
+            position: relative;
+            isolation: isolate;
+            background: transparent !important;
+            border: none !important;
+        }
+        .liquid-glass::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            border-radius: inherit; /* Perfectly molds to the shape of the parent */
+            box-shadow: inset 0 0 23px -5px var(--glass-glow); /* Uses theme color */
+            pointer-events: none; /* Prevents blocking clicks on inputs/buttons */
+        }
+        .liquid-glass::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: -2;
+            border-radius: inherit;
+            backdrop-filter: blur(1px);
+            -webkit-backdrop-filter: blur(1px);
+            filter: url(#glass-distortion);
+            -webkit-filter: url(#glass-distortion);
+            pointer-events: none;
+        }
+
+        /* 3. Base Bottom Nav Layout (Inherits the glass effect) */
         .bottom-nav {
             position: fixed; 
             bottom: calc(24px + var(--safe-bottom)); 
@@ -179,45 +212,14 @@
             width: calc(100% - 48px);
             max-width: 360px;
             height: 56px;
-            
-            /* Liquid Glass specific styles */
-            border-radius: 28px; /* Perfectly rounds the 56px height */
-            isolation: isolate; /* Ensures pseudo-elements stay behind the nav items */
-            box-shadow: 0px 6px 24px rgba(0, 0, 0, 0.2);
-            background: transparent;
-            border: none;
-            
+            border-radius: 28px;
             display: flex; justify-content: space-around; align-items: center; 
             z-index: 100;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s;
         }
-
-        /* Inner white glow / light reflection */
-        .bottom-nav::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            z-index: -1;
-            border-radius: 28px;
-            box-shadow: inset 0 0 23px -5px rgba(255, 255, 255, 0.7); /* Slightly transparent white for better blending */
-            background-color: transparent;
-        }
-
-        /* Distortion filter layer */
-        .bottom-nav::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            z-index: -2;
-            border-radius: 28px;
-            backdrop-filter: blur(1px);
-            -webkit-backdrop-filter: blur(1px);
-            filter: url(#glass-distortion);
-            -webkit-filter: url(#glass-distortion);
-        }
-
         [data-theme="light"] .bottom-nav {
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); /* Lighter drop shadow for light theme */
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
         
         /* Hides the island smoothly */
@@ -384,7 +386,7 @@
                 </button>
                 <input type="file" id="file-upload" hidden onchange="App.prepMedia(event)">
                 
-                <div class="input-wrapper">
+                <div class="input-wrapper liquid-glass">
                     <textarea id="msg-input" class="msg-input" placeholder="Type Here..." rows="1"></textarea>
                     <button class="send-btn" onclick="App.sendText()">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 7l-5-5-5 5"/></svg>
@@ -643,7 +645,7 @@
       </defs>
     </svg>
 
-    <div class="bottom-nav" id="bottom-nav">
+    <div class="bottom-nav liquid-glass" id="bottom-nav">
         <div class="nav-item active" id="nav-chats" onclick="App.switchTab('chats')">
             <div class="icon-wrap">
                 <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
