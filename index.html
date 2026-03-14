@@ -1260,7 +1260,8 @@
                         const aiItemClass = c.id === 'ai' ? ' ai-chat' : '';
                         const aiAvClass = c.id === 'ai' ? ' ai-avatar' : '';
                     
-                        const tickHtml = (isDM && c.dm_verified) || (c.id === 'ai') ? verifiedTick : '';
+                        // Change this line:
+                        const tickHtml = (isDM && c.dm_verified) || (!isDM && c.is_verified) || (c.id === 'ai') ? verifiedTick : '';
                         html += `<div class="user-item${aiItemClass}" onclick="App.openChat('${c.id}')">
                                     <div style="position:relative"><img src="${av}" class="avatar${aiAvClass}">${onlineDot}</div>
                                     <div class="user-info"><div class="user-name"><span>${n} ${tickHtml}</span> ${bage}</div><div class="user-last-msg">${prevH}</div></div>
@@ -1299,9 +1300,14 @@
                 users.forEach(x => { 
                     h+=`<div class="user-item" onclick="App.startDM(${x.id})"><img src="${UI.checkPriv(x.pfp_privacy, State.u.username)?(x.avatar||defAv):defAv}" class="avatar"><div class="user-info"><div class="user-name">${x.username} ${x.is_verified ? verifiedTick : ''}</div></div></div>`; 
                 });
-                // FIXED: Changed x.handle to x.username below
-                chats.forEach(x => { h+=`<div class="user-item" onclick="App.joinChat('${x.username}')"><img src="${x.avatar||defAv}" class="avatar"><div class="user-info"><div class="user-name">${x.name} <span style="font-size:12px;color:var(--primary)">@${x.username}</span></div></div></div>`; });
-                
+                chats.forEach(x => { 
+                    h+=`<div class="user-item" onclick="App.joinChat('${x.username}')">
+                        <img src="${x.avatar||defAv}" class="avatar">
+                        <div class="user-info">
+                            <div class="user-name">${x.name} ${x.is_verified ? verifiedTick : ''} <span style="font-size:12px;color:var(--primary)">@${x.username}</span></div>
+                        </div>
+                    </div>`; 
+                });
                 resEl.innerHTML = h || '<div style="padding:20px; text-align:center; color:var(--text-muted)">No results found.</div>';
             },
             async startDM(id) { const d = await req('/api/chats', 'POST', {type:'dm', target_user_id:id}); Router.pop(); this.openChat(d.chat_id); },
@@ -1328,7 +1334,8 @@
                 const isDM = c.type === 'dm'; 
                 const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
                 
-                document.getElementById('chat-title').textContent = isDM ? c.dm_username : c.name;
+                const isVerified = isDM ? c.dm_verified : c.is_verified;
+                document.getElementById('chat-title').innerHTML = (isDM ? c.dm_username : c.name) + (isVerified || c.id === 'ai' ? verifiedTick : '');
                 document.getElementById('chat-av').src = canSeePfp ? (isDM ? (c.dm_avatar||defAv) : (c.avatar||defAv)) : defAv;
                 
                 // Channel Admin Check
