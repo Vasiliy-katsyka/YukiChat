@@ -258,6 +258,20 @@
             border: 2px solid transparent;
         }
 
+        /* Inline Keyboards */
+        .inline-kb { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; width: 100%; }
+        .inline-row { display: flex; gap: 4px; width: 100%; }
+        .inline-btn { flex: 1; background: rgba(0,0,0,0.05); border: 1px solid var(--border); color: var(--primary); font-weight: 600; padding: 10px; border-radius: 12px; font-size: 13px; text-align: center; cursor: pointer; transition: 0.1s; display: flex; align-items: center; justify-content: center; }[data-theme="dark"] .inline-btn, [data-theme="oled"] .inline-btn { background: rgba(255,255,255,0.05); }
+        .inline-btn:active { transform: scale(0.97); background: var(--bg-hover); }
+        
+        /* Sticker Panel */
+        .sticker-panel { position: absolute; bottom: 100%; left: 0; width: 100%; height: 250px; background: var(--bg-panel); border-top-left-radius: 24px; border-top-right-radius: 24px; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); z-index: 9; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); opacity: 0; pointer-events: none; display: flex; flex-direction: column; }
+        .sticker-panel.active { transform: translateY(0); opacity: 1; pointer-events: auto; }
+        .sticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; padding: 16px; overflow-y: auto; flex: 1; }
+        .sticker-item { width: 100%; aspect-ratio: 1; cursor: pointer; object-fit: contain; transition: 0.2s; }
+        .sticker-item:active { transform: scale(0.9); }
+        .msg-sticker { width: 150px; height: 150px; object-fit: contain; background: transparent; }
+        
         /* Fix Fab and Panel padding so nothing hides behind the island */
         .fab { bottom: calc(110px + var(--safe-bottom)); }
         #panel-root .panel-body, #panel-settings .panel-body { padding-bottom: calc(120px + var(--safe-bottom)) !important; }
@@ -381,22 +395,42 @@
             </div>
             
             <!-- Floating Input Bar (No Wrapper) -->
-            <div class="input-bar" id="input-bar" style="background: transparent; border: none;">
+            <div class="input-bar" id="input-bar" style="background: transparent; border: none; position: relative;">
                 
-                <!-- Floating Plus Button -->
-                <button class="icon-btn" onclick="document.getElementById('file-upload').click()" style="color:var(--text-main); background: var(--bg-input); width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; box-shadow: var(--shadow);">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <!-- Sticker Panel (Hidden by default) -->
+                <div class="sticker-panel" id="sticker-panel">
+                    <div style="padding: 12px 20px; font-weight: 600; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;">
+                        Stickers <span onclick="App.toggleStickers()" style="cursor:pointer; color:var(--text-muted)">✕</span>
+                    </div>
+                    <div class="sticker-grid" id="sticker-grid">
+                        <!-- Mock stickers for testing. Connect this to DB later -->
+                        <img class="sticker-item" src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.webp" onclick="App.sendSticker(this.src)">
+                        <img class="sticker-item" src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f602/512.webp" onclick="App.sendSticker(this.src)">
+                        <img class="sticker-item" src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f970/512.webp" onclick="App.sendSticker(this.src)">
+                        <img class="sticker-item" src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f525/512.webp" onclick="App.sendSticker(this.src)">
+                    </div>
+                </div>
+            
+                <!-- NEW Left Sticker Button -->
+                <button class="icon-btn" onclick="App.toggleStickers()" style="color:var(--text-main); background: var(--bg-input); width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; box-shadow: var(--shadow);">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
                 </button>
-                <input type="file" id="file-upload" hidden onchange="App.prepMedia(event)">
                 
-                <!-- Floating Input Pill -->
-                <textarea id="msg-input" class="msg-input" placeholder="Message..." rows="1" style="flex: 1; background: var(--bg-input); border-radius: 24px; padding: 12px 16px; margin: 0; outline: none; border: none; max-height: 100px; color: var(--text-main); box-shadow: var(--shadow);"></textarea>
+                <!-- Input Field Wrapper -->
+                <div style="flex: 1; position: relative; display: flex; align-items: center; box-shadow: var(--shadow); border-radius: 24px; background: var(--bg-input);">
+                    <textarea id="msg-input" class="msg-input" placeholder="Message..." rows="1" style="flex: 1; background: transparent; border-radius: 24px; padding: 12px 40px 12px 16px; margin: 0; outline: none; border: none; max-height: 100px; color: var(--text-main);"></textarea>
+                    
+                    <!-- NEW Right Paperclip Button -->
+                    <button class="icon-btn" onclick="document.getElementById('file-upload').click()" style="position: absolute; right: 4px; width: 32px; height: 32px; color:var(--text-muted);">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                    </button>
+                    <input type="file" id="file-upload" hidden onchange="App.prepMedia(event)">
+                </div>
                 
-                <!-- Floating Send Button -->
+                <!-- Send Button -->
                 <button class="send-btn" onclick="App.sendText()" style="width: 44px; height: 44px; flex-shrink: 0; box-shadow: var(--shadow);">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 7l-5-5-5 5"/></svg>
                 </button>
-                
             </div>
             <div id="channel-bar" style="display:none; padding:16px; text-align:center; background:var(--bg-panel); color:var(--text-muted); font-weight:500;">Only admins can broadcast here.</div>
         </div>
@@ -934,6 +968,28 @@
                 };
                 r.readAsDataURL(f);
             },
+            // Add these directly inside the `App` object:
+            toggleStickers() {
+                const p = document.getElementById('sticker-panel');
+                p.classList.toggle('active');
+            },
+            
+            async sendSticker(url) {
+                this.toggleStickers();
+                try {
+                    await req(`/api/messages/${State.chat}`, 'POST', { content: url, type: 'sticker' });
+                    State.lastMsgId = 0; 
+                    this.sync();
+                } catch(e) { UI.toast('Failed to send sticker'); }
+            },
+            
+            async sendCallback(msgId, data) {
+                // Triggers the bot's callback query without sending a visible message
+                try {
+                    await req(`/api/messages/${msgId}/action`, 'POST', { action: 'callback', text: data });
+                    // Assume API handles Webhook push natively inside the /action endpoint
+                } catch(e) {}
+            },
             toggleTheme() { 
                 const current = document.documentElement.getAttribute('data-theme');
                 if (current === 'light') {
@@ -1270,11 +1326,13 @@
 
                         // Inside App.sync() where HTML is generated
                         // Replace the "Active Chat specific updates" block with this:
+                        // Replace the existing chat-status logic in App.sync() with this:
                         if(State.chat === c.id) {
                             if (c.type === 'channel') {
                                 document.getElementById('chat-status').innerHTML = `${c.sub_count} subscribers`;
                             } else {
-                                if(isDM && c.dm_typing == c.id) document.getElementById('chat-status').innerHTML = 'typing...';
+                                if(c.is_bot) document.getElementById('chat-status').innerHTML = 'Bot'; // NEW
+                                else if(isDM && c.dm_typing == c.id) document.getElementById('chat-status').innerHTML = 'typing...';
                                 else if(!isDM && c.is_typing == c.id) document.getElementById('chat-status').innerHTML = 'typing...';
                                 else if(isDM) document.getElementById('chat-status').innerHTML = isOnline ? '<span style="color:var(--success)">Online</span>' : UI.formatTime(c.dm_last_seen);
                             }
@@ -1413,8 +1471,30 @@
                             }
                         }
 
+                        // Replace media rendering in App.loadMsgs with this:
                         if(m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="window.open(this.src)">`;
+                        else if(m.type === 'sticker') inner += `<img src="${m.content}" class="msg-sticker">`;
                         else inner += cleanTxt;
+                        
+                        // --- NEW: INLINE KEYBOARDS ---
+                        if (m.reply_markup && m.reply_markup !== 'null') {
+                            try {
+                                const rm = JSON.parse(m.reply_markup);
+                                if (rm.inline_keyboard) {
+                                    inner += `<div class="inline-kb">`;
+                                    rm.inline_keyboard.forEach(row => {
+                                        inner += `<div class="inline-row">`;
+                                        row.forEach(btn => {
+                                            // Send callback_data back to server when clicked
+                                            inner += `<button class="inline-btn" onclick="App.sendCallback(${m.id}, '${btn.callback_data}')">${btn.text}</button>`;
+                                        });
+                                        inner += `</div>`;
+                                    });
+                                    inner += `</div>`;
+                                }
+                            } catch(e) {}
+                        }
+                        // --- END INLINE KEYBOARDS ---
                         
                         if(m.caption) inner += `<div class="msg-caption">${m.caption.replace(/</g,'&lt;')}</div>`;
 
