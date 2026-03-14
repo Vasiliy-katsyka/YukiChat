@@ -1747,7 +1747,7 @@
                     UI.toast('Failed to send media');
                     document.getElementById(tempId)?.remove();
                 }
-            }
+            },
 
             async msgAct(act, emoji=null) {
                 try { await req(`/api/messages/${State.targetId}/action`, 'POST', {action:act, emoji}); document.getElementById('ctx-menu').style.transform='translateY(100%)'; State.lastMsgId=0; this.sync(); } catch(e){}
