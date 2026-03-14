@@ -1253,7 +1253,7 @@
                     if(localStorage.hasOwnProperty(key)) totalBytes += ((localStorage[key].length + key.length) * 2);
                 }
                 document.getElementById('cache-size').innerText = (totalBytes / 1024).toFixed(1) + ' KB';
-                this.sync(); State.syncLoop = setInterval(() => this.sync(), 3000);
+                this.sync(); State.syncLoop = setInterval(() => this.sync(), 8000);
                 this.requestNotifyPerms();
             },
 
