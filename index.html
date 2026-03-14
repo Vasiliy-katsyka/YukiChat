@@ -275,6 +275,9 @@
         /* Fix Fab and Panel padding so nothing hides behind the island */
         .fab { bottom: calc(110px + var(--safe-bottom)); }
         #panel-root .panel-body, #panel-settings .panel-body { padding-bottom: calc(120px + var(--safe-bottom)) !important; }
+
+        .media-loading { position: absolute; inset: 0; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; border-radius: 12px; z-index: 2; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+        .media-loading-circle { width: 44px; height: 44px; background: rgba(0,0,0,0.5); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
         
         @media (min-width: 768px) {
             .bottom-nav { display: none; }
@@ -436,6 +439,18 @@
         </div>
     </div>
 
+    <div id="panel-stickerpack" class="panel">
+        <div class="panel-header">
+            <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+            <div class="panel-title" id="sp-title">Sticker Pack</div>
+            <div style="width:40px"></div>
+        </div>
+        <div class="panel-body" style="padding: 20px; text-align: center;">
+            <div id="sp-grid" class="sticker-grid" style="margin-bottom: 24px; max-height: 50vh; overflow-y: auto;"></div>
+            <button class="btn" id="btn-install-sp" onclick="App.installStickerPack()">Add Stickers</button>
+        </div>
+    </div>
+    
     <!-- SETTINGS PANEL -->
     <div id="panel-settings" class="panel">
         <div class="panel-header">
@@ -959,6 +974,44 @@
                 r.onload = ev => { State.regAv = ev.target.result; document.getElementById('auth-av-preview').src = State.regAv; };
                 r.readAsDataURL(f);
             },
+            async previewStickerPack(name) {
+                try {
+                    const pack = await req(`/api/stickers/${name}`);
+                    State.previewPack = pack;
+                    document.getElementById('sp-title').innerText = pack.title || name;
+                    let html = '';
+                    pack.stickers.forEach(s => html += `<img class="sticker-item" src="${s.file_url}">`);
+                    document.getElementById('sp-grid').innerHTML = html;
+                    Router.push('panel-stickerpack');
+                } catch(e) { UI.toast('Sticker pack not found'); }
+            },
+            installStickerPack() {
+                if (!State.previewPack) return;
+                let installed = JSON.parse(localStorage.getItem('y_stickers') || '[]');
+                State.previewPack.stickers.forEach(s => { if (!installed.includes(s.file_url)) installed.push(s.file_url); });
+                localStorage.setItem('y_stickers', JSON.stringify(installed));
+                UI.toast('Pack Installed!');
+                Router.pop();
+                this.loadStickerKeyboard();
+            },
+            loadStickerKeyboard() {
+                let installed = JSON.parse(localStorage.getItem('y_stickers') || '[]');
+                let html = '';
+                
+                if (installed.length === 0) {
+                    // Fallbacks if no packs are installed
+                    html = `<img class="sticker-item" src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.webp" onclick="App.sendSticker(this.src)">
+                            <img class="sticker-item" src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f602/512.webp" onclick="App.sendSticker(this.src)">
+                            <img class="sticker-item" src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f525/512.webp" onclick="App.sendSticker(this.src)">`;
+                } else {
+                    installed.forEach(url => {
+                        html += `<img class="sticker-item" src="${url}" onclick="App.sendSticker(this.src)">`;
+                    });
+                }
+                
+                const grid = document.getElementById('sticker-grid');
+                if (grid) grid.innerHTML = html;
+            },
             prepEditChanAv(e) {
                 const f = e.target.files[0]; if(!f) return;
                 const r = new FileReader();
@@ -976,11 +1029,39 @@
             
             async sendSticker(url) {
                 this.toggleStickers();
+                if(!State.chat) return;
+            
+                // 1. Immediate Optimistic UI (No Background Bubble)
+                const tempId = 'temp-' + Date.now();
+                const msgsCont = document.getElementById('msgs');
+                
+                msgsCont.innerHTML += `
+                    <div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
+                        <div class="msg-bubble" style="background: transparent; padding: 0; box-shadow: none;">
+                            <img src="${url}" class="msg-sticker">
+                            <div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;color:var(--text-muted);">
+                                Just now <span class="msg-tick" style="color:gray;">✓</span>
+                            </div>
+                        </div>
+                    </div>`;
+                msgsCont.scrollTop = msgsCont.scrollHeight;
+            
+                // 2. Send to backend
                 try {
-                    await req(`/api/messages/${State.chat}`, 'POST', { content: url, type: 'sticker' });
+                    const res = await req(`/api/messages/${State.chat}`, 'POST', { content: url, type: 'sticker' });
+                    const tempEl = document.getElementById(tempId);
+                    if (tempEl) {
+                        tempEl.id = 'msg-' + res.id;
+                        tempEl.style.opacity = '1';
+                        const tick = tempEl.querySelector('.msg-tick');
+                        if (tick) tick.style.color = 'var(--text-muted)';
+                    }
                     State.lastMsgId = 0; 
                     this.sync();
-                } catch(e) { UI.toast('Failed to send sticker'); }
+                } catch(e) { 
+                    UI.toast('Failed to send sticker'); 
+                    document.getElementById(tempId)?.remove();
+                }
             },
             
             async sendCallback(msgId, data) {
@@ -1147,12 +1228,20 @@
                 document.getElementById('chat-list').innerHTML = skels;
 
                 // Route Handlers for ?channel= / ?group=
+                // Replace the "Route Handlers for ?channel= / ?group=" block with this:
                 const p = new URLSearchParams(window.location.search);
                 if(p.get('channel') || p.get('group')) {
                     const h = p.get('channel') || p.get('group');
                     req('/api/chats/join', 'POST', {handle: h}).then(r => this.openChat(r.chat_id)).catch(e=>UI.toast("Join failed"));
                     window.history.replaceState({}, document.title, "/");
+                } else if (p.get('stickerpack')) {
+                    const sp = p.get('stickerpack');
+                    this.previewStickerPack(sp);
+                    window.history.replaceState({}, document.title, "/");
                 }
+                
+                // Add this right before "this.sync();" at the end of App.start()
+                this.loadStickerKeyboard();
                 // Show Admin Panel if username is vasiliy
                 if(State.u.username === 'vasiliy') {
                     document.getElementById('admin-panel').style.display = 'block';
@@ -1239,7 +1328,12 @@
                         if (b.id === 'ai') return 1;
                         return new Date(b.last_msg_time || 0) - new Date(a.last_msg_time || 0);
                     });
-
+                    const searchInput = document.querySelector('.search-bar input');
+                    const isSearching = searchInput && searchInput.value.trim().length > 0 && Router.stack[Router.stack.length-1] === 'panel-root';
+                    
+                    if (!isSearching) {
+                        document.getElementById('chat-list').innerHTML = html || '<div style="padding:40px;text-align:center;color:var(--text-muted)">No chats found</div>';
+                    }
                     let totalUnread = 0;
                     let html = '';
                     
@@ -1514,8 +1608,10 @@
                         const senderName = (!isMine && State.chats.get(id)?.type !== 'dm') 
                             ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
 
+                        const bubbleStyle = m.type === 'sticker' ? 'background: transparent; padding: 0; box-shadow: none;' : '';
+                        
                         html += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">
-                            <div class="msg-bubble">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px">${UI.formatTime(m.created_at)}${tick}</div></div></div>`;
+                            <div class="msg-bubble" style="${bubbleStyle}">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tick}</div></div></div>`;
                     });
                     
                     // Display Pin Bar if something is pinned
@@ -1552,14 +1648,9 @@
                 const msgsCont = document.getElementById('msgs');
                 const safeTxt = txt.replace(/</g,'&lt;'); 
                 
-                msgsCont.innerHTML += `
-                    <div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
-                        <div class="msg-bubble">${safeTxt}
-                            <div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">
-                                Just now <span class="msg-tick" style="color:gray;">✓</span>
-                            </div>
-                        </div>
-                    </div>`;
+                msgsCont.innerHTML += `<div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
+                    <div class="msg-bubble">${safeTxt}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Just now <span class="msg-tick" style="color:gray;">✓</span></div></div>
+                </div>`;
                 msgsCont.scrollTop = msgsCont.scrollHeight;
                 this.cancelReply();
 
@@ -1616,7 +1707,6 @@
                 r.readAsDataURL(f);
             },
             async sendMedia() {
-                // AT THE TOP OF App.sendMedia():
                 if (State.chat === 'ai') {
                     const cap = document.getElementById('cap-input').value.trim();
                     document.getElementById('panel-caption').classList.remove('active');
@@ -1624,8 +1714,40 @@
                 }
                 const cap = document.getElementById('cap-input').value.trim();
                 document.getElementById('panel-caption').classList.remove('active');
-                try { await req(`/api/messages/${State.chat}`, 'POST', {content: State.capMedia, caption: cap, type: State.capType}); State.lastMsgId=0; this.sync(); } catch(e){}
-            },
+                
+                // 1. Immediate UI with loading overlay
+                const tempId = 'temp-' + Date.now();
+                const msgsCont = document.getElementById('msgs');
+                const mediaHtml = State.capType === 'photo' 
+                    ? `<div style="position:relative; display:inline-block;"><img src="${State.capMedia}" class="msg-media" style="opacity:0.8;"><div class="media-loading"><div class="media-loading-circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div></div></div>` 
+                    : `📁 File`;
+                    
+                msgsCont.innerHTML += `<div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
+                    <div class="msg-bubble">${mediaHtml}${cap ? `<div class="msg-caption">${cap.replace(/</g,'&lt;')}</div>` : ''}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Just now <span class="msg-tick" style="color:gray;">✓</span></div></div>
+                </div>`;
+                msgsCont.scrollTop = msgsCont.scrollHeight;
+            
+                // 2. Send and resolve
+                try { 
+                    const res = await req(`/api/messages/${State.chat}`, 'POST', {content: State.capMedia, caption: cap, type: State.capType}); 
+                    const tempEl = document.getElementById(tempId);
+                    if (tempEl) {
+                        tempEl.id = 'msg-' + res.id;
+                        tempEl.style.opacity = '1';
+                        const loadOverlay = tempEl.querySelector('.media-loading');
+                        if (loadOverlay) loadOverlay.remove();
+                        const mediaImg = tempEl.querySelector('.msg-media');
+                        if (mediaImg) mediaImg.style.opacity = '1';
+                        const tick = tempEl.querySelector('.msg-tick');
+                        if (tick) tick.style.color = 'var(--msg-sent-txt)';
+                    }
+                    State.lastMsgId = 0; 
+                    this.sync(); 
+                } catch(e) {
+                    UI.toast('Failed to send media');
+                    document.getElementById(tempId)?.remove();
+                }
+            }
 
             async msgAct(act, emoji=null) {
                 try { await req(`/api/messages/${State.targetId}/action`, 'POST', {action:act, emoji}); document.getElementById('ctx-menu').style.transform='translateY(100%)'; State.lastMsgId=0; this.sync(); } catch(e){}
