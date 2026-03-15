@@ -774,15 +774,15 @@
     </div>
 
     <!-- MEDIA CAPTION PANEL -->
-    <div id="panel-caption" class="panel" style="z-index: 50; background: rgba(0,0,0,0.95);">
-        <div class="panel-header" style="background:transparent; border:none;">
-            <button class="icon-btn" onclick="document.getElementById('panel-caption').classList.remove('active')" style="color:white;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    <div id="panel-caption" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.95); flex-direction: column;">
+        <div class="panel-header" style="background:transparent; border:none; padding-top: var(--safe-top); display: flex; align-items: center; padding: 0 20px; height: calc(60px + var(--safe-top));">
+            <button class="icon-btn" onclick="document.getElementById('panel-caption').style.display = 'none'" style="color:white;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
         </div>
-        <div class="panel-body" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
+        <div class="panel-body" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; flex: 1;">
             <img id="cap-preview" style="max-width:100%; max-height:60vh; border-radius:16px; margin-bottom:24px; object-fit:contain;">
-            <div class="input-wrapper" style="width:100%; max-width:400px; background:#222;">
+            <div class="input-wrapper" style="width:100%; max-width:400px; background:#222; border-radius: 24px; display: flex; align-items: center; padding: 4px 6px 4px 16px;">
                 <input type="text" id="cap-input" style="flex:1; border:none; background:transparent; color:white; font-size:15px; outline:none; padding:10px 0;" placeholder="Add a caption...">
-                <button class="send-btn" style="background:white; color:black;" onclick="App.sendMedia()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 7l-5-5-5 5"/></svg></button>
+                <button class="send-btn" style="background:white; color:black; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" onclick="App.sendMedia()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 7l-5-5-5 5"/></svg></button>
             </div>
         </div>
     </div>
@@ -1915,14 +1915,14 @@
                             State.capType = 'photo';
                             document.getElementById('cap-preview').src = State.capMedia;
                             document.getElementById('cap-input').value = '';
-                            document.getElementById('panel-caption').classList.add('active');
+                            document.getElementById('panel-caption').style.display = 'flex';
                         };
                         img.src = ev.target.result;
                     } else {
                         State.capMedia = ev.target.result; State.capType = 'file';
                         document.getElementById('cap-preview').src = 'https://via.placeholder.com/150?text=File';
                         document.getElementById('cap-input').value = '';
-                        document.getElementById('panel-caption').classList.add('active');
+                        document.getElementById('panel-caption').style.display = 'flex';
                     }
                 };
                 r.readAsDataURL(f);
@@ -1930,11 +1930,11 @@
             async sendMedia() {
                 if (State.chat === 'ai') {
                     const cap = document.getElementById('cap-input').value.trim();
-                    document.getElementById('panel-caption').classList.remove('active');
+                    document.getElementById('panel-caption').style.display = 'none';
                     return this.sendToAI(cap, State.capType, State.capMedia);
                 }
                 const cap = document.getElementById('cap-input').value.trim();
-                document.getElementById('panel-caption').classList.remove('active');
+                document.getElementById('panel-caption').style.display = 'none';
                 
                 // 1. Immediate UI with loading overlay
                 const tempId = 'temp-' + Date.now();
