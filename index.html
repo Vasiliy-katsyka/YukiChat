@@ -1348,13 +1348,43 @@
             },
 
             showCtx(e, id, isMine) {
+                // 1. Check if the user is highlighting/selecting text. 
+                // If they are, do NOT open the popup. Let them copy their text!
+                if (window.getSelection().toString().trim().length > 0) {
+                    return; 
+                }
+
                 e.preventDefault();
+                e.stopPropagation(); // Stops this click from immediately triggering the close listener
+
                 State.targetId = id;
                 const msgEl = document.getElementById('msg-'+id);
                 const bubble = msgEl ? msgEl.querySelector('.msg-bubble') : null;
                 State.targetTxt = bubble ? Array.from(bubble.childNodes).filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() : '';
+                
                 document.getElementById('ctx-del').style.display = isMine ? 'flex' : 'none';
-                document.getElementById('ctx-menu').style.transform = 'translateY(0)';
+                
+                const ctxMenu = document.getElementById('ctx-menu');
+                ctxMenu.style.transform = 'translateY(0)';
+
+                // 2. Global listener to close the menu when clicking/tapping OUTSIDE of it
+                const closeMenu = (evt) => {
+                    // If the user clicked somewhere that is NOT inside the popup menu
+                    if (!ctxMenu.contains(evt.target)) {
+                        ctxMenu.style.transform = 'translateY(100%)';
+                        // Clean up listeners so they don't pile up
+                        document.removeEventListener('click', closeMenu);
+                        document.removeEventListener('touchstart', closeMenu);
+                        document.removeEventListener('contextmenu', closeMenu);
+                    }
+                };
+
+                // Add a tiny delay so the current click doesn't instantly close the menu
+                setTimeout(() => {
+                    document.addEventListener('click', closeMenu);
+                    document.addEventListener('touchstart', closeMenu);
+                    document.addEventListener('contextmenu', closeMenu);
+                }, 10);
             },
             
             // --- NOTIFICATIONS ---
