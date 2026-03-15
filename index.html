@@ -134,23 +134,7 @@
         .reply-bar-active, .pinned-bar { background: var(--bg-input); padding: 12px 20px; font-size: 14px; border-radius: 12px; margin: 10px 20px 0; display: flex; align-items: center; justify-content: space-between; }
         .reply-block { background: rgba(0,0,0,0.05); padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; border-left: 3px solid var(--primary); opacity: 0.8; }
         [data-theme="dark"] .reply-block { background: rgba(255,255,255,0.1); }
-        [data-theme="ocean"] { --bg-base: #0f172a; --bg-panel: #1e293b; --bg-input: #0f2027; --bg-hover: rgba(255,255,255,0.05); --border: #203a43; --primary: #00d2ff; --text-main: #f8fafc; --text-muted: #94a3b8; --msg-sent: #00d2ff; --msg-sent-txt: #000000; --msg-recv: #203a43; --msg-recv-txt: #ffffff; --chat-bg: #0f172a; }
-        [data-theme="sunset"] { --bg-base: #2d1b2e; --bg-panel: #3b223c; --bg-input: #4a2c40; --bg-hover: rgba(255,255,255,0.05); --border: #5c3546; --primary: #ff7e67; --text-main: #fff0f5; --text-muted: #d8b4e2; --msg-sent: #ff7e67; --msg-sent-txt: #000000; --msg-recv: #4a2c40; --msg-recv-txt: #ffffff; --chat-bg: #2d1b2e; }
-        [data-theme="forest"] { --bg-base: #1c2321; --bg-panel: #27302c; --bg-input: #323e39; --bg-hover: rgba(255,255,255,0.05); --border: #404f48; --primary: #a3c4bc; --text-main: #eef2e6; --text-muted: #8a9a92; --msg-sent: #a3c4bc; --msg-sent-txt: #000000; --msg-recv: #323e39; --msg-recv-txt: #ffffff; --chat-bg: #1c2321; }
-        [data-theme="cyberpunk"] { --bg-base: #000000; --bg-panel: #120415; --bg-input: #240b2a; --bg-hover: rgba(255,255,255,0.05); --border: #fcee0a; --primary: #ff003c; --text-main: #e5e5e5; --text-muted: #00f0ff; --msg-sent: #ff003c; --msg-sent-txt: #ffffff; --msg-recv: #240b2a; --msg-recv-txt: #00f0ff; --chat-bg: #000000; }
-        [data-theme="synthwave"] { --bg-base: #17031a; --bg-panel: #2b0638; --bg-input: #3e0a54; --bg-hover: rgba(255,255,255,0.05); --border: #f8409d; --primary: #00f3ff; --text-main: #ffffff; --text-muted: #ff71ce; --msg-sent: #00f3ff; --msg-sent-txt: #000000; --msg-recv: #3e0a54; --msg-recv-txt: #ffffff; --chat-bg: #17031a; }
 
-        /* Theme Selector UI styles */
-        .theme-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 12px 16px 16px; scrollbar-width: none; -ms-overflow-style: none; }
-        .theme-scroll::-webkit-scrollbar { display: none; }
-        .theme-card { min-width: 80px; height: 110px; border-radius: 16px; border: 2px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.2s; flex-shrink: 0; position: relative; overflow: hidden; }
-        .theme-card::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(circle at center, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 10px 10px; opacity: 0.4; pointer-events: none;}
-        .theme-card.active { border-color: var(--primary); transform: scale(0.95); }
-        .theme-card.active.light-border { border-color: #000000; }
-        .theme-bubble { width: 45px; height: 20px; border-radius: 10px; margin: 4px; z-index: 1; }
-        .theme-bubble.recv { align-self: flex-start; margin-left: 8px; }
-        .theme-bubble.sent { align-self: flex-end; margin-right: 8px; }
-        .theme-name { font-size: 11px; font-weight: 600; margin-top: 8px; z-index: 1; text-transform: capitalize; }
         /* Skeletons */
         .skeleton { background: linear-gradient(90deg, var(--bg-input) 25%, var(--border) 50%, var(--bg-input) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 12px; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
@@ -237,7 +221,6 @@
         [data-theme="light"] .bottom-nav {
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
-        
         
         /* Hides the island smoothly */
         .bottom-nav.hidden {
@@ -580,55 +563,13 @@
                     </label>
                 </div>
                 <div class="settings-row" style="margin:0; background:transparent;">
-                    <!-- REPLACE THE OLD COLOR THEME DROPDOWN ROW WITH THIS -->
-                    <div style="padding: 16px 16px 0; font-size: 15px; font-weight: 500;">Color Theme</div>
-                    <div class="theme-scroll" id="theme-selector">
-                        <div class="theme-card light-border" onclick="App.setTheme('light')" data-theme-id="light" style="background: #ffffff; border-color: #e5e7eb;">
-                            <div class="theme-bubble recv" style="background: #f4f4f5"></div>
-                            <div class="theme-bubble sent" style="background: #000000"></div>
-                            <div class="theme-name" style="color: #000000">Light</div>
-                        </div>
-                        <div class="theme-card" onclick="App.setTheme('dark')" data-theme-id="dark" style="background: #0f172a;">
-                            <div class="theme-bubble recv" style="background: #334155"></div>
-                            <div class="theme-bubble sent" style="background: #ffffff"></div>
-                            <div class="theme-name" style="color: #ffffff">Dark</div>
-                        </div>
-                        <div class="theme-card" onclick="App.setTheme('oled')" data-theme-id="oled" style="background: #000000;">
-                            <div class="theme-bubble recv" style="background: #111111"></div>
-                            <div class="theme-bubble sent" style="background: #ffffff"></div>
-                            <div class="theme-name" style="color: #ffffff">OLED</div>
-                        </div>
-                        <div class="theme-card" onclick="App.setTheme('dracula')" data-theme-id="dracula" style="background: #282a36;">
-                            <div class="theme-bubble recv" style="background: #44475a"></div>
-                            <div class="theme-bubble sent" style="background: #ff79c6"></div>
-                            <div class="theme-name" style="color: #f8f8f2">Dracula</div>
-                        </div>
-                        <div class="theme-card" onclick="App.setTheme('ocean')" data-theme-id="ocean" style="background: #0f172a;">
-                            <div class="theme-bubble recv" style="background: #203a43"></div>
-                            <div class="theme-bubble sent" style="background: #00d2ff"></div>
-                            <div class="theme-name" style="color: #f8fafc">Ocean</div>
-                        </div>
-                        <div class="theme-card" onclick="App.setTheme('sunset')" data-theme-id="sunset" style="background: #2d1b2e;">
-                            <div class="theme-bubble recv" style="background: #4a2c40"></div>
-                            <div class="theme-bubble sent" style="background: #ff7e67"></div>
-                            <div class="theme-name" style="color: #fff0f5">Sunset</div>
-                        </div>
-                        <div class="theme-card" onclick="App.setTheme('forest')" data-theme-id="forest" style="background: #1c2321;">
-                            <div class="theme-bubble recv" style="background: #323e39"></div>
-                            <div class="theme-bubble sent" style="background: #a3c4bc"></div>
-                            <div class="theme-name" style="color: #eef2e6">Forest</div>
-                        </div>
-                        <div class="theme-card" onclick="App.setTheme('cyberpunk')" data-theme-id="cyberpunk" style="background: #000000;">
-                            <div class="theme-bubble recv" style="background: #240b2a"></div>
-                            <div class="theme-bubble sent" style="background: #ff003c"></div>
-                            <div class="theme-name" style="color: #e5e5e5">Cyber</div>
-                        </div>
-                        <div class="theme-card" onclick="App.setTheme('synthwave')" data-theme-id="synthwave" style="background: #17031a;">
-                            <div class="theme-bubble recv" style="background: #3e0a54"></div>
-                            <div class="theme-bubble sent" style="background: #00f3ff"></div>
-                            <div class="theme-name" style="color: #ffffff">Synth</div>
-                        </div>
-                    </div>
+                    <span>Color Theme</span>
+                    <select id="set-theme" style="background:transparent; border:none; outline:none; font-weight:600; color:var(--primary); font-size:14px; text-align:right;" onchange="App.setTheme(this.value)">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="oled">OLED</option>
+                        <option value="dracula">Dracula</option>
+                    </select>
                 </div>
             </div>
             <div class="settings-header">Notifications</div>
@@ -1028,6 +969,16 @@
                 this.incomingChat = null;
                 document.getElementById('panel-call').style.transform = 'translateY(100%)';
             },
+
+            // (Modify endCall slightly to kill the ringtone)
+            async endCall() {
+                if(this.ringtone) { this.ringtone.pause(); this.ringtone.currentTime = 0; }
+                if(this.activeCall) req(`/api/calls/${this.activeCall}/end`, 'POST').catch(e=>{});
+                this.activeCall = null; clearInterval(this.sigLoop); clearInterval(this.timerInterval);
+                if(this.stream) { this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; }
+                Object.values(this.peers).forEach(pc => pc.close()); this.peers = {};
+                document.getElementById('panel-call').style.transform = 'translateY(100%)';
+            },
             startSigLoop() {
                 let lastSig = 0;
                 this.sigLoop = setInterval(async () => {
@@ -1044,48 +995,21 @@
             async handleSignal(peerId, type, data) {
                 if(type === 'join') { this.createPeer(peerId, true); }
                 else if(type === 'offer') { const pc = this.createPeer(peerId, false); await pc.setRemoteDescription(new RTCSessionDescription(data)); const ans = await pc.createAnswer(); await pc.setLocalDescription(ans); req(`/api/calls/${this.activeCall}/signal`, 'POST', {target_id: peerId, type:'answer', data: pc.localDescription}); }
-                else if(type === 'answer') { 
-                    await this.peers[peerId].setRemoteDescription(new RTCSessionDescription(data)); 
-                    document.getElementById('call-status-txt').innerText = Object.keys(this.peers).length > 1 ? 'Conference Active' : 'Connected'; 
-                }
+                else if(type === 'answer') { await this.peers[peerId].setRemoteDescription(new RTCSessionDescription(data)); document.getElementById('call-status-txt').innerText = RTC.peers.length > 1 ? 'Conference Active' : 'Connected'; }
                 else if(type === 'ice') { this.peers[peerId].addIceCandidate(new RTCIceCandidate(data)); }
             },
-            
             createPeer(peerId, isInitiator) {
                 if(this.peers[peerId]) return this.peers[peerId];
                 const pc = new RTCPeerConnection(this.pcConfig); this.peers[peerId] = pc;
                 this.stream.getTracks().forEach(t => pc.addTrack(t, this.stream));
                 pc.onicecandidate = e => { if(e.candidate) req(`/api/calls/${this.activeCall}/signal`, 'POST', {target_id: peerId, type:'ice', data: e.candidate}); };
                 pc.ontrack = e => { 
-                    // Attach to DOM so Safari/Mobile Chrome doesn't kill the audio silently
-                    let audio = document.getElementById('audio-' + peerId);
-                    if (!audio) {
-                        audio = document.createElement('audio');
-                        audio.id = 'audio-' + peerId;
-                        audio.autoplay = true;
-                        audio.style.display = 'none';
-                        document.body.appendChild(audio);
-                    }
-                    audio.srcObject = e.streams[0];
-                    audio.play().catch(err => console.error("Audio playback error:", err));
-                    
+                    const audio = new Audio(); audio.srcObject = e.streams[0]; audio.play();
+                    // Auto-switch to conference UI if >1 peer
                     if(Object.keys(this.peers).length > 1) { document.getElementById('call-view-single').style.display='none'; document.getElementById('call-view-conf').style.display='flex'; this.renderConf(); }
                 };
                 if(isInitiator) { pc.createOffer().then(off => { pc.setLocalDescription(off); req(`/api/calls/${this.activeCall}/signal`, 'POST', {target_id: peerId, type:'offer', data: off}); }); }
                 return pc;
-            },
-
-            async endCall() {
-                if(this.ringtone) { this.ringtone.pause(); this.ringtone.currentTime = 0; }
-                if(this.activeCall) req(`/api/calls/${this.activeCall}/end`, 'POST').catch(e=>{});
-                this.activeCall = null; clearInterval(this.sigLoop); clearInterval(this.timerInterval);
-                if(this.stream) { this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; }
-                Object.values(this.peers).forEach(pc => pc.close()); this.peers = {};
-                
-                // Cleanup dynamically injected audio streams 
-                document.querySelectorAll('audio[id^="audio-"]').forEach(el => el.remove());
-                
-                document.getElementById('panel-call').style.transform = 'translateY(100%)';
             },
             showUI() {
                 const c = State.chats.get(State.chat); if(!c) return;
@@ -1355,18 +1279,7 @@
                 } catch(e) {}
             },
             // --- APPEARANCE ---
-            setTheme(t) { 
-                document.documentElement.setAttribute('data-theme', t); 
-                localStorage.setItem('y_theme', t); 
-                
-                // Update active outline inside the horizontal slider
-                document.querySelectorAll('.theme-card').forEach(el => el.classList.remove('active'));
-                const activeCard = document.querySelector(`.theme-card[data-theme-id="${t}"]`);
-                if(activeCard) {
-                    activeCard.classList.add('active');
-                    activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                }
-            },
+            setTheme(t) { document.documentElement.setAttribute('data-theme', t); localStorage.setItem('y_theme', t); document.getElementById('set-theme').value=t; },
             // Change your existing setWallpaper function to this:
             setWallpaper(w) { 
                 document.getElementById('chat-area-bg').style.backgroundImage = w ? `url(${w})` : 'none'; 
