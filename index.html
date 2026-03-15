@@ -834,7 +834,7 @@
             formatTime(dStr) {
                 if (!dStr) return ''; // FIX: Protects against bots or users who have never logged in
                 const d = new Date(dStr + (dStr.includes('Z')?'':'Z')); const n = new Date();
-                return (d.getDate()===n.getDate() && d.getMonth()===n.getMonth()) ? d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : d.toLocaleDateString([], {hour:'2-digit', minute:'2-digit'}) : d.toLocaleDateString([], {month:'short', day:'numeric'});
+                return (d.getDate()===n.getDate() && d.getMonth()===n.getMonth()) ? d.toLocaleTimeString([], {month:'short', day:'numeric'});
             },
             checkPriv(privStr, myHandle) {
                 if(!privStr || privStr==='everyone') return true;
