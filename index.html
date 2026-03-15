@@ -284,6 +284,24 @@
             .fab { bottom: 30px; }
             #panel-root .panel-body, #panel-settings .panel-body { padding-bottom: var(--safe-bottom) !important; }
         }
+        /* Add these 6 new unique themes below [data-theme="dracula"] */[data-theme="ocean"] { --bg-base: #082f49; --bg-panel: #0c4a6e; --bg-input: #0284c7; --border: #38bdf8; --primary: #7dd3fc; --text-main: #f0f9ff; --text-muted: #bae6fd; --msg-sent: #0284c7; --msg-sent-txt: #f0f9ff; --msg-recv: #082f49; --msg-recv-txt: #e0f2fe; --chat-bg: #082f49; }
+        [data-theme="forest"] { --bg-base: #14532d; --bg-panel: #166534; --bg-input: #15803d; --border: #4ade80; --primary: #86efac; --text-main: #f0fdf4; --text-muted: #bbf7d0; --msg-sent: #15803d; --msg-sent-txt: #f0fdf4; --msg-recv: #14532d; --msg-recv-txt: #dcfce7; --chat-bg: #14532d; }[data-theme="sunset"] { --bg-base: #450a0a; --bg-panel: #7f1d1d; --bg-input: #991b1b; --border: #f87171; --primary: #fca5a5; --text-main: #fef2f2; --text-muted: #fecaca; --msg-sent: #991b1b; --msg-sent-txt: #fef2f2; --msg-recv: #450a0a; --msg-recv-txt: #fee2e2; --chat-bg: #450a0a; }
+        [data-theme="cyber"] { --bg-base: #09090b; --bg-panel: #18181b; --bg-input: #27272a; --border: #ec4899; --primary: #06b6d4; --text-main: #fdf2f8; --text-muted: #a1a1aa; --msg-sent: #ec4899; --msg-sent-txt: #09090b; --msg-recv: #27272a; --msg-recv-txt: #06b6d4; --chat-bg: #09090b; }
+        [data-theme="coffee"] { --bg-base: #3e2723; --bg-panel: #4e342e; --bg-input: #5d4037; --border: #a1887f; --primary: #d7ccc8; --text-main: #efebe9; --text-muted: #bcaaa4; --msg-sent: #5d4037; --msg-sent-txt: #efebe9; --msg-recv: #3e2723; --msg-recv-txt: #d7ccc8; --chat-bg: #3e2723; }
+        [data-theme="lavender"] { --bg-base: #1e1b4b; --bg-panel: #312e81; --bg-input: #4338ca; --border: #a5b4fc; --primary: #c7d2fe; --text-main: #eef2ff; --text-muted: #c7d2fe; --msg-sent: #4338ca; --msg-sent-txt: #eef2ff; --msg-recv: #1e1b4b; --msg-recv-txt: #e0e7ff; --chat-bg: #1e1b4b; }
+        
+        /* Add these styles for the horizontal theme preview picker */
+        .theme-scroll-wrapper { display: flex; gap: 14px; overflow-x: auto; width: 100%; padding: 4px 4px 12px 4px; scroll-snap-type: x mandatory; }
+        .theme-scroll-wrapper::-webkit-scrollbar { height: 4px; }
+        .theme-scroll-wrapper::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        .theme-preview { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; flex-shrink: 0; scroll-snap-align: start; }
+        .theme-preview-inner { width: 64px; height: 84px; border-radius: 12px; border: 2px solid transparent; padding: 6px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .theme-preview.active .theme-preview-inner { border-color: var(--primary); transform: scale(1.05); }
+        .theme-preview-inner .mini-bubble { height: 14px; border-radius: 6px; width: 80%; }
+        .theme-preview-inner .mini-bubble.right { align-self: flex-end; }
+        .theme-preview-inner .mini-bubble.left { align-self: flex-start; }
+        .theme-label { font-size: 12px; font-weight: 600; color: var(--text-muted); transition: 0.2s; }
+        .theme-preview.active .theme-label { color: var(--text-main); }
         
         /* FIX DESKTOP LAYOUT SHIFTING & EMPTY STATE */
         @media (min-width: 768px) {
@@ -562,14 +580,61 @@
                         <input type="file" id="set-wall-file" hidden accept="image/*" onchange="App.setWallpaperFile(event)">
                     </label>
                 </div>
-                <div class="settings-row" style="margin:0; background:transparent;">
+                <!-- Replace the existing Color Theme settings-row with this block -->
+                <div class="settings-row" style="margin:0; background:transparent; flex-direction:column; align-items:flex-start; gap:16px;">
                     <span>Color Theme</span>
-                    <select id="set-theme" style="background:transparent; border:none; outline:none; font-weight:600; color:var(--primary); font-size:14px; text-align:right;" onchange="App.setTheme(this.value)">
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                        <option value="oled">OLED</option>
-                        <option value="dracula">Dracula</option>
-                    </select>
+                    <div class="theme-scroll-wrapper">
+                        <div class="theme-preview" data-theme-val="light" onclick="App.setTheme('light')">
+                            <div class="theme-preview-inner" style="background:#ffffff; border:1px solid #e5e7eb;">
+                                <div class="mini-bubble right" style="background:#000000"></div><div class="mini-bubble left" style="background:#f4f4f5"></div>
+                            </div><span class="theme-label">Light</span>
+                        </div>
+                        <div class="theme-preview" data-theme-val="dark" onclick="App.setTheme('dark')">
+                            <div class="theme-preview-inner" style="background:#1e293b;">
+                                <div class="mini-bubble right" style="background:#ffffff"></div><div class="mini-bubble left" style="background:#334155"></div>
+                            </div><span class="theme-label">Dark</span>
+                        </div>
+                        <div class="theme-preview" data-theme-val="oled" onclick="App.setTheme('oled')">
+                            <div class="theme-preview-inner" style="background:#000000; border:1px solid #222222;">
+                                <div class="mini-bubble right" style="background:#ffffff"></div><div class="mini-bubble left" style="background:#111111"></div>
+                            </div><span class="theme-label">OLED</span>
+                        </div>
+                        <div class="theme-preview" data-theme-val="dracula" onclick="App.setTheme('dracula')">
+                            <div class="theme-preview-inner" style="background:#282a36;">
+                                <div class="mini-bubble right" style="background:#ff79c6"></div><div class="mini-bubble left" style="background:#44475a"></div>
+                            </div><span class="theme-label">Dracula</span>
+                        </div>
+                        <div class="theme-preview" data-theme-val="ocean" onclick="App.setTheme('ocean')">
+                            <div class="theme-preview-inner" style="background:#0c4a6e;">
+                                <div class="mini-bubble right" style="background:#0284c7"></div><div class="mini-bubble left" style="background:#082f49"></div>
+                            </div><span class="theme-label">Ocean</span>
+                        </div>
+                        <div class="theme-preview" data-theme-val="forest" onclick="App.setTheme('forest')">
+                            <div class="theme-preview-inner" style="background:#166534;">
+                                <div class="mini-bubble right" style="background:#15803d"></div><div class="mini-bubble left" style="background:#14532d"></div>
+                            </div><span class="theme-label">Forest</span>
+                        </div>
+                        <div class="theme-preview" data-theme-val="sunset" onclick="App.setTheme('sunset')">
+                            <div class="theme-preview-inner" style="background:#7f1d1d;">
+                                <div class="mini-bubble right" style="background:#991b1b"></div><div class="mini-bubble left" style="background:#450a0a"></div>
+                            </div><span class="theme-label">Sunset</span>
+                        </div>
+                        <div class="theme-preview" data-theme-val="cyber" onclick="App.setTheme('cyber')">
+                            <div class="theme-preview-inner" style="background:#18181b;">
+                                <div class="mini-bubble right" style="background:#ec4899"></div><div class="mini-bubble left" style="background:#27272a"></div>
+                            </div><span class="theme-label">Cyber</span>
+                        </div>
+                        <div class="theme-preview" data-theme-val="coffee" onclick="App.setTheme('coffee')">
+                            <div class="theme-preview-inner" style="background:#4e342e;">
+                                <div class="mini-bubble right" style="background:#5d4037"></div><div class="mini-bubble left" style="background:#3e2723"></div>
+                            </div><span class="theme-label">Coffee</span>
+                        </div>
+                        <div class="theme-preview" data-theme-val="lavender" onclick="App.setTheme('lavender')">
+                            <div class="theme-preview-inner" style="background:#312e81;">
+                                <div class="mini-bubble right" style="background:#4338ca"></div><div class="mini-bubble left" style="background:#1e1b4b"></div>
+                            </div><span class="theme-label">Lavender</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="settings-header">Notifications</div>
@@ -1279,7 +1344,21 @@
                 } catch(e) {}
             },
             // --- APPEARANCE ---
-            setTheme(t) { document.documentElement.setAttribute('data-theme', t); localStorage.setItem('y_theme', t); document.getElementById('set-theme').value=t; },
+            setTheme(t) { 
+                document.documentElement.setAttribute('data-theme', t); 
+                localStorage.setItem('y_theme', t); 
+                
+                // Outline the currently selected theme preview
+                document.querySelectorAll('.theme-preview').forEach(el => {
+                    if(el.getAttribute('data-theme-val') === t) {
+                        el.classList.add('active');
+                        // Optional: smoothly scroll it into view if out of bounds
+                        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                    } else {
+                        el.classList.remove('active');
+                    }
+                });
+            },
             // Change your existing setWallpaper function to this:
             setWallpaper(w) { 
                 document.getElementById('chat-area-bg').style.backgroundImage = w ? `url(${w})` : 'none'; 
