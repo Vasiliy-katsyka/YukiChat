@@ -1322,18 +1322,15 @@
                     const d = await req('/api/sync', 'POST', {typingIn: isTyping ? State.chat : null});
                     
                     // Sort chats by last message time (descending)
-                    // REPLACE your current d.chats.sort(...) in App.sync() with this:
                     d.chats.sort((a, b) => {
                         if (a.id === 'ai') return -1;
                         if (b.id === 'ai') return 1;
                         return new Date(b.last_msg_time || 0) - new Date(a.last_msg_time || 0);
                     });
+
                     const searchInput = document.querySelector('.search-bar input');
                     const isSearching = searchInput && searchInput.value.trim().length > 0 && Router.stack[Router.stack.length-1] === 'panel-root';
                     
-                    if (!isSearching) {
-                        document.getElementById('chat-list').innerHTML = html || '<div style="padding:40px;text-align:center;color:var(--text-muted)">No chats found</div>';
-                    }
                     let totalUnread = 0;
                     let html = '';
                     
@@ -1343,7 +1340,6 @@
                         const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
                         const av = canSeePfp ? (isDM?(c.dm_avatar||defAv):(c.avatar||defAv)) : defAv;
 
-                        // 1. Define message previews first (so notifications can use them)
                         let prevH = c.last_msg ? c.last_msg.replace(/</g,'&lt;') : 'Start chatting...';
                         if(c.last_msg_type === 'photo') prevH = '🖼️ Photo';
                         if(c.last_msg_type === 'file') prevH = '📁 File';
@@ -1352,13 +1348,11 @@
                         else if(!isDM && c.is_typing == c.id) prevH = '<span style="color:var(--primary)">typing...</span>';
 
                         const bage = c.unread > 0 ? `<span class="badge">${c.unread}</span>` : '';
+                        totalUnread += c.unread || 0; // Fixed: Keep track of total unread
                         
-                        // 2. Define active calls once
                         const hasCall = d.calls.find(x => x.chat_id === c.id);
                         const callBtn = hasCall ? `<span class="call-badge" onclick="event.stopPropagation(); RTC.joinCall(${hasCall.id}); App.openChat('${c.id}')">📞 Join Call</span>` : '';
 
-                        // 3. --- NOTIFICATION LOGIC ---
-                        // 3. --- NOTIFICATION & INCOMING CALL OVERLAY ---
                         if (c.unread > 0 && c.last_msg_id) {
                             if (!State.notifiedMsgs.has(c.last_msg_id) && State.chat !== c.id) {
                                 State.notifiedMsgs.add(c.last_msg_id);
@@ -1371,7 +1365,6 @@
                                 State.notifiedCalls.add(hasCall.id);
                                 App.showPush(`📞 Call from ${n}`, "Tap to answer", av, true);
                                 
-                                // --- ONLY SHOW INCOMING UI IF I AM NOT THE CALLER ---
                                 RTC.incomingCallId = hasCall.id;
                                 RTC.incomingChat = c.id;
                                 
@@ -1386,10 +1379,8 @@
                                 
                                 if(!RTC.ringtone) { RTC.ringtone = new Audio('https://actions.google.com/sounds/v1/alarms/phone_ringing.ogg'); RTC.ringtone.loop = true; }
                                 RTC.ringtone.play().catch(e=>{});
-                                // ----------------------------------------------------
                             }
                         } else if (!hasCall && RTC.incomingChat === c.id) {
-                            // Call ended by caller before we picked up
                             if(RTC.ringtone) { RTC.ringtone.pause(); RTC.ringtone.currentTime = 0; }
                             if(document.getElementById('call-view-incoming').style.display === 'flex') {
                                 document.getElementById('panel-call').style.transform = 'translateY(100%)';
@@ -1397,20 +1388,13 @@
                             RTC.incomingCallId = null;
                             RTC.incomingChat = null;
                         }
-                        // -----------------------------
-                        // -----------------------------
 
-                        // 4. Online Dot Indicator
                         const isOnline = isDM && c.dm_last_seen && (new Date() - new Date(c.dm_last_seen + (c.dm_last_seen.includes('Z')?'':'Z')) < 60000);
                         const onlineDot = isOnline ? `<div class="online-dot"></div>` : '';
 
-                        // 5. Generate HTML
-                        // 5. Generate HTML
-                        // 5. Generate HTML
                         const aiItemClass = c.id === 'ai' ? ' ai-chat' : '';
                         const aiAvClass = c.id === 'ai' ? ' ai-avatar' : '';
                     
-                        // Change this line:
                         const tickHtml = (isDM && c.dm_verified) || (!isDM && c.is_verified) || (c.id === 'ai') ? verifiedTick : '';
                         html += `<div class="user-item${aiItemClass}" onclick="App.openChat('${c.id}')">
                                     <div style="position:relative"><img src="${av}" class="avatar${aiAvClass}">${onlineDot}</div>
@@ -1418,14 +1402,11 @@
                                     ${callBtn}
                                 </div>`;
 
-                        // Inside App.sync() where HTML is generated
-                        // Replace the "Active Chat specific updates" block with this:
-                        // Replace the existing chat-status logic in App.sync() with this:
                         if(State.chat === c.id) {
                             if (c.type === 'channel') {
                                 document.getElementById('chat-status').innerHTML = `${c.sub_count} subscribers`;
                             } else {
-                                if(c.is_bot) document.getElementById('chat-status').innerHTML = 'Bot'; // NEW
+                                if(c.is_bot) document.getElementById('chat-status').innerHTML = 'Bot'; 
                                 else if(isDM && c.dm_typing == c.id) document.getElementById('chat-status').innerHTML = 'typing...';
                                 else if(!isDM && c.is_typing == c.id) document.getElementById('chat-status').innerHTML = 'typing...';
                                 else if(isDM) document.getElementById('chat-status').innerHTML = isOnline ? '<span style="color:var(--success)">Online</span>' : UI.formatTime(c.dm_last_seen);
@@ -1433,14 +1414,21 @@
                             if(c.last_msg_id > State.lastMsgId) { State.lastMsgId = c.last_msg_id; this.loadMsgs(c.id); }
                         }
                     });
+
                     const navBadge = document.getElementById('nav-badge');
                     if (navBadge) {
                         navBadge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
                         navBadge.textContent = totalUnread > 99 ? '99+' : totalUnread;
                     }
                     
-                    document.getElementById('chat-list').innerHTML = html || '<div style="padding:40px;text-align:center;color:var(--text-muted)">No chats found</div>';
-                } catch(e){}
+                    // ONLY overwrite the list if we aren't searching
+                    if (!isSearching) {
+                        document.getElementById('chat-list').innerHTML = html || '<div style="padding:40px;text-align:center;color:var(--text-muted)">No chats found</div>';
+                    }
+
+                } catch(e){
+                    console.error("Sync Error: ", e); // This ensures we can see errors in the console!
+                }
             },
 
             // --- SEARCH & CHAT CREATION ---
