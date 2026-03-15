@@ -285,8 +285,7 @@
             #panel-root .panel-body, #panel-settings .panel-body { padding-bottom: var(--safe-bottom) !important; }
         }
         
-        /* FIX DESKTOP LAYOUT SHIFTING */
-        /* FIX DESKTOP LAYOUT SHIFTING */
+        /* FIX DESKTOP LAYOUT SHIFTING & EMPTY STATE */
         @media (min-width: 768px) {
             body { 
                 flex-direction: row; 
@@ -298,7 +297,6 @@
                 width: calc(100vw - 360px) !important; 
                 left: 360px !important; 
                 z-index: 10;
-                /* Keep transition from mobile so they smoothly slide in */
             }
         
             /* 2. Sidebar (Root) is pinned left, in document flow */
@@ -327,7 +325,32 @@
                 display: none; 
             }
         
-            /* 4. Full screen overlays (Auth and Calls) */
+            /* 4. "Select a Chat" Overlay when no chat is active */
+            #panel-chat:not(.active)::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: var(--bg-base); /* Hides the empty header and input bar */
+                z-index: 100;
+            }
+            
+            #panel-chat:not(.active)::after {
+                content: 'Select a chat to start messaging';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: var(--bg-input);
+                color: var(--text-muted);
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: 500;
+                z-index: 101;
+                box-shadow: var(--shadow);
+            }
+        
+            /* 5. Full screen overlays (Auth and Calls) */
             #panel-auth, #panel-call { 
                 width: 100vw !important; 
                 left: 0 !important; 
@@ -339,20 +362,20 @@
                 transform: translateX(0) !important; 
             }
         
-            /* 5. Keep Context Menu constrained to the chat side */
+            /* 6. Keep Context Menu constrained to the chat side */
             #ctx-menu {
                 width: calc(100vw - 360px) !important;
                 left: 360px !important;
             }
         
-            /* 6. Fix FAB to stay inside the left sidebar */
+            /* 7. Fix FAB to stay inside the left sidebar */
             .fab { 
                 bottom: 30px; 
                 left: 280px !important; 
                 right: auto !important; 
             }
             
-            /* 7. Hide bottom nav and fix safe-area padding */
+            /* 8. Hide bottom nav and fix safe-area padding */
             .bottom-nav { display: none !important; }
             #panel-root .panel-body, #panel-settings .panel-body { padding-bottom: var(--safe-bottom) !important; }
         }
