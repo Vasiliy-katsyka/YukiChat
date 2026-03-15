@@ -831,11 +831,18 @@
 
         const UI = {
             toast(m) { const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3000); },
+            
+            // Corrected syntax here
             formatTime(dStr) {
-                if (!dStr) return ''; // FIX: Protects against bots or users who have never logged in
-                const d = new Date(dStr + (dStr.includes('Z')?'':'Z')); const n = new Date();
-                return (d.getDate()===n.getDate() && d.getMonth()===n.getMonth()) ? d.toLocaleTimeString([], {month:'short', day:'numeric'});
+                if (!dStr) return '';
+                const d = new Date(dStr + (dStr.includes('Z')?'':'Z')); 
+                const n = new Date();
+                // Fixed: added [] as the first argument for locale-specific formatting
+                return (d.getDate()===n.getDate() && d.getMonth()===n.getMonth()) 
+                    ? d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+                    : d.toLocaleDateString([], {month:'short', day:'numeric'});
             },
+            
             checkPriv(privStr, myHandle) {
                 if(!privStr || privStr==='everyone') return true;
                 if(privStr==='noone') return false;
@@ -1403,16 +1410,30 @@
                                     ${callBtn}
                                 </div>`;
 
+                        // Inside App.sync()
                         if(State.chat === c.id) {
                             if (c.type === 'channel') {
                                 document.getElementById('chat-status').innerHTML = `${c.sub_count} subscribers`;
                             } else {
-                                if(c.is_bot) document.getElementById('chat-status').innerHTML = 'Bot'; 
-                                else if(isDM && c.dm_typing == c.id) document.getElementById('chat-status').innerHTML = 'typing...';
-                                else if(!isDM && c.is_typing == c.id) document.getElementById('chat-status').innerHTML = 'typing...';
-                                else if(isDM) document.getElementById('chat-status').innerHTML = isOnline ? '<span style="color:var(--success)">Online</span>' : UI.formatTime(c.dm_last_seen);
+                                // --- UPDATED LOGIC HERE ---
+                                if (c.is_bot) {
+                                    document.getElementById('chat-status').innerHTML = 'Bot';
+                                } else if (isDM && c.dm_typing == c.id) {
+                                    document.getElementById('chat-status').innerHTML = 'typing...';
+                                } else if (!isDM && c.is_typing == c.id) {
+                                    document.getElementById('chat-status').innerHTML = 'typing...';
+                                } else if (isDM) {
+                                    document.getElementById('chat-status').innerHTML = isOnline 
+                                        ? '<span style="color:var(--success)">Online</span>' 
+                                        : UI.formatTime(c.dm_last_seen);
+                                }
+                                // --- END UPDATED LOGIC ---
+                                
+                                if(c.last_msg_id > State.lastMsgId) { 
+                                    State.lastMsgId = c.last_msg_id; 
+                                    this.loadMsgs(c.id); 
+                                }
                             }
-                            if(c.last_msg_id > State.lastMsgId) { State.lastMsgId = c.last_msg_id; this.loadMsgs(c.id); }
                         }
                     });
 
