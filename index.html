@@ -1344,6 +1344,7 @@
                 } catch(e) {}
             },
             // --- APPEARANCE ---
+            // --- APPEARANCE ---
             setTheme(t) { 
                 document.documentElement.setAttribute('data-theme', t); 
                 localStorage.setItem('y_theme', t); 
@@ -1352,8 +1353,13 @@
                 document.querySelectorAll('.theme-preview').forEach(el => {
                     if(el.getAttribute('data-theme-val') === t) {
                         el.classList.add('active');
-                        // Optional: smoothly scroll it into view if out of bounds
-                        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                        
+                        // FIX: Only scroll into view if the Settings Panel is actually open!
+                        // This prevents the browser from breaking the layout on app startup.
+                        const settingsPanel = document.getElementById('panel-settings');
+                        if (settingsPanel && settingsPanel.classList.contains('active')) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                        }
                     } else {
                         el.classList.remove('active');
                     }
