@@ -1461,23 +1461,35 @@
             },
 
             // --- SEARCH & CHAT CREATION ---
+            searchTimer: null, // Add this state variable
             async searchGlobal(q) {
                 const resEl = document.getElementById(Router.stack.includes('panel-new') ? 'global-search-res' : 'chat-list');
                 if(!q) return this.sync();
-                const {users, chats} = await req(`/api/search?q=${q}`);
-                let h = '';
-                users.forEach(x => { 
-                    h+=`<div class="user-item" onclick="App.startDM(${x.id})"><img src="${UI.checkPriv(x.pfp_privacy, State.u.username)?(x.avatar||defAv):defAv}" class="avatar"><div class="user-info"><div class="user-name">${x.username} ${x.is_verified ? verifiedTick : ''}</div></div></div>`; 
-                });
-                chats.forEach(x => { 
-                    h+=`<div class="user-item" onclick="App.joinChat('${x.username}')">
-                        <img src="${x.avatar||defAv}" class="avatar">
-                        <div class="user-info">
-                            <div class="user-name">${x.name} ${x.is_verified ? verifiedTick : ''} <span style="font-size:12px;color:var(--primary)">@${x.username}</span></div>
-                        </div>
-                    </div>`; 
-                });
-                resEl.innerHTML = h || '<div style="padding:20px; text-align:center; color:var(--text-muted)">No results found.</div>';
+                
+                // Don't search for 1 or 2 letters (saves massive full table scans)
+                if(q.length < 3) {
+                    resEl.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted)">Type at least 3 characters...</div>';
+                    return;
+                }
+
+                // Debounce: Wait 500ms after the user STOPS typing before hitting the API
+                clearTimeout(this.searchTimer);
+                this.searchTimer = setTimeout(async () => {
+                    const {users, chats} = await req(`/api/search?q=${q}`);
+                    let h = '';
+                    users.forEach(x => { 
+                        h+=`<div class="user-item" onclick="App.startDM(${x.id})"><img src="${UI.checkPriv(x.pfp_privacy, State.u.username)?(x.avatar||defAv):defAv}" class="avatar"><div class="user-info"><div class="user-name">${x.username} ${x.is_verified ? verifiedTick : ''}</div></div></div>`; 
+                    });
+                    chats.forEach(x => { 
+                        h+=`<div class="user-item" onclick="App.joinChat('${x.username}')">
+                            <img src="${x.avatar||defAv}" class="avatar">
+                            <div class="user-info">
+                                <div class="user-name">${x.name} ${x.is_verified ? verifiedTick : ''} <span style="font-size:12px;color:var(--primary)">@${x.username}</span></div>
+                            </div>
+                        </div>`; 
+                    });
+                    resEl.innerHTML = h || '<div style="padding:20px; text-align:center; color:var(--text-muted)">No results found.</div>';
+                }, 500);
             },
             async startDM(id) { const d = await req('/api/chats', 'POST', {type:'dm', target_user_id:id}); Router.pop(); this.openChat(d.chat_id); },
             async joinChat(handle) { const d = await req('/api/chats/join', 'POST', {handle}); Router.pop(); this.openChat(d.chat_id); },
