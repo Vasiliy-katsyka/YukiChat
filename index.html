@@ -1261,7 +1261,14 @@
                     if(localStorage.hasOwnProperty(key)) totalBytes += ((localStorage[key].length + key.length) * 2);
                 }
                 document.getElementById('cache-size').innerText = (totalBytes / 1024).toFixed(1) + ' KB';
-                this.sync(); State.syncLoop = setInterval(() => this.sync(), 8000);
+                this.sync(); 
+                // Increased to 15 seconds to save limits (cuts rows read in half)
+                State.syncLoop = setInterval(() => {
+                    // Only sync if the tab is visible to save huge amounts of D1 reads
+                    if (document.visibilityState === 'visible') {
+                        this.sync();
+                    }
+                }, 15000);
                 this.requestNotifyPerms();
             },
 
