@@ -67,6 +67,10 @@
             -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             -webkit-mask-composite: xor; mask-composite: exclude;
         }
+        /* Remove glass border for AI avatars */
+        .avatar-wrap.ai-wrap::before {
+            display: none !important;
+        }
         /* Add border: none !important to the AI avatar */
         img.avatar.ai-avatar {
             background: transparent !important;
@@ -1860,10 +1864,11 @@
 
                         const aiItemClass = c.id === 'ai' ? ' ai-chat' : '';
                         const aiAvClass = c.id === 'ai' ? ' ai-avatar' : '';
+                        const aiWrapClass = c.id === 'ai' ? ' ai-wrap' : '';
                     
                         const tickHtml = (isDM && c.dm_verified) || (!isDM && c.is_verified) || (c.id === 'ai') ? verifiedTick : '';
                         html += `<div class="user-item${aiItemClass}" onclick="App.openChat('${c.id}')">
-                                <div class="avatar-wrap" style="width:50px;height:50px;"><img src="${av}" class="avatar${aiAvClass}" style="width:100%;height:100%;">${onlineDot}</div>
+                                    <div class="avatar-wrap${aiWrapClass}" style="width:50px;height:50px;"><img src="${av}" class="avatar${aiAvClass}" style="width:100%;height:100%;">${onlineDot}</div>
                                     <div class="user-info"><div class="user-name"><span>${n} ${tickHtml}</span> ${bage}</div><div class="user-last-msg">${prevH}</div></div>
                                     ${callBtn}
                                 </div>`;
@@ -1969,6 +1974,14 @@
                 const isVerified = isDM ? c.dm_verified : c.is_verified;
                 document.getElementById('chat-title').innerHTML = (isDM ? c.dm_username : c.name) + (isVerified || c.id === 'ai' ? verifiedTick : '');
                 document.getElementById('chat-av').src = canSeePfp ? (isDM ? (c.dm_avatar||getDefAv(c.dm_username)) : (c.avatar||getDefAv(c.name))) : getDefAv('?');
+                const chatAv = document.getElementById('chat-av');
+                if (id === 'ai') {
+                    chatAv.classList.add('ai-avatar');
+                    chatAv.parentElement.classList.add('ai-wrap');
+                } else {
+                    chatAv.classList.remove('ai-avatar');
+                    chatAv.parentElement.classList.remove('ai-wrap');
+                }
                 
                 // Channel Admin Check
                 // Inside App.openChat(id)
