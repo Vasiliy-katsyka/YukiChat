@@ -418,6 +418,34 @@
         .n-ctx-backdrop {
             position: fixed; inset: 0; z-index: 8999; display: none; background: transparent;
         }
+
+        /* 1. Fix the glass effect on headers to perfectly match the navigation bar */
+        .n-liquid::before {
+            background: transparent !important;
+            box-shadow: inset 0 0 23px -5px var(--glass-glow) !important;
+        }
+        .n-liquid::after {
+            backdrop-filter: blur(1px) !important;
+            -webkit-backdrop-filter: blur(1px) !important;
+            filter: url(#glass-distortion) !important;
+            -webkit-filter: url(#glass-distortion) !important;
+        }
+        
+        /* 2. Remove the empty block under the search bar */
+        .n-glass-header .search-wrap {
+            padding: 2px 20px 10px 20px !important;
+        }
+        .n-chat-list-pad {
+            padding-top: calc(110px + var(--safe-top)) !important;
+        }
+        
+        /* 3. Fix the chat background so you ONLY see the chat wallpaper through the header, NOT the "Messages" list */
+        .n-chat-area-relative { 
+            position: absolute !important; 
+            inset: 0 !important; 
+            display: flex !important; 
+            flex-direction: column !important;
+        }
         
         /* FIX DESKTOP LAYOUT SHIFTING & EMPTY STATE */
         @media (min-width: 768px) {
