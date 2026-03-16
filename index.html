@@ -418,34 +418,6 @@
         .n-ctx-backdrop {
             position: fixed; inset: 0; z-index: 8999; display: none; background: transparent;
         }
-
-        /* 1. Fix the glass effect on headers to perfectly match the navigation bar */
-        .n-liquid::before {
-            background: transparent !important;
-            box-shadow: inset 0 0 23px -5px var(--glass-glow) !important;
-        }
-        .n-liquid::after {
-            backdrop-filter: blur(1px) !important;
-            -webkit-backdrop-filter: blur(1px) !important;
-            filter: url(#glass-distortion) !important;
-            -webkit-filter: url(#glass-distortion) !important;
-        }
-        
-        /* 2. Remove the empty block under the search bar */
-        .n-glass-header .search-wrap {
-            padding: 2px 20px 10px 20px !important;
-        }
-        .n-chat-list-pad {
-            padding-top: calc(110px + var(--safe-top)) !important;
-        }
-        
-        /* 3. Fix the chat background so you ONLY see the chat wallpaper through the header, NOT the "Messages" list */
-        .n-chat-area-relative { 
-            position: absolute !important; 
-            inset: 0 !important; 
-            display: flex !important; 
-            flex-direction: column !important;
-        }
         
         /* FIX DESKTOP LAYOUT SHIFTING & EMPTY STATE */
         @media (min-width: 768px) {
@@ -582,25 +554,24 @@
 
     <!-- ROOT CHAT LIST -->
     <!-- ROOT CHAT LIST -->
+    <!-- ROOT CHAT LIST -->
     <div id="panel-root" class="panel root">
-        <!-- WRAPPED IN ABSOLUTE GLASS CONTAINER -->
-        <div class="n-glass-header n-liquid">
-            <div class="root-header" style="background: transparent;">
-                <h1>Messages</h1>
-                <button class="icon-btn" onclick="App.toggleTheme()">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                </button>
-            </div>
-            <div class="search-wrap" style="background: transparent;">
-                <div class="search-bar n-search-bar">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    <input type="text" placeholder="Search" oninput="App.searchGlobal(this.value)">
-                </div>
+        <!-- RESTORED SOLID HEADER (No Glass) -->
+        <div class="root-header">
+            <h1>Messages</h1>
+            <button class="icon-btn" onclick="App.toggleTheme()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
+        </div>
+        <div class="search-wrap">
+            <div class="search-bar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" placeholder="Search" oninput="App.searchGlobal(this.value)">
             </div>
         </div>
         
-        <!-- Added n-chat-list-pad so items start below the floating header -->
-        <div class="panel-body n-chat-list-pad" id="chat-list"></div>
+        <!-- Standard list container without the huge empty gap -->
+        <div class="panel-body" id="chat-list"></div>
         
         <button class="fab" onclick="Router.push('panel-new')">
             <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -611,7 +582,8 @@
     <!-- ACTIVE CHAT -->
     <div id="panel-chat" class="panel n-panel-fix">
         <!-- Added n-glass-header -->
-        <div class="panel-header n-liquid n-glass-header" style="justify-content: space-between;">
+        <!-- Transparent Glass Header for Chat Window ONLY (matches Navigation Bar) -->
+        <div class="panel-header liquid-glass n-glass-header" style="justify-content: space-between; border-bottom: none;">
             <div style="display:flex; align-items:center; gap:12px; cursor:pointer;" onclick="App.viewProfile(State.chat)">
                 <button class="icon-btn" onclick="event.stopPropagation(); Router.pop()" style="margin-left:-8px">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
