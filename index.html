@@ -1107,24 +1107,24 @@
         };
 
         /* MESH WebRTC ENGINE */
+        /* MESH WebRTC ENGINE */
         const RTC = {
-            activeCall: null, stream: null, peers: {}, pcConfig: {iceServers:[{urls: 'stun:stun.l.google.com:19302'}]},
+            activeCall: null, stream: null, peers: {}, 
+            pcConfig: {iceServers:[{urls: 'stun:stun.l.google.com:19302'}, {urls: 'stun:stun1.l.google.com:19302'}]},
             sigLoop: null, isMuted: false, isSpeaker: true, startTime: null, timerInterval: null,
+            iceQueue: {}, // FIX: Holds ICE candidates that arrive too early
             
             async initMedia() {
                 if(this.stream) return;
                 try { this.stream = await navigator.mediaDevices.getUserMedia({audio:true}); } 
                 catch(e) { UI.toast("Microphone access required"); throw e; }
             },
-            // Inside RTC.startCall()
             async startCall() {
                 if(this.activeCall) return;
                 await this.initMedia();
                 try {
                     const res = await req('/api/calls/start', 'POST', {chat_id: State.chat});
                     this.activeCall = res.call_id; 
-                    
-                    // This function sets the UI to 'Calling...' and does NOT display the 'incoming' div
                     this.showUI(); 
                     this.startSigLoop();
                 } catch(e) { UI.toast(e.message); }
@@ -1132,7 +1132,6 @@
             async joinCall(callId) {
                 if(this.activeCall) return;
                 await this.initMedia(); this.activeCall = callId; this.showUI(); this.startSigLoop();
-                // Send join ping so everyone offers
                 req(`/api/calls/${this.activeCall}/signal`, 'POST', {type: 'join', data:{}});
             },
             acceptCall() {
@@ -1142,7 +1141,6 @@
                 App.openChat(this.incomingChat); 
                 this.joinCall(this.incomingCallId);
             },
-
             declineCall() {
                 if(this.ringtone) { this.ringtone.pause(); this.ringtone.currentTime = 0; }
                 req(`/api/calls/${this.incomingCallId}/end`, 'POST').catch(e=>{});
@@ -1150,15 +1148,14 @@
                 this.incomingChat = null;
                 document.getElementById('panel-call').style.transform = 'translateY(100%)';
             },
-
-            // (Modify endCall slightly to kill the ringtone)
             async endCall() {
                 if(this.ringtone) { this.ringtone.pause(); this.ringtone.currentTime = 0; }
                 if(this.activeCall) req(`/api/calls/${this.activeCall}/end`, 'POST').catch(e=>{});
                 this.activeCall = null; clearInterval(this.sigLoop); clearInterval(this.timerInterval);
                 if(this.stream) { this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; }
                 Object.values(this.peers).forEach(pc => pc.close()); this.peers = {};
-                // FIX: Remove hidden audio tags when the call ends
+                
+                // FIX: Cleanup all hidden audio tags when call ends
                 document.querySelectorAll('audio[id^="audio-"]').forEach(el => el.remove());
                 document.getElementById('panel-call').style.transform = 'translateY(100%)';
             },
@@ -1170,38 +1167,95 @@
                         const sigs = await req(`/api/calls/${this.activeCall}/signals?since=${lastSig}`);
                         for(let s of sigs) {
                             lastSig = s.id; if(s.sender_id === State.u.userId) continue;
-                            await this.handleSignal(s.sender_id, s.type, JSON.parse(s.data)); // <-- ADDED 'await'
+                            // FIX: Added Await to prevent connection state collisions
+                            await this.handleSignal(s.sender_id, s.type, JSON.parse(s.data));
                         }
-                    } catch(e){}
+                    } catch(e){ console.error("Sigloop Error", e); }
                 }, 2000);
             },
             async handleSignal(peerId, type, data) {
-                if(type === 'join') { this.createPeer(peerId, true); }
-                else if(type === 'offer') { const pc = this.createPeer(peerId, false); await pc.setRemoteDescription(new RTCSessionDescription(data)); const ans = await pc.createAnswer(); await pc.setLocalDescription(ans); req(`/api/calls/${this.activeCall}/signal`, 'POST', {target_id: peerId, type:'answer', data: pc.localDescription}); }
-                else if(type === 'answer') { await this.peers[peerId].setRemoteDescription(new RTCSessionDescription(data)); document.getElementById('call-status-txt').innerText = RTC.peers.length > 1 ? 'Conference Active' : 'Connected'; }
-                else if(type === 'ice') { this.peers[peerId].addIceCandidate(new RTCIceCandidate(data)); }
+                try {
+                    if(type === 'join') { 
+                        this.createPeer(peerId, true); 
+                    }
+                    else if(type === 'offer') { 
+                        const pc = this.createPeer(peerId, false); 
+                        await pc.setRemoteDescription(new RTCSessionDescription(data)); 
+                        const ans = await pc.createAnswer(); 
+                        await pc.setLocalDescription(ans); 
+                        req(`/api/calls/${this.activeCall}/signal`, 'POST', {target_id: peerId, type:'answer', data: pc.localDescription}); 
+                        this.processIceQueue(peerId, pc); // Process any queued network paths
+                    }
+                    else if(type === 'answer') { 
+                        const pc = this.peers[peerId];
+                        if (pc) {
+                            await pc.setRemoteDescription(new RTCSessionDescription(data)); 
+                            document.getElementById('call-status-txt').innerText = Object.keys(this.peers).length > 1 ? 'Conference Active' : 'Connected'; 
+                            this.processIceQueue(peerId, pc);
+                        }
+                    }
+                    else if(type === 'ice') { 
+                        const pc = this.peers[peerId];
+                        // FIX: Check if we are ready for ICE candidates. If not, queue them safely.
+                        if (pc && pc.remoteDescription && pc.remoteDescription.type) {
+                            await pc.addIceCandidate(new RTCIceCandidate(data)); 
+                        } else {
+                            if(!this.iceQueue[peerId]) this.iceQueue[peerId] = [];
+                            this.iceQueue[peerId].push(data);
+                        }
+                    }
+                } catch (err) {
+                    console.error("Signal Processing Error:", err);
+                }
+            },
+            async processIceQueue(peerId, pc) {
+                if (this.iceQueue[peerId]) {
+                    for (let ice of this.iceQueue[peerId]) {
+                        try { await pc.addIceCandidate(new RTCIceCandidate(ice)); } catch(e){}
+                    }
+                    this.iceQueue[peerId] =[];
+                }
             },
             createPeer(peerId, isInitiator) {
                 if(this.peers[peerId]) return this.peers[peerId];
                 const pc = new RTCPeerConnection(this.pcConfig); this.peers[peerId] = pc;
+                
                 this.stream.getTracks().forEach(t => pc.addTrack(t, this.stream));
-                pc.onicecandidate = e => { if(e.candidate) req(`/api/calls/${this.activeCall}/signal`, 'POST', {target_id: peerId, type:'ice', data: e.candidate}); };
+                
+                pc.onicecandidate = e => { 
+                    if(e.candidate) req(`/api/calls/${this.activeCall}/signal`, 'POST', {target_id: peerId, type:'ice', data: e.candidate}); 
+                };
+                
                 pc.ontrack = e => { 
-                    // FIX: Attach audio to DOM so the browser doesn't garbage collect it
+                    // FIX: Attach audio to DOM explicitly for iOS/Safari support
                     let audio = document.getElementById(`audio-${peerId}`);
                     if (!audio) {
                         audio = document.createElement('audio');
                         audio.id = `audio-${peerId}`;
                         audio.autoplay = true;
-                        // Required for iOS/Safari:
-                        audio.setAttribute('playsinline', 'true'); 
+                        audio.setAttribute('playsinline', 'true'); // Required for iOS
                         document.body.appendChild(audio);
                     }
-                    audio.srcObject = e.streams[0];
-                    // Auto-switch to conference UI if >1 peer
-                    if(Object.keys(this.peers).length > 1) { document.getElementById('call-view-single').style.display='none'; document.getElementById('call-view-conf').style.display='flex'; this.renderConf(); }
+                    
+                    // Fallback for older browsers
+                    audio.srcObject = (e.streams && e.streams[0]) ? e.streams[0] : new MediaStream([e.track]);
+                    
+                    // Force play and catch strict browser autoplay blocks
+                    audio.play().catch(err => console.log("Audio play blocked (waiting for interaction):", err));
+                    
+                    if(Object.keys(this.peers).length > 1) { 
+                        document.getElementById('call-view-single').style.display='none'; 
+                        document.getElementById('call-view-conf').style.display='flex'; 
+                        this.renderConf(); 
+                    }
                 };
-                if(isInitiator) { pc.createOffer().then(off => { pc.setLocalDescription(off); req(`/api/calls/${this.activeCall}/signal`, 'POST', {target_id: peerId, type:'offer', data: off}); }); }
+                
+                if(isInitiator) { 
+                    pc.createOffer().then(off => { 
+                        pc.setLocalDescription(off); 
+                        req(`/api/calls/${this.activeCall}/signal`, 'POST', {target_id: peerId, type:'offer', data: off}); 
+                    }); 
+                }
                 return pc;
             },
             showUI() {
@@ -1216,7 +1270,6 @@
                     const secs = Math.floor((Date.now()-this.startTime)/1000);
                     const t = `${String(Math.floor(secs/60)).padStart(2,'0')}:${String(secs%60).padStart(2,'0')}`;
                     document.getElementById('call-time').innerText = t;
-                    // update conf timers too if visible
                     document.querySelectorAll('.conf-timer').forEach(el=>el.innerText=t);
                 }, 1000);
             },
