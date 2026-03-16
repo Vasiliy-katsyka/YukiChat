@@ -1742,27 +1742,29 @@
                         const callBtn = (hasCall && hasCall.id !== RTC.activeCall) ? `<span class="call-badge" onclick="event.stopPropagation(); RTC.incomingIsVideo=false; RTC.incomingCallId=${hasCall.id}; RTC.incomingChat='${c.id}'; RTC.acceptCall();">📞 Join Call</span>` : '';
 
                         // 1. Handle Incoming Ringing
+                        // 1. Handle Incoming Ringing
                         if (hasCall && hasCall.status === 'ringing' && hasCall.caller_id !== State.u.userId) {
+                            // ALWAYS enforce the UI popup while ringing
+                            RTC.incomingCallId = hasCall.id;
+                            RTC.incomingChat = c.id;
+                            
+                            document.getElementById('call-bg').style.backgroundImage = `url(${av})`;
+                            document.getElementById('inc-call-av').src = av;
+                            document.getElementById('inc-call-name').innerText = n;
+                            
+                            document.getElementById('call-view-active').style.display = 'none';
+                            document.getElementById('call-view-incoming').style.display = 'flex';
+                            document.getElementById('panel-call').style.transform = 'translateY(0)';
+
+                            // ONLY play the ringtone/push notification ONCE per call
                             if (!State.notifiedCalls.has(hasCall.id)) {
                                 State.notifiedCalls.add(hasCall.id);
                                 App.showPush(`📞 Call from ${n}`, "Tap to answer", av, true);
                                 
-                                RTC.incomingCallId = hasCall.id;
-                                RTC.incomingChat = c.id;
-                                // Wait for 'init' signal to know if it's video
-                                
-                                document.getElementById('call-bg').style.backgroundImage = `url(${av})`;
-                                document.getElementById('inc-call-av').src = av;
-                                document.getElementById('inc-call-name').innerText = n;
-                                
-                                document.getElementById('call-view-active').style.display = 'none';
-                                document.getElementById('call-view-incoming').style.display = 'flex';
-                                document.getElementById('panel-call').style.transform = 'translateY(0)';
-                                
                                 if(!RTC.ringtone) { RTC.ringtone = new Audio('https://actions.google.com/sounds/v1/alarms/phone_ringing.ogg'); RTC.ringtone.loop = true; }
-                                RTC.ringtone.play().catch(e=>{});
+                                RTC.ringtone.play().catch(e=>{ console.warn("Autoplay prevented ringtone"); });
                             }
-                        } 
+                        }
                         // 2. Handle Missed/Ended Calls (Ghost Call Cleanup)
                         else if (!hasCall && RTC.incomingChat === c.id) {
                             if(RTC.ringtone) { RTC.ringtone.pause(); RTC.ringtone.currentTime = 0; }
