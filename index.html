@@ -320,10 +320,9 @@
             inset: 0;
             z-index: -1;
             border-radius: inherit;
-            /* Keeps your inner shadow, uses theme colors */
             box-shadow: inset 0 0 15px -5px var(--glass-glow);
-            /* Adds a tiny tint so text on top remains readable */
-            background-color: color-mix(in srgb, var(--bg-panel) 30%, transparent);
+            /* FIX: Changed from --bg-panel to --glass-glow to make the glass visible and frosted */
+            background-color: color-mix(in srgb, var(--glass-glow) 8%, transparent);
             pointer-events: none;
         }
         
@@ -352,19 +351,27 @@
         }
         
         .n-chat-list-pad {
-            padding-top: calc(130px + var(--safe-top)) !important;
-            height: 100%; overflow-y: auto;
+            /* FIX: Reduced from 130px to 105px to perfectly fit the header height */
+            padding-top: calc(105px + var(--safe-top)) !important;
+            height: 100%; 
+            overflow-y: auto;
+        }
+        
+        .n-messages-absolute {
+            position: absolute !important; inset: 0 !important;
+            /* FIX: Reduced from 80px to 64px to perfectly fit the chat header */
+            padding-top: calc(64px + var(--safe-top)) !important;
+            padding-bottom: calc(100px + var(--safe-bottom)) !important;
+            overflow-y: auto !important;
         }
         
         .n-chat-area-relative { 
             position: relative !important; display: block !important; 
         }
-        
-        .n-messages-absolute {
-            position: absolute !important; inset: 0 !important;
-            padding-top: calc(80px + var(--safe-top)) !important;
-            padding-bottom: calc(100px + var(--safe-bottom)) !important;
-            overflow-y: auto !important;
+
+        /* Ensures the background of the panel itself doesn't block the glass */
+        .n-panel-fix { 
+            background: transparent !important; 
         }
         
         /* --- 3. INPUT BAR CONTAINER FLOATING --- */
@@ -405,8 +412,6 @@
             -webkit-mask-composite: xor; mask-composite: exclude;
         }
         
-        /* --- FIX FOR HORIZONTAL SCROLL CRASH (BUG 1) --- */
-        .n-panel-fix { overflow-x: hidden !important; width: 100%; }
         .panel-body { overflow-x: hidden !important; } /* Prevents theme slider from breaking layout */
         
         /* --- CONTEXT MENU BACKDROP (BUG 2) --- */
