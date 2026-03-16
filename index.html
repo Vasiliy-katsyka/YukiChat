@@ -1158,6 +1158,8 @@
                 this.activeCall = null; clearInterval(this.sigLoop); clearInterval(this.timerInterval);
                 if(this.stream) { this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; }
                 Object.values(this.peers).forEach(pc => pc.close()); this.peers = {};
+                // FIX: Remove hidden audio tags when the call ends
+                document.querySelectorAll('audio[id^="audio-"]').forEach(el => el.remove());
                 document.getElementById('panel-call').style.transform = 'translateY(100%)';
             },
             startSigLoop() {
@@ -1168,7 +1170,7 @@
                         const sigs = await req(`/api/calls/${this.activeCall}/signals?since=${lastSig}`);
                         for(let s of sigs) {
                             lastSig = s.id; if(s.sender_id === State.u.userId) continue;
-                            this.handleSignal(s.sender_id, s.type, JSON.parse(s.data));
+                            await this.handleSignal(s.sender_id, s.type, JSON.parse(s.data)); // <-- ADDED 'await'
                         }
                     } catch(e){}
                 }, 2000);
@@ -1185,7 +1187,17 @@
                 this.stream.getTracks().forEach(t => pc.addTrack(t, this.stream));
                 pc.onicecandidate = e => { if(e.candidate) req(`/api/calls/${this.activeCall}/signal`, 'POST', {target_id: peerId, type:'ice', data: e.candidate}); };
                 pc.ontrack = e => { 
-                    const audio = new Audio(); audio.srcObject = e.streams[0]; audio.play();
+                    // FIX: Attach audio to DOM so the browser doesn't garbage collect it
+                    let audio = document.getElementById(`audio-${peerId}`);
+                    if (!audio) {
+                        audio = document.createElement('audio');
+                        audio.id = `audio-${peerId}`;
+                        audio.autoplay = true;
+                        // Required for iOS/Safari:
+                        audio.setAttribute('playsinline', 'true'); 
+                        document.body.appendChild(audio);
+                    }
+                    audio.srcObject = e.streams[0];
                     // Auto-switch to conference UI if >1 peer
                     if(Object.keys(this.peers).length > 1) { document.getElementById('call-view-single').style.display='none'; document.getElementById('call-view-conf').style.display='flex'; this.renderConf(); }
                 };
