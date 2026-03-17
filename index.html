@@ -605,6 +605,13 @@
                     </button>
                 </div>
             </div>
+            <!-- THE SEARCH BAR IS BACK -->
+            <div class="search-wrap" style="background: transparent;">
+                <div class="search-bar" style="background: color-mix(in srgb, var(--text-main) 8%, transparent);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" placeholder="Search" oninput="App.searchGlobal(this.value)">
+                </div>
+            </div>
         </div>
         
         <!-- Exact padding to remove the empty gap while allowing items to scroll BEHIND the glass -->
@@ -1084,22 +1091,22 @@
         const manifest = { 
             name: "YukiChat Pro", 
             short_name: "YukiChat", 
-            start_url: "/", // FIX: Prevents path-isolation logout bugs
+            start_url: "./", // FIX: Using dot-slash targets the GitHub Repo root correctly
             display: "standalone", 
             background_color: "#0f172a", 
             theme_color: "#0f172a", 
             icons:[
-                { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
-                { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
-                { src: defAv, sizes: "192x192", type: "image/svg+xml" } // Fallback SVG
+                { src: "./icon-192.png", sizes: "192x192", type: "image/png" }, // FIX: Relative Path
+                { src: "./icon-512.png", sizes: "512x512", type: "image/png" }, // FIX: Relative Path
+                { src: defAv, sizes: "192x192", type: "image/svg+xml" }
             ] 
         };
         document.getElementById('pwa-manifest').href = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifest));
         
-        // Register Service Worker correctly (points to root /sw.js)
+        // Register Service Worker correctly (Using relative path!)
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js')
-                .then(() => console.log('SW Registered'))
+            navigator.serviceWorker.register('./sw.js') // FIX: ./sw.js instead of /sw.js
+                .then(() => console.log('SW Registered Successfully'))
                 .catch(err => console.error('SW Failed:', err));
         }
         
@@ -1111,11 +1118,15 @@
             e.preventDefault(); 
             deferredPrompt = e; 
             
-            // Only show install buttons if we are NOT already running inside the PWA
+            // Show buttons ONLY if not already installed
             if (!isStandalone) {
-                document.getElementById('header-install-btn').style.display='flex'; 
-                document.getElementById('settings-install-card').style.display='block';
-                document.getElementById('settings-install-header').style.display='block';
+                const hBtn = document.getElementById('header-install-btn');
+                if(hBtn) hBtn.style.display='flex'; 
+                
+                const sCard = document.getElementById('settings-install-card');
+                const sHeader = document.getElementById('settings-install-header');
+                if(sCard) sCard.style.display='block';
+                if(sHeader) sHeader.style.display='block';
             }
         });
         
