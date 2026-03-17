@@ -560,38 +560,43 @@
     <!-- AUTH PANEL -->
     <div id="panel-auth" class="panel active" style="justify-content: center; padding: 32px; overflow-y: auto;">
         <div style="max-width: 360px; width: 100%; margin: auto; text-align: center;">
-            <h1 style="font-size: 32px; font-weight: 800; margin-bottom: 40px;">YukiChat</h1>
+            
+            <!-- LIQUID BORDER LANGUAGE SWITCHER -->
+            <div style="display:flex; justify-content:center; gap:8px; margin-bottom: 32px; background: color-mix(in srgb, var(--text-main) 5%, transparent); padding: 6px; border-radius: 30px; width: fit-content; margin-inline: auto;" class="liquid-glass n-glass-border">
+                <button class="lang-btn liquid-glass n-glass-border" data-lang="en" onclick="App.setLang('en')" style="padding: 8px 24px; border-radius: 24px; border: 1px solid var(--text-main); font-weight: 600; font-size: 13px;">EN</button>
+                <button class="lang-btn liquid-glass n-glass-border" data-lang="ru" onclick="App.setLang('ru')" style="padding: 8px 24px; border-radius: 24px; border: 1px solid transparent; font-weight: 600; font-size: 13px;">RU</button>
+            </div>
+
+            <h1 style="font-size: 32px; font-weight: 800; margin-bottom: 40px;" data-i18n="app_title">YukiChat</h1>
             
             <div id="auth-reg-fields" style="display:none; margin-bottom: 24px;">
                 <label style="position:relative; display:inline-block; margin-bottom:12px; cursor:pointer;">
                     <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOTRhM2I4IiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PHBhdGggZD0iTTEyIDh2OG0tNCA0aDgiLz48L3N2Zz4=" id="auth-av-preview" class="avatar" style="width:80px;height:80px; border:2px solid var(--border)">
                     <input type="file" hidden accept="image/*" onchange="App.authAv(event)">
                 </label>
-                <div style="color:var(--text-muted); font-size:13px;">Upload Photo</div>
+                <div style="color:var(--text-muted); font-size:13px;" data-i18n="upload_photo">Upload Photo</div>
             </div>
 
-            <input type="text" id="auth-u" class="settings-input" placeholder="Username">
-            <input type="password" id="auth-p" class="settings-input" placeholder="Password" style="margin-bottom: 24px;">
+            <!-- GLASS INPUTS -->
+            <input type="text" id="auth-u" class="settings-input liquid-glass n-glass-border" data-i18n-ph="username" placeholder="Username" style="background: transparent;">
+            <input type="password" id="auth-p" class="settings-input liquid-glass n-glass-border" data-i18n-ph="password" placeholder="Password" style="margin-bottom: 24px; background: transparent;">
             
-            <button class="btn" id="btn-auth-main" onclick="App.submitAuth()">Log In</button>
+            <!-- GLASS BUTTON -->
+            <button class="btn liquid-glass n-glass-border" id="btn-auth-main" onclick="App.submitAuth()" data-i18n="login_btn" style="background: color-mix(in srgb, var(--primary) 20%, transparent); color: var(--text-main);">Log In</button>
+            
             <div style="margin-top: 24px; color:var(--text-muted); font-size:14px;">
-                <span id="auth-toggle-txt">Don't have an account?</span> 
-                <span style="color:var(--primary); cursor:pointer; font-weight:600;" onclick="App.toggleAuthMode()">Sign Up</span>
+                <span id="auth-toggle-txt" data-i18n="no_account">Don't have an account?</span> 
+                <span style="color:var(--primary); cursor:pointer; font-weight:600;" onclick="App.toggleAuthMode()" id="auth-toggle-action" data-i18n="sign_up">Sign Up</span>
             </div>
         </div>
     </div>
 
     <!-- ROOT CHAT LIST -->
-    <!-- ROOT CHAT LIST -->
-    <!-- ROOT CHAT LIST -->
-    <!-- ROOT CHAT LIST -->
     <div id="panel-root" class="panel root">
-        <!-- WRAPPED IN CLEAR LIQUID GLASS -->
         <div class="liquid-glass n-glass-header" style="position: absolute; width: 100%; top: 0; z-index: 50;">
             <div class="root-header" style="background: transparent;">
-                <h1>Messages</h1>
+                <h1 data-i18n="messages">Messages</h1>
                 <div style="display:flex; gap: 8px; align-items: center;">
-                    <!-- NEW Install Button (Hidden by default) -->
                     <button class="icon-btn" id="header-install-btn" style="display:none;" onclick="App.installPWA()">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -599,22 +604,19 @@
                             <line x1="12" y1="15" x2="12" y2="3"></line>
                         </svg>
                     </button>
-                    <!-- Existing Theme Button -->
                     <button class="icon-btn" onclick="App.toggleTheme()">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                     </button>
                 </div>
             </div>
-            <!-- THE SEARCH BAR IS BACK -->
             <div class="search-wrap" style="background: transparent;">
                 <div class="search-bar" style="background: color-mix(in srgb, var(--text-main) 8%, transparent);">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    <input type="text" placeholder="Search" oninput="App.searchGlobal(this.value)">
+                    <input type="text" data-i18n-ph="search_ph" placeholder="Search" oninput="App.searchGlobal(this.value)">
                 </div>
             </div>
         </div>
         
-        <!-- Exact padding to remove the empty gap while allowing items to scroll BEHIND the glass -->
         <div class="panel-body" id="chat-list" style="padding-top: calc(125px + var(--safe-top)); height: 100%; overflow-y: auto;"></div>
         
         <button class="fab" onclick="Router.push('panel-new')">
@@ -623,10 +625,7 @@
     </div>
 
     <!-- ACTIVE CHAT -->
-    <!-- ACTIVE CHAT -->
     <div id="panel-chat" class="panel n-panel-fix">
-        <!-- Added n-glass-header -->
-        <!-- Transparent Glass Header for Chat Window ONLY (matches Navigation Bar) -->
         <div class="panel-header liquid-glass n-glass-header" style="justify-content: space-between; border-bottom: none;">
             <div style="display:flex; align-items:center; gap:12px; cursor:pointer;" onclick="App.viewProfile(State.chat)">
                 <button class="icon-btn" onclick="event.stopPropagation(); Router.pop()" style="margin-left:-8px">
@@ -635,62 +634,49 @@
                 <div class="avatar-wrap" style="width:40px;height:40px;"><img src="" id="chat-av" class="avatar" style="width:100%;height:100%;"></div>
                 <div>
                     <div class="panel-title" id="chat-title" style="text-align:left; font-size:16px;">Chat</div>
-                    <div style="font-size: 12px; color: var(--text-muted); font-weight: 500;" id="chat-status">Connecting...</div>
+                    <div style="font-size: 12px; color: var(--text-muted); font-weight: 500;" id="chat-status" data-i18n="connecting">Connecting...</div>
                 </div>
             </div>
-            <!-- FIX: Added flex-shrink:0 to prevent squishing, reduced gap from 16px to 8px -->
             <div style="display:flex; gap:8px; align-items:center; flex-shrink: 0;">
                 <button class="icon-btn" id="ai-clear-btn" onclick="App.clearAI()" style="display:none; color:var(--danger); flex-shrink: 0;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>
                 </button>
-                <!-- START VIDEO CALL BUTTON -->
                 <button class="icon-btn" style="color:var(--text-main); flex-shrink: 0;" onclick="RTC.startCall(true)">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
                 </button>
-                <!-- START AUDIO CALL BUTTON -->
                 <button class="icon-btn" style="color:var(--text-main); flex-shrink: 0;" onclick="RTC.startCall()">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                 </button>
             </div>
         </div>
         
-        <!-- Added n-chat-area-relative -->
         <div class="chat-area n-chat-area-relative" id="chat-area-bg">
-            
-            <!-- Added absolute positioning to pinned messages so it sits under the header -->
             <div id="pinned-msg" class="pinned-bar n-liquid" style="display:none; position:absolute; top:calc(60px + var(--safe-top)); left:0; right:0; z-index:45; margin:0; border-radius:0; border-bottom:1px solid var(--border);" onclick="App.scrollToPin()">
-                <div style="font-weight:600; font-size:12px; color:var(--primary)">📌 Pinned</div>
+                <div style="font-weight:600; font-size:12px; color:var(--primary)" data-i18n="pinned">📌 Pinned</div>
                 <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-left:12px; color:var(--text-muted)" id="pinned-text"></div>
             </div>
             
-            <!-- Added n-messages-absolute to fill screen -->
-            <div class="messages n-messages-absolute" id="msgs">
-                <!-- Messages populate here -->
-            </div>
+            <div class="messages n-messages-absolute" id="msgs"></div>
             
-            <!-- WRAPPED IN ABSOLUTE BOTTOM CONTAINER -->
-            <!-- WRAPPED IN ABSOLUTE BOTTOM CONTAINER -->
             <div class="n-input-container">
                 <div id="reply-preview" class="reply-bar-active liquid-glass" style="display:none; margin: 0 20px 10px; border: 1px solid var(--border);">
-                    <div style="border-left:3px solid var(--primary); padding-left:10px; font-size:13px; color:var(--text-main)" id="reply-preview-text">Replying...</div>
+                    <div style="border-left:3px solid var(--primary); padding-left:10px; font-size:13px; color:var(--text-main)" id="reply-preview-text" data-i18n="replying">Replying...</div>
                     <button class="icon-btn" style="width:24px;height:24px; color:var(--text-main)" onclick="App.cancelReply()">✕</button>
                 </div>
                 
-                <!-- ADD THIS NEW MEDIA PREVIEW BLOCK -->
                 <div id="media-preview" class="reply-bar-active liquid-glass" style="display:none; margin: 0 20px 10px; border: 1px solid var(--border); padding: 8px 12px; align-items: flex-start;">
                     <img id="media-preview-img" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: var(--bg-input); margin-right: 12px;">
                     <div style="flex:1; display:flex; flex-direction:column; justify-content:center; height: 48px;">
-                        <div style="font-size:13px; font-weight:600; color:var(--text-main);">Attached Media</div>
-                        <div style="font-size:12px; color:var(--text-muted);">Ready to send</div>
+                        <div style="font-size:13px; font-weight:600; color:var(--text-main);" data-i18n="attached_media">Attached Media</div>
+                        <div style="font-size:12px; color:var(--text-muted);" data-i18n="ready_to_send">Ready to send</div>
                     </div>
                     <button class="icon-btn" style="width:24px;height:24px; color:var(--text-main)" onclick="App.cancelMedia()">✕</button>
                 </div>
                 
                 <div class="input-bar n-input-bar-reset" id="input-bar">
-                    <!-- Sticker Panel -->
                     <div class="sticker-panel" id="sticker-panel">
                         <div style="padding: 12px 20px; font-weight: 600; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;">
-                            Stickers <span onclick="App.toggleStickers()" style="cursor:pointer; color:var(--text-muted)">✕</span>
+                            <span data-i18n="stickers">Stickers</span> <span onclick="App.toggleStickers()" style="cursor:pointer; color:var(--text-muted)">✕</span>
                         </div>
                         <div class="sticker-grid" id="sticker-grid"></div>
                     </div>
@@ -700,7 +686,7 @@
                     </button>
                     
                     <div class="liquid-glass n-glass-border" style="flex: 1; position: relative; display: flex; align-items: center; border-radius: 24px;">
-                        <textarea id="msg-input" class="msg-input" placeholder="Message..." rows="1" style="flex: 1; background: transparent; border-radius: 24px; padding: 12px 40px 12px 16px; margin: 0; outline: none; border: none; max-height: 100px; color: var(--text-main);"></textarea>
+                        <textarea id="msg-input" class="msg-input" data-i18n-ph="msg_ph" placeholder="Message..." rows="1" style="flex: 1; background: transparent; border-radius: 24px; padding: 12px 40px 12px 16px; margin: 0; outline: none; border: none; max-height: 100px; color: var(--text-main);"></textarea>
                         
                         <button class="icon-btn" onclick="document.getElementById('file-upload').click()" style="position: absolute; right: 4px; width: 32px; height: 32px; color:var(--text-main);">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
@@ -712,8 +698,7 @@
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 7l-5-5-5 5"/></svg>
                     </button>
                 </div>
-                <!-- Fixed Channel Bar background to liquid too -->
-                <div id="channel-bar" class="liquid-glass" style="display:none; padding:16px; text-align:center; color:var(--text-main); font-weight:500;">Only admins can broadcast here.</div>
+                <div id="channel-bar" class="liquid-glass" style="display:none; padding:16px; text-align:center; color:var(--text-main); font-weight:500;" data-i18n="admin_only">Only admins can broadcast here.</div>
             </div>
         </div>
     </div>
@@ -721,12 +706,12 @@
     <div id="panel-stickerpack" class="panel">
         <div class="panel-header">
             <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-            <div class="panel-title" id="sp-title">Sticker Pack</div>
+            <div class="panel-title" id="sp-title" data-i18n="spack">Sticker Pack</div>
             <div style="width:40px"></div>
         </div>
         <div class="panel-body" style="padding: 20px; text-align: center;">
             <div id="sp-grid" class="sticker-grid" style="margin-bottom: 24px; max-height: 50vh; overflow-y: auto;"></div>
-            <button class="btn" id="btn-install-sp" onclick="App.installStickerPack()">Add Stickers</button>
+            <button class="btn" id="btn-install-sp" onclick="App.installStickerPack()" data-i18n="add_stickers">Add Stickers</button>
         </div>
     </div>
     
@@ -736,48 +721,45 @@
             <button class="icon-btn" onclick="Router.pop()">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
-            <div class="panel-title">Settings</div>
+            <div class="panel-title" data-i18n="settings">Settings</div>
             <div style="width:40px"></div>
         </div>
         <div class="panel-body" style="padding: 0 20px;">
-            <!-- NEW Settings Install Button -->
-            <div class="settings-header" id="settings-install-header" style="display:none;">App</div>
+            <div class="settings-header" id="settings-install-header" style="display:none;" data-i18n="app">App</div>
             <div class="settings-card" id="settings-install-card" style="display:none;">
                 <div class="settings-row" style="margin:0; background:transparent; cursor:pointer;" onclick="App.installPWA()">
                     <div style="display:flex; align-items:center; gap:10px; color:var(--primary); font-weight:600;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                        Install App (PWA)
+                        <span data-i18n="install_app">Install App (PWA)</span>
                     </div>
                 </div>
             </div>
-            <div class="settings-header">Profile</div>
+            <div class="settings-header" data-i18n="profile">Profile</div>
             <div class="settings-card" style="padding: 1px 20px 20px;">
                 <label class="profile-av-wrap" style="display:block; cursor:pointer;">
                     <img src="" id="set-av" class="avatar">
-                    <div class="profile-av-edit">Edit</div>
+                    <div class="profile-av-edit" data-i18n="edit">Edit</div>
                     <input type="file" hidden accept="image/*" onchange="App.updateProfile(event, 'avatar')">
                 </label>
                 
-                <div style="font-size:13px; color:var(--text-muted); margin-bottom:6px; font-weight:500;">Username</div>
+                <div style="font-size:13px; color:var(--text-muted); margin-bottom:6px; font-weight:500;" data-i18n="username">Username</div>
                 <input type="text" id="set-name" class="settings-input" onblur="App.updateProfile(null, 'username')">
                 
-                <div style="font-size:13px; color:var(--text-muted); margin-bottom:6px; font-weight:500;">Bio</div>
+                <div style="font-size:13px; color:var(--text-muted); margin-bottom:6px; font-weight:500;" data-i18n="bio">Bio</div>
                 <textarea id="set-bio" class="settings-input" rows="2" style="resize:none;" onblur="App.updateProfile(null, 'bio')"></textarea>
             </div>
             
-            <div class="settings-header">Appearance</div>
+            <div class="settings-header" data-i18n="appearance">Appearance</div>
             <div class="settings-card">
                 <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
-                    <span>Wallpaper</span>
-                    <!-- Replaced text input with file input to match user request -->
+                    <span data-i18n="wallpaper">Wallpaper</span>
                     <label style="cursor:pointer; width:60px; height:36px; background:var(--bg-input); border-radius:8px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; overflow:hidden;">
-                        <span style="font-size:12px; color:var(--text-muted);">Upload</span>
+                        <span style="font-size:12px; color:var(--text-muted);" data-i18n="upload">Upload</span>
                         <input type="file" id="set-wall-file" hidden accept="image/*" onchange="App.setWallpaperFile(event)">
                     </label>
                 </div>
-                <!-- Replace the existing Color Theme settings-row with this block -->
                 <div class="settings-row" style="margin:0; background:transparent; flex-direction:column; align-items:flex-start; gap:16px;">
-                    <span>Color Theme</span>
+                    <span data-i18n="theme">Color Theme</span>
                     <div class="theme-scroll-wrapper">
                         <div class="theme-preview" data-theme-val="light" onclick="App.setTheme('light')">
                             <div class="theme-preview-inner" style="background:#ffffff; border:1px solid #e5e7eb;">
@@ -832,67 +814,64 @@
                     </div>
                 </div>
             </div>
-            <div class="settings-header">Notifications</div>
+            <div class="settings-header" data-i18n="notifs">Notifications</div>
             <div class="settings-card">
                 <div class="settings-row" style="margin:0; background:transparent; cursor:pointer;" onclick="window.open('https://t.me/yukichat_nots_bot?start=' + State.t, '_blank')">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="2"><path d="M22 2L11 13M22 2L15 22 11 13 2 9 22 2z"/></svg>
-                        Enable Telegram Notifications
+                        <span data-i18n="enable_tg">Enable Telegram Notifications</span>
                     </div>
                 </div>
             </div>
-            <div class="settings-header">Privacy</div>
+            <div class="settings-header" data-i18n="privacy">Privacy</div>
             <div class="settings-card" style="padding: 16px;">
                 <div style="margin-bottom: 16px;">
-                    <div style="font-size:14px; margin-bottom:8px; font-weight:500;">Who can call me</div>
+                    <div style="font-size:14px; margin-bottom:8px; font-weight:500;" data-i18n="who_call">Who can call me</div>
                     <select id="set-call" class="settings-input" style="padding:12px; margin:0;" onchange="App.updateProfile(null,'privacy')">
-                        <option value="everyone">Everyone</option><option value="noone">No One</option>
+                        <option value="everyone" data-i18n="everyone">Everyone</option><option value="noone" data-i18n="noone">No One</option>
                     </select>
                 </div>
                 <div>
-                    <div style="font-size:14px; margin-bottom:8px; font-weight:500;">Who can view my profile</div>
+                    <div style="font-size:14px; margin-bottom:8px; font-weight:500;" data-i18n="who_pfp">Who can view my profile</div>
                     <select id="set-pfp" class="settings-input" style="padding:12px; margin:0;" onchange="App.updateProfile(null,'privacy')">
-                        <option value="everyone">Everyone</option><option value="noone">No One</option>
+                        <option value="everyone" data-i18n="everyone">Everyone</option><option value="noone" data-i18n="noone">No One</option>
                     </select>
                 </div>
             </div>
-            <!-- CACHE SETTINGS -->
-            <div class="settings-header">Storage & Data</div>
+            <div class="settings-header" data-i18n="storage">Storage & Data</div>
             <div class="settings-card">
                 <div class="settings-row" style="margin:0; background:transparent; cursor:pointer;" onclick="App.clearCache()">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                        Clear Local Cache
+                        <span data-i18n="clear_cache">Clear Local Cache</span>
                     </div>
                     <span id="cache-size" style="font-size:12px; color:var(--text-muted); font-weight:700;">Calculating...</span>
                 </div>
             </div>
 
-            <!-- ADMIN PANEL (Hidden by default, shown via JS) -->
+            <!-- ADMIN PANEL -->
             <div id="admin-panel" style="display: none;">
-                <div class="settings-header" style="color:#0088cc;">Administrator Tools</div>
+                <div class="settings-header" style="color:#0088cc;" data-i18n="admin_tools">Administrator Tools</div>
                 <div class="settings-card" style="padding: 16px;">
-                    <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px; font-weight:500;">Grant Verification Tick</div>
+                    <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px; font-weight:500;" data-i18n="grant_tick">Grant Verification Tick</div>
                     <div style="display:flex; gap:10px;">
-                        <input type="text" id="admin-verify-user" class="settings-input" style="margin:0; flex:1;" placeholder="@username">
-                        <button class="btn" style="width:auto; padding:0 20px; background:#0088cc;" onclick="App.verifyUser()">Verify</button>
+                        <input type="text" id="admin-verify-user" class="settings-input" style="margin:0; flex:1;" data-i18n-ph="username" placeholder="@username">
+                        <button class="btn" style="width:auto; padding:0 20px; background:#0088cc;" onclick="App.verifyUser()" data-i18n="verify">Verify</button>
                     </div>
                 </div>
             </div>
             <div class="settings-card">
                 <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0; cursor:pointer;" onclick="App.loadSessions()">
-                    <span>Active Sessions</span>
+                    <span data-i18n="sessions">Active Sessions</span>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </div>
                 <div class="settings-row" style="margin:0; background:transparent; color:var(--danger); cursor:pointer;" onclick="App.logout()">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                        Log Out
+                        <span data-i18n="logout">Log Out</span>
                     </div>
                 </div>
             </div>
-            
-            
         </div>
     </div>
 
@@ -900,7 +879,7 @@
     <div id="panel-profile" class="panel">
         <div class="panel-header">
             <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-            <div class="panel-title">Contact Info</div>
+            <div class="panel-title" data-i18n="contact_info">Contact Info</div>
             <div style="width:40px"></div>
         </div>
         <div class="panel-body" style="padding: 32px 20px; text-align:center;">
@@ -916,7 +895,7 @@
     <div id="panel-sessions" class="panel">
         <div class="panel-header">
             <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-            <div class="panel-title">Active Sessions</div>
+            <div class="panel-title" data-i18n="sessions">Active Sessions</div>
             <div style="width:40px"></div>
         </div>
         <div class="panel-body" id="sessions-list" style="padding: 20px;"></div>
@@ -925,28 +904,28 @@
     <div id="panel-create-channel" class="panel">
         <div class="panel-header">
             <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-            <div class="panel-title">New Channel</div>
+            <div class="panel-title" data-i18n="new_chan">New Channel</div>
             <div style="width:40px"></div>
         </div>
         <div class="panel-body" style="padding: 20px;">
             <label class="profile-av-wrap" style="display:block; cursor:pointer;">
                 <img src="" id="new-chan-av" class="avatar" style="background:var(--bg-input);">
-                <div class="profile-av-edit">Upload</div>
+                <div class="profile-av-edit" data-i18n="upload">Upload</div>
                 <input type="file" hidden accept="image/*" onchange="App.prepChanAv(event)">
             </label>
-            <input type="text" id="new-chan-name" class="settings-input" placeholder="Channel Name">
-            <textarea id="new-chan-desc" class="settings-input" placeholder="Description (Optional)" rows="2"></textarea>
+            <input type="text" id="new-chan-name" class="settings-input" data-i18n-ph="name_ph" placeholder="Channel Name">
+            <textarea id="new-chan-desc" class="settings-input" data-i18n-ph="desc_ph" placeholder="Description (Optional)" rows="2"></textarea>
             
             <div class="settings-row" style="background:transparent; padding:16px 0;">
-                <span>Private Channel</span>
+                <span data-i18n="priv_chan">Private Channel</span>
                 <input type="checkbox" id="new-chan-private" style="width:20px;height:20px;" onchange="document.getElementById('new-chan-handle-box').style.display = this.checked ? 'none' : 'block'">
             </div>
             
             <div id="new-chan-handle-box">
-                <input type="text" id="new-chan-handle" class="settings-input" placeholder="Public @handle (e.g. mychannel)">
+                <input type="text" id="new-chan-handle" class="settings-input" data-i18n-ph="handle_ph" placeholder="Public @handle (e.g. mychannel)">
             </div>
             
-            <button class="btn" style="margin-top: 24px;" onclick="App.submitChannel()">Create Channel</button>
+            <button class="btn" style="margin-top: 24px;" onclick="App.submitChannel()" data-i18n="create_chan">Create Channel</button>
         </div>
     </div>
     
@@ -954,48 +933,32 @@
     <div id="panel-new" class="panel">
         <div class="panel-header">
             <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-            <div class="panel-title">New Message</div>
+            <div class="panel-title" data-i18n="new_msg">New Message</div>
             <div style="width:40px"></div>
         </div>
         <div class="panel-body" style="padding: 20px;">
             <div class="search-bar" style="margin-bottom: 24px;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" placeholder="Search global users..." oninput="App.searchGlobal(this.value)">
+                <input type="text" data-i18n-ph="search_global" placeholder="Search global users..." oninput="App.searchGlobal(this.value)">
             </div>
             <button class="settings-row" style="width:100%; justify-content:flex-start; gap:16px; margin-bottom:12px; border:none;" onclick="App.createChat('group')">
                 <div class="icon-btn" style="background:var(--primary); color:var(--bg-base); width:36px; height:36px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
-                New Group
+                <span data-i18n="new_group">New Group</span>
             </button>
             <button class="settings-row" style="width:100%; justify-content:flex-start; gap:16px; border:none;" onclick="App.createChannelUI()">
                 <div class="icon-btn" style="background:var(--primary); color:var(--bg-base); width:36px; height:36px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg></div>
-                New Channel
+                <span data-i18n="new_chan">New Channel</span>
             </button>
             <div id="global-search-res" style="margin-top: 24px;"></div>
         </div>
     </div>
 
-    <!-- MEDIA CAPTION PANEL 
-    <div id="panel-caption" class="panel" style="z-index: 50; background: rgba(0,0,0,0.95);">
-        <div class="panel-header" style="background:transparent; border:none;">
-            <button class="icon-btn" onclick="document.getElementById('panel-caption').classList.remove('active')" style="color:white;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-        </div>
-        <div class="panel-body" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
-            <img id="cap-preview" style="max-width:100%; max-height:60vh; border-radius:16px; margin-bottom:24px; object-fit:contain;">
-            <div class="input-wrapper" style="width:100%; max-width:400px; background:#222;">
-                <input type="text" id="cap-input" style="flex:1; border:none; background:transparent; color:white; font-size:15px; outline:none; padding:10px 0;" placeholder="Add a caption...">
-                <button class="send-btn" style="background:white; color:black;" onclick="App.sendMedia()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 7l-5-5-5 5"/></svg></button>
-            </div>
-        </div>
-    </div>-->
-
     <!-- CALL UI PANEL -->
-    <!-- PERMANENT MEDIA ELEMENTS (Fixes Audio Drops & iOS Autoplay Blocks) -->
     <audio id="rtc-audio" autoplay playsinline style="display:none;"></audio>
     
     <div id="panel-call" class="panel" style="transform:translateY(100%); transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); background: #000;">
         <div class="call-bg" id="call-bg"></div>
         
-        <!-- VIDEO CONTAINERS -->
         <video id="remote-video" autoplay playsinline style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; display:none;"></video>
         <video id="local-video" autoplay playsinline muted style="position:absolute; top:calc(20px + var(--safe-top)); right:20px; width:100px; height:150px; border-radius:12px; object-fit:cover; z-index:3; display:none; box-shadow:0 4px 12px rgba(0,0,0,0.3); background:#222;"></video>
 
@@ -1003,7 +966,7 @@
         <div class="call-content" id="call-view-incoming" style="display:none; text-align:center; z-index:4;">
             <img id="inc-call-av" class="avatar" style="width:130px;height:130px; box-shadow:var(--shadow);" src="">
             <div style="font-size:28px; font-weight:700; margin-top:24px; color:white;" id="inc-call-name">User Name</div>
-            <div style="font-size:15px; color:rgba(255,255,255,0.7); margin-top:8px;" id="inc-call-type">Incoming Call...</div>
+            <div style="font-size:15px; color:rgba(255,255,255,0.7); margin-top:8px;" id="inc-call-type" data-i18n="inc_aud">Incoming Call...</div>
             
             <div class="call-controls" style="margin-top:auto; background:transparent; box-shadow:none; width:100%; justify-content:center; gap:40px;">
                 <button class="call-btn end" style="width:72px; height:72px;" onclick="RTC.declineCall()">
@@ -1020,7 +983,7 @@
             <div id="call-header-info" style="text-align:center;">
                 <img id="call-av" class="avatar" style="width:100px;height:100px; box-shadow:var(--shadow);" src="">
                 <div style="font-size:24px; font-weight:700; margin-top:16px; color:white;" id="call-name">User Name</div>
-                <div style="font-size:15px; color:rgba(255,255,255,0.7); margin-top:4px;" id="call-status-txt">Ringing...</div>
+                <div style="font-size:15px; color:rgba(255,255,255,0.7); margin-top:4px;" id="call-status-txt" data-i18n="ringing">Ringing...</div>
                 <div style="font-size:18px; font-weight:600; margin-top:8px; color:white; font-variant-numeric: tabular-nums;" id="call-time">00:00</div>
             </div>
             
@@ -1048,29 +1011,28 @@
             <span onclick="App.msgAct('react','❤️')">❤️</span><span onclick="App.msgAct('react','😂')">😂</span><span onclick="App.msgAct('react','👍')">👍</span>
             <span onclick="App.msgAct('react','😢')">😢</span><span onclick="App.msgAct('react','🔥')">🔥</span>
         </div>
-        <div class="settings-row" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; cursor:pointer;" onclick="App.initReply()">↩️ Reply</div>
-        <div class="settings-row" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; cursor:pointer;" onclick="App.msgAct('pin')">📌 Pin / Unpin</div>
-        <div class="settings-row" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; cursor:pointer;" onclick="navigator.clipboard.writeText(App.targetTxt); UI.toast('Copied')">📋 Copy Text</div>
-        <div class="settings-row" id="ctx-del" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; color:var(--danger); cursor:pointer;" onclick="App.msgAct('delete')">🗑️ Delete Message</div>
+        <div class="settings-row" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; cursor:pointer;" onclick="App.initReply()" data-i18n="ctx_reply">↩️ Reply</div>
+        <div class="settings-row" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; cursor:pointer;" onclick="App.msgAct('pin')" data-i18n="ctx_pin">📌 Pin / Unpin</div>
+        <div class="settings-row" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; cursor:pointer;" onclick="navigator.clipboard.writeText(App.targetTxt); UI.toast(App.t('toast_copy'))" data-i18n="ctx_copy">📋 Copy Text</div>
+        <div class="settings-row" id="ctx-del" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; color:var(--danger); cursor:pointer;" onclick="App.msgAct('delete')" data-i18n="ctx_del">🗑️ Delete Message</div>
     </div>
     
-    <div class="bottom-nav liquid-glass" id="bottom-nav">
+    <div class="bottom-nav liquid-glass" id="bottom-nav" style="display: none;">
         <div class="nav-item active" id="nav-chats" onclick="App.switchTab('chats')">
             <div class="icon-wrap">
                 <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                 <div class="nav-badge" id="nav-badge" style="display:none;">0</div>
             </div>
-            <span>Chats</span>
+            <span data-i18n="nav_chats">Chats</span>
         </div>
         <div class="nav-item" id="nav-profile" onclick="App.switchTab('profile')">
             <div class="icon-wrap">
-                <!-- Uses actual user profile picture! -->
                 <img src="" id="nav-av" style="width:26px; height:26px; border-radius:50%; object-fit:cover;">
             </div>
-            <span>Profile</span>
+            <span data-i18n="nav_profile">Profile</span>
         </div>
     </div>
-    <script>
+<script>
         /* SETUP & PWA Injection */
         const defAv = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzMzNDE1NSI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==";
         const getDefAv = (name) => {
@@ -1080,51 +1042,44 @@
         const API = 'https://yukichat.kviappsgames.workers.dev'; 
         const verifiedTick = `<svg style="width:16px; height:16px; vertical-align:text-bottom; fill:#0088cc; margin-left:4px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M23,12L20.56,9.22L20.9,5.54L17.29,4.72L15.4,1.54L12,3L8.6,1.54L6.71,4.72L3.1,5.53L3.44,9.21L1,12L3.44,14.78L3.1,18.47L6.71,19.29L8.6,22.47L12,21L15.4,22.46L17.29,19.28L20.9,18.46L20.56,14.78L23,12M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z" /></svg>`;
         
-        // Prevent iOS/Android from purging LocalStorage (Fixes random logouts)
         if (navigator.storage && navigator.storage.persist) {
             navigator.storage.persist().then(granted => {
                 if (granted) console.log("Storage will not be cleared by the OS.");
             });
         }
         
-        // FIX: Generate Absolute URL dynamically for GitHub pages (e.g. https://domain.com/YukiChat/)
         const baseUrl = new URL('.', window.location.href).href;
         
-        // Dynamic PWA Manifest Generation for Installation
         const manifest = { 
             name: "YukiChat Pro", 
             short_name: "YukiChat", 
-            start_url: baseUrl, // Absolute URL fixes the 'invalid URL' error
+            start_url: baseUrl, 
             display: "standalone", 
             background_color: "#0f172a", 
             theme_color: "#0f172a", 
             icons:[
-                { src: baseUrl + "icon-192.png", sizes: "192x192", type: "image/png" }, // Absolute URL
-                { src: baseUrl + "icon-512.png", sizes: "512x512", type: "image/png" }, // Absolute URL
-                { src: defAv, sizes: "192x192", type: "image/svg+xml" } // Data URIs are naturally fine
+                { src: baseUrl + "icon-192.png", sizes: "192x192", type: "image/png" }, 
+                { src: baseUrl + "icon-512.png", sizes: "512x512", type: "image/png" }, 
+                { src: defAv, sizes: "192x192", type: "image/svg+xml" } 
             ] 
         };
         document.getElementById('pwa-manifest').href = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifest));
         
-        // Register Service Worker correctly (Using relative path is fine here)
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js')
                 .then(() => console.log('SW Registered Successfully'))
                 .catch(err => console.error('SW Failed:', err));
         }
         
-        // PWA Install Prompt Handlers
         let deferredPrompt;
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
         
         window.addEventListener('beforeinstallprompt', (e) => { 
             e.preventDefault(); 
             deferredPrompt = e; 
-            
             if (!isStandalone) {
                 const hBtn = document.getElementById('header-install-btn');
                 if(hBtn) hBtn.style.display='flex'; 
-                
                 const sCard = document.getElementById('settings-install-card');
                 const sHeader = document.getElementById('settings-install-header');
                 if(sCard) sCard.style.display='block';
@@ -1137,14 +1092,88 @@
             document.getElementById('settings-install-card').style.display='none';
             document.getElementById('settings-install-header').style.display='none';
             deferredPrompt = null;
-            UI.toast("App successfully installed!");
+            UI.toast(App.t('toast_installed') || "App successfully installed!");
         });
 
+        // ================= LANGUAGE DICTIONARY =================
+        const Locales = {
+            en: {
+                app_title: "YukiChat", upload_photo: "Upload Photo", username: "Username", password: "Password",
+                login_btn: "Log In", signup_btn: "Create Account", no_account: "Don't have an account?", 
+                has_account: "Already have an account?", sign_up: "Sign Up", log_in: "Log In",
+                nav_chats: "Chats", nav_profile: "Profile", messages: "Messages", search_ph: "Search", 
+                search_global: "Search global users...", no_chats: "No chats found", no_results: "No results found.", 
+                type_3: "Type at least 3 characters...", connecting: "Connecting...", online: "Online", 
+                typing: "typing...", replying: "Replying...", attached_media: "Attached Media", 
+                ready_to_send: "Ready to send", msg_ph: "Message...", admin_only: "Only admins can broadcast here.", 
+                pinned: "📌 Pinned", ctx_reply: "↩️ Reply", ctx_pin: "📌 Pin / Unpin", ctx_copy: "📋 Copy Text", 
+                ctx_del: "🗑️ Delete Message", settings: "Settings", app: "App", install_app: "Install App (PWA)", 
+                profile: "Profile", edit: "Edit", bio: "Bio", appearance: "Appearance", wallpaper: "Wallpaper", 
+                upload: "Upload", theme: "Color Theme", notifs: "Notifications", enable_tg: "Enable Telegram Notifications", 
+                privacy: "Privacy", who_call: "Who can call me", everyone: "Everyone", noone: "No One", 
+                who_pfp: "Who can view my profile", storage: "Storage & Data", clear_cache: "Clear Local Cache", 
+                admin_tools: "Administrator Tools", grant_tick: "Grant Verification Tick", verify: "Verify", 
+                sessions: "Active Sessions", logout: "Log Out", contact_info: "Contact Info", copy_link: "🔗 Copy Link", 
+                change_photo: "Change Photo", name_ph: "Name", handle_ph: "Handle", desc_ph: "Description (Optional)", 
+                save_changes: "Save Changes", subs: "Subscribers", promote: "Promote", add_member: "➕ Add Member", 
+                new_msg: "New Message", new_group: "New Group", new_chan: "New Channel", priv_chan: "Private Channel", 
+                create_chan: "Create Channel", toast_copy: "Copied", toast_cache: "Cache Cleared", toast_updated: "Updated", 
+                toast_fail: "Failed to send", toast_link: "Link Copied!", toast_added: "Added!", toast_revoked: "Revoked", 
+                toast_mem: "Memory Cleared", p_name: "Enter name:", p_handle: "Enter public @username (blank for private):", 
+                p_user: "Enter username to add:", conf_ai: "Clear AI chat history?", conf_admin: "Make admin?", 
+                ringing: "Ringing...", connected: "Connected", inc_vid: "Incoming Video Call...", inc_aud: "Incoming Audio Call...", 
+                join_call: "📞 Join Call", stickers: "Stickers", add_stickers: "Add Stickers", spack: "Sticker Pack", bot: "Bot",
+                camera_req: "Camera/Mic access required", join_failed: "Join failed", name_req: "Name required",
+                no_bio: "No bio", no_desc: "No description", loading: "Loading...", no_sessions: "No sessions",
+                del_msg: "Deleted message", photo_sent: "🖼️ Photo Sent", file_sent: "📁 File Sent",
+                photo: "🖼️ Photo", file: "📁 File", just_now: "Just now", ai_help: "How can I help you today?",
+                mute_chan: "Mute Channel", unmute_chan: "Unmute Channel", pack_not_found: "Sticker pack not found",
+                pack_installed: "Pack Installed!", err_user_not_found: "User or channel not found", err_find_user: "Error finding user",
+                wall_updated: "Wallpaper Updated", vid_call_from: "📹 Video Call from", aud_call_from: "📞 Audio Call from",
+                tap_answer: "Tap to answer", start_chat: "Start chatting...", toast_installed: "App successfully installed!"
+            },
+            ru: {
+                app_title: "YukiChat", upload_photo: "Загрузить фото", username: "Имя пользователя", password: "Пароль",
+                login_btn: "Войти", signup_btn: "Создать аккаунт", no_account: "Нет аккаунта?", 
+                has_account: "Уже есть аккаунт?", sign_up: "Регистрация", log_in: "Войти",
+                nav_chats: "Чаты", nav_profile: "Профиль", messages: "Сообщения", search_ph: "Поиск", 
+                search_global: "Глобальный поиск...", no_chats: "Чаты не найдены", no_results: "Ничего не найдено.", 
+                type_3: "Введите минимум 3 символа...", connecting: "Подключение...", online: "В сети", 
+                typing: "печатает...", replying: "Ответ...", attached_media: "Прикрепленный файл", 
+                ready_to_send: "Готово к отправке", msg_ph: "Сообщение...", admin_only: "Писать могут только администраторы.", 
+                pinned: "📌 Закреплено", ctx_reply: "↩️ Ответить", ctx_pin: "📌 Закрепить / Открепить", ctx_copy: "📋 Копировать", 
+                ctx_del: "🗑️ Удалить", settings: "Настройки", app: "Приложение", install_app: "Установить (PWA)", 
+                profile: "Профиль", edit: "Изменить", bio: "О себе", appearance: "Внешний вид", wallpaper: "Обои", 
+                upload: "Загрузить", theme: "Цветовая тема", notifs: "Уведомления", enable_tg: "Включить уведомления Telegram", 
+                privacy: "Конфиденциальность", who_call: "Кто может мне звонить", everyone: "Все", noone: "Никто", 
+                who_pfp: "Кто видит мое фото", storage: "Данные и память", clear_cache: "Очистить кэш", 
+                admin_tools: "Инструменты администратора", grant_tick: "Выдать галочку верификации", verify: "Подтвердить", 
+                sessions: "Активные сеансы", logout: "Выйти", contact_info: "Информация", copy_link: "🔗 Копировать ссылку", 
+                change_photo: "Изменить фото", name_ph: "Имя", handle_ph: "Юзернейм", desc_ph: "Описание (необяз.)", 
+                save_changes: "Сохранить", subs: "Подписчики", promote: "Повысить", add_member: "➕ Добавить участника", 
+                new_msg: "Новое сообщение", new_group: "Новая группа", new_chan: "Новый канал", priv_chan: "Частный канал", 
+                create_chan: "Создать канал", toast_copy: "Скопировано", toast_cache: "Кэш очищен", toast_updated: "Обновлено", 
+                toast_fail: "Ошибка", toast_link: "Ссылка скопирована!", toast_added: "Добавлено!", toast_revoked: "Отозвано", 
+                toast_mem: "Память очищена", p_name: "Введите имя:", p_handle: "Публичный @username (пусто=частный):", 
+                p_user: "Введите username:", conf_ai: "Очистить историю ИИ?", conf_admin: "Сделать админиcтратором?", 
+                ringing: "Звонок...", connected: "Соединено", inc_vid: "Входящий видеозвонок...", inc_aud: "Входящий аудиозвонок...", 
+                join_call: "📞 Присоединиться", stickers: "Стикеры", add_stickers: "Добавить стикеры", spack: "Набор стикеров", bot: "Бот",
+                camera_req: "Нужен доступ к камере/микрофону", join_failed: "Ошибка входа", name_req: "Введите имя",
+                no_bio: "Нет описания", no_desc: "Нет описания", loading: "Загрузка...", no_sessions: "Нет сеансов",
+                del_msg: "Удаленное сообщение", photo_sent: "🖼️ Фото отправлено", file_sent: "📁 Файл отправлен",
+                photo: "🖼️ Фото", file: "📁 Файл", just_now: "Только что", ai_help: "Чем я могу помочь вам сегодня?",
+                mute_chan: "Выключить звук", unmute_chan: "Включить звук", pack_not_found: "Набор стикеров не найден",
+                pack_installed: "Набор установлен!", err_user_not_found: "Пользователь или канал не найден", err_find_user: "Ошибка поиска",
+                wall_updated: "Обои обновлены", vid_call_from: "📹 Видеозвонок от", aud_call_from: "📞 Аудиозвонок от",
+                tap_answer: "Нажмите, чтобы ответить", start_chat: "Начать чат...", toast_installed: "Успешно установлено!"
+            }
+        };
+
         const State = { 
+            lang: localStorage.getItem('y_lang') || 'en',
             t: localStorage.getItem('y_t'), u: JSON.parse(localStorage.getItem('y_u')||'{}'), 
             chats: new Map(), chat: null, syncLoop: null, lastMsgId: 0,
             capMedia: null, capType: null, authMode: 'login', regAv: null, replyTo: null,
-            // ADD THESE TWO LINES:
             notifiedMsgs: new Set(),
             notifiedCalls: new Set()
         };
@@ -1166,23 +1195,19 @@
                 const nav = document.getElementById('bottom-nav');
                 if (!nav) return;
         
-                // 1. Forcefully remove from DOM on Auth/Login
                 if (!State.t || current === 'panel-auth') {
                     nav.style.display = 'none';
                     return;
                 } else {
-                    // Clear the inline style so your CSS rules can properly take over
                     nav.style.display = ''; 
                 }
                 
-                // 2. Hide smoothly on ANY page that is not root (Chats) or settings (Profile)
                 if (current === 'panel-root' || current === 'panel-settings') {
                     nav.classList.remove('hidden');
                 } else {
                     nav.classList.add('hidden');
                 }
                 
-                // 3. Update active icon styling
                 document.querySelectorAll('.bottom-nav .nav-item').forEach(el => el.classList.remove('active'));
                 if (current === 'panel-settings') document.getElementById('nav-profile').classList.add('active');
                 else if (current === 'panel-root') document.getElementById('nav-chats').classList.add('active');
@@ -1192,7 +1217,7 @@
                 this.stack.push(id); 
                 
                 const el = document.getElementById(id);
-                el.style.zIndex = 10 + this.stack.length; // FIX: Automatically force the new panel to the front
+                el.style.zIndex = 10 + this.stack.length;
                 el.classList.add('active');
                 
                 history.pushState({id}, '', `#${id}`);
@@ -1204,7 +1229,7 @@
                 
                 const el = document.getElementById(id);
                 el.classList.remove('active');
-                setTimeout(() => el.style.zIndex = '', 350); // Reset z-index after closing animation finishes
+                setTimeout(() => el.style.zIndex = '', 350); 
                 
                 if(id==='panel-chat') { State.chat=null; State.lastMsgId=0; }
                 this.updateNav();
@@ -1215,12 +1240,10 @@
         const UI = {
             toast(m) { const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3000); },
             
-            // Corrected syntax here
             formatTime(dStr) {
                 if (!dStr) return '';
                 const d = new Date(dStr + (dStr.includes('Z')?'':'Z')); 
                 const n = new Date();
-                // Fixed: added [] as the first argument for locale-specific formatting
                 return (d.getDate()===n.getDate() && d.getMonth()===n.getMonth()) 
                     ? d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
                     : d.toLocaleDateString([], {month:'short', day:'numeric'});
@@ -1237,7 +1260,7 @@
             activeCall: null, stream: null, peers: {}, isVideo: false,
             pcConfig: {iceServers:[{urls: 'stun:stun.l.google.com:19302'}]},
             sigLoop: null, isMuted: false, isSpeaker: true, startTime: null, timerInterval: null,
-            iceQueue: {}, // The crucial buffer for race conditions
+            iceQueue: {}, 
         
             async initMedia(video = false) {
                 this.isVideo = video;
@@ -1249,7 +1272,7 @@
                         localVid.srcObject = this.stream;
                         localVid.style.display = 'block';
                     }
-                } catch(e) { UI.toast("Camera/Mic access required"); throw e; }
+                } catch(e) { UI.toast(App.t('camera_req')); throw e; }
             },
             
             async startCall(video = false) {
@@ -1258,24 +1281,21 @@
                 try {
                     const res = await req('/api/calls/start', 'POST', {chat_id: State.chat, with_video: video});
                     this.activeCall = res.call_id; 
-                    this.showUI('Ringing...'); // Caller sees ringing
+                    this.showUI(App.t('ringing')); 
                     this.startSigLoop();
                 } catch(e) { UI.toast(e.message); this.endCall(true); }
             },
         
             async acceptCall() {
                 if(this.ringtone) { this.ringtone.pause(); this.ringtone.currentTime = 0; }
-                // Fetch call info to see if it was video
                 await this.initMedia(this.incomingIsVideo);
                 this.activeCall = this.incomingCallId;
                 
                 document.getElementById('call-view-incoming').style.display = 'none';
                 State.chat = this.incomingChat; App.openChat(this.incomingChat); 
-                this.showUI('Connecting...');
+                this.showUI(App.t('connecting'));
                 
-                // 1. Tell Server we Accepted
                 await req(`/api/calls/${this.activeCall}/accept`, 'POST');
-                // 2. Start signals and broadcast join
                 this.startSigLoop();
                 req(`/api/calls/${this.activeCall}/signal`, 'POST', {type: 'join', data:{}});
             },
@@ -1315,25 +1335,23 @@
                         for(let s of sigs) {
                             lastSig = s.id; 
                             if(s.sender_id === State.u.userId) continue;
-                            
-                            // Atomic Hangup Watcher
                             if (s.type === 'bye') return this.endCall(true); 
                             if (s.type === 'init') { this.incomingIsVideo = JSON.parse(s.data).video; continue; }
                             
                             await this.handleSignal(s.sender_id, s.type, JSON.parse(s.data));
                         }
                     } catch(e){}
-                }, 1500); // Faster polling during active calls
+                }, 1500); 
             },
         
             async handleSignal(peerId, type, data) {
                 if(type === 'join') { 
-                    document.getElementById('call-status-txt').innerText = 'Connected';
+                    document.getElementById('call-status-txt').innerText = App.t('connected');
                     this.startTimer();
                     this.createPeer(peerId, true); 
                 }
                 else if(type === 'offer') { 
-                    document.getElementById('call-status-txt').innerText = 'Connected';
+                    document.getElementById('call-status-txt').innerText = App.t('connected');
                     this.startTimer();
                     const pc = this.createPeer(peerId, false); 
                     await pc.setRemoteDescription(new RTCSessionDescription(data)); 
@@ -1374,11 +1392,11 @@
                         const rVid = document.getElementById('remote-video');
                         rVid.srcObject = stream;
                         rVid.style.display = 'block';
-                        document.getElementById('call-bg').style.display = 'none'; // Hide BG for video
+                        document.getElementById('call-bg').style.display = 'none'; 
                     } else {
                         const rAud = document.getElementById('rtc-audio');
                         rAud.srcObject = stream;
-                        rAud.play().catch(console.error); // Safe because element is pinned in DOM
+                        rAud.play().catch(console.error); 
                     }
                 };
                 
@@ -1396,7 +1414,6 @@
                     document.getElementById('call-status-txt').innerText = statusText;
                     document.getElementById('call-time').innerText = '';
                     
-                    // NEW: Hide the video toggle button if this is an audio-only call
                     const isVidCall = this.isVideo || this.incomingIsVideo;
                     document.getElementById('btn-video').style.display = isVidCall ? 'flex' : 'none';
                     
@@ -1408,7 +1425,7 @@
             startTimer() {
                 if(this.timerInterval) return;
                 this.startTime = Date.now();
-                document.getElementById('call-header-info').style.transform = this.isVideo ? 'scale(0.7) translateY(-20px)' : 'none'; // Shrink header if video
+                document.getElementById('call-header-info').style.transform = this.isVideo ? 'scale(0.7) translateY(-20px)' : 'none'; 
                 this.timerInterval = setInterval(()=> {
                     const secs = Math.floor((Date.now()-this.startTime)/1000);
                     document.getElementById('call-time').innerText = `${String(Math.floor(secs/60)).padStart(2,'0')}:${String(secs%60).padStart(2,'0')}`;
@@ -1424,13 +1441,41 @@
         };
 
         const App = {
-            // --- AUTHENTICATION ---
+            t(key) { return Locales[State.lang]?.[key] || Locales['en'][key] || key; },
+
+            setLang(l) {
+                State.lang = l;
+                localStorage.setItem('y_lang', l);
+
+                document.querySelectorAll('.lang-btn').forEach(b => b.style.borderColor = 'transparent');
+                const activeBtn = document.querySelector(`.lang-btn[data-lang="${l}"]`);
+                if(activeBtn) activeBtn.style.borderColor = 'var(--text-main)';
+
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const trans = App.t(el.getAttribute('data-i18n'));
+                    if (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3) el.textContent = trans;
+                    else {
+                        el.childNodes.forEach(child => {
+                            if (child.nodeType === 3 && child.textContent.trim().length > 0) child.textContent = trans;
+                        });
+                    }
+                });
+
+                document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+                    el.placeholder = App.t(el.getAttribute('data-i18n-ph'));
+                });
+
+                if (State.t && document.getElementById('panel-auth').classList.contains('active') === false) {
+                    this.sync(); 
+                }
+            },
+
             toggleAuthMode() {
                 State.authMode = State.authMode === 'login' ? 'register' : 'login';
                 document.getElementById('auth-reg-fields').style.display = State.authMode === 'register' ? 'block' : 'none';
-                document.getElementById('btn-auth-main').textContent = State.authMode === 'register' ? 'Create Account' : 'Log In';
-                document.getElementById('auth-toggle-txt').textContent = State.authMode === 'register' ? 'Already have an account?' : "Don't have an account?";
-                document.getElementById('auth-toggle-txt').nextElementSibling.textContent = State.authMode === 'register' ? 'Log In' : 'Sign Up';
+                document.getElementById('btn-auth-main').textContent = App.t(State.authMode === 'register' ? 'signup_btn' : 'login_btn');
+                document.getElementById('auth-toggle-txt').textContent = App.t(State.authMode === 'register' ? 'has_account' : 'no_account');
+                document.getElementById('auth-toggle-action').textContent = App.t(State.authMode === 'register' ? 'log_in' : 'sign_up');
             },
             authAv(e) {
                 const f = e.target.files[0]; if(!f) return; const r = new FileReader();
@@ -1440,24 +1485,23 @@
             async previewStickerPack(name) {
                 try {
                     const pack = await req(`/api/stickers/${name}`);
-                    pack.name = name; // Save internal name for updates
+                    pack.name = name; 
                     State.previewPack = pack;
                     document.getElementById('sp-title').innerText = pack.title || name;
                     let html = '';
                     pack.stickers.forEach(s => html += `<img class="sticker-item" src="${s.file_url}">`);
                     document.getElementById('sp-grid').innerHTML = html;
                     Router.push('panel-stickerpack');
-                } catch(e) { UI.toast('Sticker pack not found'); }
+                } catch(e) { UI.toast(App.t('pack_not_found')); }
             },
             
             installStickerPack() {
                 if (!State.previewPack) return;
                 let packs = JSON.parse(localStorage.getItem('y_packs') || '[]');
-                // Remove if already exists so we don't duplicate
                 packs = packs.filter(p => p.name !== State.previewPack.name);
                 packs.push(State.previewPack);
                 localStorage.setItem('y_packs', JSON.stringify(packs));
-                UI.toast('Pack Installed!');
+                UI.toast(App.t('pack_installed'));
                 Router.pop();
                 this.loadStickerKeyboard();
             },
@@ -1471,8 +1515,7 @@
                             <img class="sticker-item" src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f602/512.webp" onclick="App.sendSticker(this.src)">`;
                 } else {
                     packs.forEach(p => {
-                        // Title row spanning all columns
-                        html += `<div style="grid-column: 1 / -1; padding: 12px 4px 4px; font-size: 13px; font-weight: 700; color: var(--text-muted);">${p.title || 'Stickers'}</div>`;
+                        html += `<div style="grid-column: 1 / -1; padding: 12px 4px 4px; font-size: 13px; font-weight: 700; color: var(--text-muted);">${p.title || App.t('stickers')}</div>`;
                         p.stickers.forEach(s => {
                             html += `<img class="sticker-item" src="${s.file_url}" onclick="App.sendSticker(this.src)">`;
                         });
@@ -1481,7 +1524,6 @@
                 const grid = document.getElementById('sticker-grid');
                 if (grid) grid.innerHTML = html;
 
-                // Auto-update logic in the background
                 if(!State.updatingStickers && packs.length > 0) {
                     State.updatingStickers = true;
                     setTimeout(async () => {
@@ -1496,17 +1538,17 @@
                         }
                         if(updated) {
                             localStorage.setItem('y_packs', JSON.stringify(packs));
-                            if(document.getElementById('sticker-panel').classList.contains('active')) this.loadStickerKeyboard(); // Soft refresh UI
+                            if(document.getElementById('sticker-panel').classList.contains('active')) this.loadStickerKeyboard(); 
                         }
                         State.updatingStickers = false;
-                    }, 500); // Wait 500ms so it doesn't freeze the UI
+                    }, 500); 
                 }
             },
             async findAndPreviewSticker(url) {
                 try {
                     const res = await req(`/api/stickers/find?url=${encodeURIComponent(url)}`);
                     if(res.set_name) this.previewStickerPack(res.set_name);
-                } catch(e) { UI.toast('Sticker pack not found'); }
+                } catch(e) { UI.toast(App.t('pack_not_found')); }
             },
             prepEditChanAv(e) {
                 const f = e.target.files[0]; if(!f) return;
@@ -1517,7 +1559,6 @@
                 };
                 r.readAsDataURL(f);
             },
-            // Add these directly inside the `App` object:
             toggleStickers() {
                 const p = document.getElementById('sticker-panel');
                 p.classList.toggle('active');
@@ -1527,7 +1568,6 @@
                 this.toggleStickers();
                 if(!State.chat) return;
             
-                // 1. Immediate Optimistic UI (No Background Bubble)
                 const tempId = 'temp-' + Date.now();
                 const msgsCont = document.getElementById('msgs');
                 
@@ -1536,13 +1576,12 @@
                         <div class="msg-bubble" style="background: transparent; padding: 0; box-shadow: none;">
                             <img src="${url}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${url}')">
                             <div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;color:var(--text-muted);">
-                                Just now <span class="msg-tick" style="color:gray;">✓</span>
+                                ${App.t('just_now')} <span class="msg-tick" style="color:gray;">✓</span>
                             </div>
                         </div>
                     </div>`;
                 msgsCont.scrollTop = msgsCont.scrollHeight;
             
-                // 2. Send to backend
                 try {
                     const res = await req(`/api/messages/${State.chat}`, 'POST', { content: url, type: 'sticker' });
                     const tempEl = document.getElementById(tempId);
@@ -1555,16 +1594,14 @@
                     State.lastMsgId = 0; 
                     this.sync();
                 } catch(e) { 
-                    UI.toast('Failed to send sticker'); 
+                    UI.toast(App.t('toast_fail')); 
                     document.getElementById(tempId)?.remove();
                 }
             },
             
             async sendCallback(msgId, data) {
-                // Triggers the bot's callback query without sending a visible message
                 try {
                     await req(`/api/messages/${msgId}/action`, 'POST', { action: 'callback', text: data });
-                    // Assume API handles Webhook push natively inside the /action endpoint
                 } catch(e) {}
             },
             toggleTheme() { 
@@ -1596,7 +1633,6 @@
             },
 
             clearCache() {
-                // Keep authentication tokens and theme settings, delete cached messages and chats
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
                     if (key.startsWith('y_cache_')) {
@@ -1604,7 +1640,7 @@
                     }
                 }
                 document.getElementById('cache-size').innerText = '0.0 KB';
-                UI.toast('Cache Cleared');
+                UI.toast(App.t('toast_cache'));
             },
             async submitAuth() {
                 const u = document.getElementById('auth-u').value.trim(); const p = document.getElementById('auth-p').value.trim();
@@ -1617,7 +1653,6 @@
                     document.getElementById('panel-auth').classList.remove('active'); this.start();
                 } catch(e) { UI.toast(e.message); }
             },
-            // Fallback for old HTML just in case
             async auth(isLog) { State.authMode = isLog ? 'login' : 'register'; await this.submitAuth(); },
 
             logout() { localStorage.clear(); location.reload(); },
@@ -1633,22 +1668,20 @@
                         deferredPrompt = null;
                     });
                 } else {
-                    UI.toast("App is already installed or browser blocked it.");
+                    UI.toast(App.t('toast_installed') || "App successfully installed!");
                 }
             },
             async sendToAI(text, type, mediaData) {
                 const msgsCont = document.getElementById('msgs');
                 
-                // 1. Instantly display the user's message on screen (Optimistic UI)
-                const displayTxt = type === 'text' ? text.replace(/</g,'&lt;') : '🖼️ Photo Sent';
+                const displayTxt = type === 'text' ? text.replace(/</g,'&lt;') : App.t('photo_sent');
                 msgsCont.innerHTML += `
                     <div class="msg-row sent">
                         <div class="msg-bubble">${displayTxt}
-                            <div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px">Just now ✓</div>
+                            <div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px">${App.t('just_now')} ✓</div>
                         </div>
                     </div>`;
                 
-                // 2. Instantly display the AI's animated generating dots
                 const typingId = 'ai-typing-' + Date.now();
                 msgsCont.innerHTML += `
                     <div class="msg-row received" id="${typingId}">
@@ -1657,15 +1690,14 @@
                         </div>
                     </div>`;
                 
-                msgsCont.scrollTop = msgsCont.scrollHeight; // Scroll to bottom
+                msgsCont.scrollTop = msgsCont.scrollHeight;
             
-                // 3. Actually send the request to the server in the background
                 try {
                     await req('/api/ai/chat', 'POST', { text, type, media_data: mediaData });
                     State.lastMsgId = 0; 
-                    this.loadMsgs('ai'); // This will reload the chat, replacing the dots with the real answer!
+                    this.loadMsgs('ai'); 
                 } catch(e) { 
-                    document.getElementById(typingId)?.remove(); // Remove dots on error
+                    document.getElementById(typingId)?.remove(); 
                     UI.toast(e.message); 
                 }
             },
@@ -1690,43 +1722,37 @@
                 const desc = document.getElementById('new-chan-desc').value.trim();
                 const isPriv = document.getElementById('new-chan-private').checked;
                 const handle = document.getElementById('new-chan-handle').value.trim();
-                if(!name) return UI.toast('Name required');
+                if(!name) return UI.toast(App.t('name_req'));
                 try {
                     const d = await req('/api/chats', 'POST', { type:'channel', name, description:desc, is_private:isPriv, handle: isPriv?'':handle, avatar: State.tmpChanAv });
                     Router.pop(); Router.pop(); this.openChat(d.chat_id);
                 } catch(e) { UI.toast(e.message); }
             },
             async clearAI() {
-                if(!confirm("Clear AI chat history?")) return;
+                if(!confirm(App.t('conf_ai'))) return;
                 try {
                     await req('/api/ai/clear', 'POST');
                     State.lastMsgId = 0;
                     this.loadMsgs('ai');
-                    UI.toast('Memory Cleared');
+                    UI.toast(App.t('toast_mem'));
                 } catch(e) {}
             },
-            // --- APPEARANCE ---
-            // --- APPEARANCE ---
             setTheme(t) { 
                 document.documentElement.setAttribute('data-theme', t); 
                 localStorage.setItem('y_theme', t); 
                 
-                // FIX: Dynamically update the Phone's Status Bar & Bottom Nav Bar!
                 setTimeout(() => {
-                    // Reads the exact background color of the current theme
                     const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-base').trim();
                     const metaThemeColor = document.getElementById('meta-theme-color');
                     if (metaThemeColor) {
                         metaThemeColor.setAttribute('content', bgColor);
                     }
-                }, 10); // Tiny delay to allow CSS to apply first
+                }, 10); 
             
-                // Outline the currently selected theme preview
                 document.querySelectorAll('.theme-preview').forEach(el => {
                     if(el.getAttribute('data-theme-val') === t) {
                         el.classList.add('active');
                         
-                        // Only scroll into view if the Settings Panel is actually open
                         const settingsPanel = document.getElementById('panel-settings');
                         if (settingsPanel && settingsPanel.classList.contains('active')) {
                             el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
@@ -1736,45 +1762,37 @@
                     }
                 });
             },
-            // Change your existing setWallpaper function to this:
             setWallpaper(w) { 
                 document.getElementById('chat-area-bg').style.backgroundImage = w ? `url(${w})` : 'none'; 
                 localStorage.setItem('y_wall', w); 
                 
-                // Check if the element exists before trying to set its value
                 const wallInput = document.getElementById('set-wall');
                 if(wallInput) {
                     wallInput.value = w;
                 }
             },
 
-            // --- INITIALIZATION ---
             start() {
                 document.getElementById('set-av').src = State.u.avatar || getDefAv(State.u.username);
                 document.getElementById('nav-av').src = State.u.avatar || getDefAv(State.u.username);
-                Router.updateNav(); // Fix visibility instantly
+                Router.updateNav(); 
 
                 const nameEl = document.getElementById('set-name');
                 if(nameEl.tagName === 'INPUT') nameEl.value = State.u.username; else nameEl.textContent = State.u.username;
                 document.getElementById('set-bio').value = State.u.bio || '';
                 
-                // Load saved appearance
                 const t = localStorage.getItem('y_theme') || 'dark'; this.setTheme(t);
                 const w = localStorage.getItem('y_wall') || ''; this.setWallpaper(w);
 
-                // Initial UI Loading Skeletons for Chat List
                 let skels=''; for(let i=0;i<6;i++) skels+=`<div class="user-item"><div class="skel-av skeleton"></div><div class="user-info"><div class="skel-text skeleton"></div><div class="skel-text short skeleton"></div></div></div>`;
                 document.getElementById('chat-list').innerHTML = skels;
 
-                // Route Handlers for ?channel= / ?group=
-                // Replace the "Route Handlers for ?channel= / ?group=" block with this:
-                // Route Handlers for deep links
                 const p = new URLSearchParams(window.location.search);
-                const basePath = window.location.pathname; // FIX: Preserves /YukiChat/ folder!
+                const basePath = window.location.pathname; 
 
                 if(p.get('channel') || p.get('group')) {
                     const h = p.get('channel') || p.get('group');
-                    req('/api/chats/join', 'POST', {handle: h}).then(r => this.openChat(r.chat_id)).catch(e=>UI.toast("Join failed"));
+                    req('/api/chats/join', 'POST', {handle: h}).then(r => this.openChat(r.chat_id)).catch(e=>UI.toast(App.t('join_failed')));
                     window.history.replaceState({}, document.title, basePath);
                 } else if (p.get('stickerpack')) {
                     const sp = p.get('stickerpack');
@@ -1785,23 +1803,18 @@
                     window.history.replaceState({}, document.title, basePath);
                 }
                 
-                // Add this right before "this.sync();" at the end of App.start()
                 this.loadStickerKeyboard();
-                // Show Admin Panel if username is vasiliy
                 if(State.u.username === 'vasiliy') {
                     document.getElementById('admin-panel').style.display = 'block';
                 }
 
-                // Calculate Cache Size
                 let totalBytes = 0;
                 for(let key in localStorage) {
                     if(localStorage.hasOwnProperty(key)) totalBytes += ((localStorage[key].length + key.length) * 2);
                 }
                 document.getElementById('cache-size').innerText = (totalBytes / 1024).toFixed(1) + ' KB';
                 this.sync(); 
-                // Increased to 15 seconds to save limits (cuts rows read in half)
                 State.syncLoop = setInterval(() => {
-                    // Only sync if the tab is visible to save huge amounts of D1 reads
                     if (document.visibilityState === 'visible') {
                         this.sync();
                     }
@@ -1820,61 +1833,52 @@
                 const bubble = msgEl ? msgEl.querySelector('.msg-bubble') : null;
                 State.targetTxt = bubble ? Array.from(bubble.childNodes).filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() : '';
                 
-                // Show the invisible backdrop to reliably catch taps outside
                 document.getElementById('n-ctx-backdrop').style.display = 'block';
                 
-                // Show the context menu (Delete button is now permanently visible in HTML)
                 const ctxMenu = document.getElementById('ctx-menu');
                 ctxMenu.style.transform = 'translateY(0)';
             },
 
             closeCtx() {
-                // Instantly hide backdrop and slide menu down
                 document.getElementById('n-ctx-backdrop').style.display = 'none';
                 document.getElementById('ctx-menu').style.transform = 'translateY(100%)';
             },
             
-            // --- NOTIFICATIONS ---
             requestNotifyPerms() {
                 if ('Notification' in window && Notification.permission === 'default') {
                     Notification.requestPermission();
                 }
             },
 
-            // Add this inside the const App = { ... } object
             setWallpaperFile(e) {
                 const f = e.target.files[0];
                 if(!f) return;
                 const r = new FileReader();
                 r.onload = ev => {
                     const dataUrl = ev.target.result;
-                    // Apply it directly to the chat background
                     document.getElementById('chat-area-bg').style.backgroundImage = `url(${dataUrl})`;
-                    // Save to localStorage just like the original logic did
                     localStorage.setItem('y_wall', dataUrl);
-                    UI.toast('Wallpaper Updated');
+                    UI.toast(App.t('wall_updated'));
                 };
                 r.readAsDataURL(f);
             },
         
             showPush(title, body, icon, isCall = false) {
                 if (!('Notification' in window) || Notification.permission !== 'granted') {
-                    if(isCall) UI.toast(`📞 Incoming Call: ${title}`);
+                    if(isCall) UI.toast(`📞 ${title}`);
                     return;
                 }
 
-                // Clean up HTML tags from the message preview
                 const cleanBody = body ? body.replace(/&lt;/g, '<').replace(/<[^>]*>?/gm, '') : 'New message';
                 
                 const opts = {
                     body: cleanBody,
-                    icon: icon !== defAv ? icon : null, // Use their avatar
-                    tag: isCall ? 'call' : 'msg', // Prevents spamming, groups notifications
-                    vibrate: isCall ?[500, 1000, 500, 1000, 500] :[200, 100, 200], // Long buzz for calls
-                    requireInteraction: isCall // Keeps call notification on screen until clicked
+                    icon: icon !== defAv ? icon : null, 
+                    tag: isCall ? 'call' : 'msg', 
+                    vibrate: isCall ?[500, 1000, 500, 1000, 500] :[200, 100, 200], 
+                    requireInteraction: isCall 
                 };
 
-                // Use Service Worker to show notification so it works properly on Android/iOS
                 if (navigator.serviceWorker && navigator.serviceWorker.controller) {
                     navigator.serviceWorker.ready.then(sw => sw.showNotification(title, opts));
                 } else {
@@ -1882,13 +1886,11 @@
                 }
             },
             
-            // --- REAL-TIME SYNC ---
             async sync() {
                 try {
                     const isTyping = State.chat && document.getElementById('msg-input') && document.getElementById('msg-input').value.trim().length > 0;
                     const d = await req('/api/sync', 'POST', {typingIn: isTyping ? State.chat : null});
                     
-                    // Sort chats by last message time (descending)
                     d.chats.sort((a, b) => {
                         if (a.id === 'ai') return -1;
                         if (b.id === 'ai') return 1;
@@ -1907,28 +1909,21 @@
                         const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
                         const av = canSeePfp ? (isDM?(c.dm_avatar||getDefAv(c.dm_username)):(c.avatar||getDefAv(c.name))) : getDefAv('?');
 
-                        let prevH = c.last_msg ? c.last_msg.replace(/</g,'&lt;') : 'Start chatting...';
-                        if(c.last_msg_type === 'photo') prevH = '🖼️ Photo';
-                        if(c.last_msg_type === 'file') prevH = '📁 File';
+                        let prevH = c.last_msg ? c.last_msg.replace(/</g,'&lt;') : App.t('start_chat');
+                        if(c.last_msg_type === 'photo') prevH = App.t('photo');
+                        if(c.last_msg_type === 'file') prevH = App.t('file');
                         
-                        if(isDM && c.dm_typing == c.id) prevH = '<span style="color:var(--primary)">typing...</span>';
-                        else if(!isDM && c.is_typing == c.id) prevH = '<span style="color:var(--primary)">typing...</span>';
+                        if(isDM && c.dm_typing == c.id) prevH = `<span style="color:var(--primary)">${App.t('typing')}</span>`;
+                        else if(!isDM && c.is_typing == c.id) prevH = `<span style="color:var(--primary)">${App.t('typing')}</span>`;
 
                         const bage = c.unread > 0 ? `<span class="badge">${c.unread}</span>` : '';
-                        totalUnread += c.unread || 0; // Fixed: Keep track of total unread
+                        totalUnread += c.unread || 0; 
                         
-                        // NEW: Strict Server-Driven Call Logic
-                        // Find active calls (ringing or connected)
-                        // Find active calls (ringing or connected)
                         const hasCall = d.calls.find(x => x.chat_id === c.id && (x.status === 'ringing' || x.status === 'connected'));
-                        
-                        // NEW: Extract the video flag correctly so BOTH the popup and the green Join Badge use it!
                         const isVid = (hasCall && hasCall.init_data) ? JSON.parse(hasCall.init_data).video : false;
 
-                        // Render join button in chat list if there is an active call we aren't part of yet
-                        const callBtn = (hasCall && hasCall.id !== RTC.activeCall) ? `<span class="call-badge" onclick="event.stopPropagation(); RTC.incomingIsVideo=${isVid}; RTC.incomingCallId=${hasCall.id}; RTC.incomingChat='${c.id}'; RTC.acceptCall();">📞 Join Call</span>` : '';
+                        const callBtn = (hasCall && hasCall.id !== RTC.activeCall) ? `<span class="call-badge" onclick="event.stopPropagation(); RTC.incomingIsVideo=${isVid}; RTC.incomingCallId=${hasCall.id}; RTC.incomingChat='${c.id}'; RTC.acceptCall();">📞 ${App.t('join_call')}</span>` : '';
 
-                        // 1. Handle Incoming Ringing
                         if (hasCall && hasCall.status === 'ringing' && hasCall.caller_id !== State.u.userId) {
                             
                             RTC.incomingIsVideo = isVid;
@@ -1938,8 +1933,7 @@
                             document.getElementById('call-bg').style.backgroundImage = `url(${av})`;
                             document.getElementById('inc-call-av').src = av;
                             document.getElementById('inc-call-name').innerText = n;
-                            // This will now successfully say "Video Call..."
-                            document.getElementById('inc-call-type').innerText = isVid ? 'Incoming Video Call...' : 'Incoming Audio Call...';
+                            document.getElementById('inc-call-type').innerText = isVid ? App.t('inc_vid') : App.t('inc_aud');
                             
                             document.getElementById('call-view-active').style.display = 'none';
                             document.getElementById('call-view-incoming').style.display = 'flex';
@@ -1947,13 +1941,12 @@
 
                             if (!State.notifiedCalls.has(hasCall.id)) {
                                 State.notifiedCalls.add(hasCall.id);
-                                App.showPush(isVid ? `📹 Video Call from ${n}` : `📞 Audio Call from ${n}`, "Tap to answer", av, true);
+                                App.showPush(isVid ? `${App.t('vid_call_from')} ${n}` : `${App.t('aud_call_from')} ${n}`, App.t('tap_answer'), av, true);
                                 
                                 if(!RTC.ringtone) { RTC.ringtone = new Audio('https://actions.google.com/sounds/v1/alarms/phone_ringing.ogg'); RTC.ringtone.loop = true; }
                                 RTC.ringtone.play().catch(e=>{ console.warn("Autoplay prevented ringtone"); });
                             }
                         }
-                        // 2. Handle Missed/Ended Calls (Ghost Call Cleanup)
                         else if (!hasCall && RTC.incomingChat === c.id) {
                             if(RTC.ringtone) { RTC.ringtone.pause(); RTC.ringtone.currentTime = 0; }
                             if(document.getElementById('call-view-incoming').style.display === 'flex') {
@@ -1976,24 +1969,21 @@
                                     ${callBtn}
                                 </div>`;
 
-                        // Inside App.sync()
                         if(State.chat === c.id) {
                             if (c.type === 'channel') {
-                                document.getElementById('chat-status').innerHTML = `${c.sub_count} subscribers`;
+                                document.getElementById('chat-status').innerHTML = `${c.sub_count} ${App.t('subs')}`;
                             } else {
-                                // --- UPDATED LOGIC HERE ---
                                 if (c.is_bot) {
-                                    document.getElementById('chat-status').innerHTML = 'Bot';
+                                    document.getElementById('chat-status').innerHTML = App.t('bot');
                                 } else if (isDM && c.dm_typing == c.id) {
-                                    document.getElementById('chat-status').innerHTML = 'typing...';
+                                    document.getElementById('chat-status').innerHTML = App.t('typing');
                                 } else if (!isDM && c.is_typing == c.id) {
-                                    document.getElementById('chat-status').innerHTML = 'typing...';
+                                    document.getElementById('chat-status').innerHTML = App.t('typing');
                                 } else if (isDM) {
                                     document.getElementById('chat-status').innerHTML = isOnline 
-                                        ? '<span style="color:var(--success)">Online</span>' 
+                                        ? `<span style="color:var(--success)">${App.t('online')}</span>` 
                                         : UI.formatTime(c.dm_last_seen);
                                 }
-                                // --- END UPDATED LOGIC ---
                                 
                                 if(c.last_msg_id > State.lastMsgId) { 
                                     State.lastMsgId = c.last_msg_id; 
@@ -2009,29 +1999,25 @@
                         navBadge.textContent = totalUnread > 99 ? '99+' : totalUnread;
                     }
                     
-                    // ONLY overwrite the list if we aren't searching
                     if (!isSearching) {
-                        document.getElementById('chat-list').innerHTML = html || '<div style="padding:40px;text-align:center;color:var(--text-muted)">No chats found</div>';
+                        document.getElementById('chat-list').innerHTML = html || `<div style="padding:40px;text-align:center;color:var(--text-muted)">${App.t('no_chats')}</div>`;
                     }
 
                 } catch(e){
-                    console.error("Sync Error: ", e); // This ensures we can see errors in the console!
+                    console.error("Sync Error: ", e); 
                 }
             },
 
-            // --- SEARCH & CHAT CREATION ---
-            searchTimer: null, // Add this state variable
+            searchTimer: null, 
             async searchGlobal(q) {
                 const resEl = document.getElementById(Router.stack.includes('panel-new') ? 'global-search-res' : 'chat-list');
                 if(!q) return this.sync();
                 
-                // Don't search for 1 or 2 letters (saves massive full table scans)
                 if(q.length < 3) {
-                    resEl.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted)">Type at least 3 characters...</div>';
+                    resEl.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted)">${App.t('type_3')}</div>`;
                     return;
                 }
 
-                // Debounce: Wait 500ms after the user STOPS typing before hitting the API
                 clearTimeout(this.searchTimer);
                 this.searchTimer = setTimeout(async () => {
                     const {users, chats} = await req(`/api/search?q=${q}`);
@@ -2047,27 +2033,25 @@
                             </div>
                         </div>`; 
                     });
-                    resEl.innerHTML = h || '<div style="padding:20px; text-align:center; color:var(--text-muted)">No results found.</div>';
+                    resEl.innerHTML = h || `<div style="padding:20px; text-align:center; color:var(--text-muted)">${App.t('no_results')}</div>`;
                 }, 500);
             },
             async startDM(id) { const d = await req('/api/chats', 'POST', {type:'dm', target_user_id:id}); Router.pop(); this.openChat(d.chat_id); },
             async joinChat(handle) { const d = await req('/api/chats/join', 'POST', {handle}); Router.pop(); this.openChat(d.chat_id); },
             async createChat(type) { 
-                const name = prompt("Enter name:"); if(!name) return;
-                const handle = prompt("Enter public @username (optional, leave blank for private):");
+                const name = prompt(App.t('p_name')); if(!name) return;
+                const handle = prompt(App.t('p_handle'));
                 try { const d = await req('/api/chats', 'POST', {type, name, handle}); Router.pop(); this.openChat(d.chat_id); }
                 catch(e) { UI.toast(e.message); }
             },
 
-            // --- CHAT INTERFACE ---
             openChat(id) {
-                // 1. Fix the String vs Number mismatch for the Map lookup
                 if (id !== 'ai') id = Number(id);
                 
                 State.chat = id; 
                 const c = State.chats.get(id); 
                 
-                if (!c) return; // Safety fallback
+                if (!c) return; 
                 
                 Router.push('panel-chat');
                 
@@ -2086,20 +2070,15 @@
                     chatAv.parentElement.classList.remove('ai-wrap');
                 }
                 
-                // Channel Admin Check
-                // Inside App.openChat(id)
-                // Replace Channel Admin Check block with this:
                 if (c.type === 'channel' && c.my_role !== 'admin') {
                     document.getElementById('input-bar').style.display = 'none'; 
-                    document.getElementById('channel-bar').innerHTML = `<button class="btn btn-outline" style="border-radius:12px; padding:10px; width:100%" onclick="App.toggleMute(${c.id})">${c.muted ? '🔇 Unmute Channel' : '🔊 Mute Channel'}</button>`;
+                    document.getElementById('channel-bar').innerHTML = `<button class="btn btn-outline" style="border-radius:12px; padding:10px; width:100%" onclick="App.toggleMute(${c.id})">${c.muted ? '🔇 ' + App.t('unmute_chan') : '🔊 ' + App.t('mute_chan')}</button>`;
                     document.getElementById('channel-bar').style.display = 'block';
                 } else {
                     document.getElementById('input-bar').style.display = 'flex'; 
                     document.getElementById('channel-bar').style.display = 'none';
                 }
                 
-                // AI & Call Button Logic
-                // AI Clear Button Logic
                 const clearBtn = document.getElementById('ai-clear-btn');
                 if (clearBtn) {
                     clearBtn.style.display = (id === 'ai') ? 'flex' : 'none';
@@ -2113,7 +2092,6 @@
                 const cont = document.getElementById('msgs');
                 const cacheKey = `y_cache_msgs_${id}`;
                 if(State.lastMsgId === 0) cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div><div class="skeleton skel-text short" style="height:40px; border-radius:18px; margin-left:auto; margin-top:10px;"></div></div>`;
-                // Load from cache INSTANTLY before network finishes
                 if(State.lastMsgId === 0) {
                     const cachedHtml = localStorage.getItem(cacheKey);
                     if(cachedHtml) {
@@ -2129,19 +2107,14 @@
                         const isMine = m.sender_id === State.u.userId; let inner = '';
                         if(m.is_pinned) pinned = m.content;
 
-                        // Reply Block
                         if(m.reply_to_id) {
                             const repM = msgs.find(x => x.id === m.reply_to_id);
-                            const repTxt = repM ? repM.content.replace(/</g,'&lt;') : 'Deleted message';
+                            const repTxt = repM ? repM.content.replace(/</g,'&lt;') : App.t('del_msg');
                             inner += `<div class="reply-block" onclick="document.getElementById('msg-${m.reply_to_id}').scrollIntoView({behavior:'smooth', block:'center'})">${repTxt}</div>`;
                         }
 
-                        // Link parsing & HTML escape
-                        // HTML escape first
                         let cleanTxt = m.content.replace(/</g,'&lt;');
                         
-                        // Simple Markdown Parser
-                        // Simple Markdown Parser
                         if (m.type === 'text') {
                             cleanTxt = cleanTxt.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;">$1</pre>');
                             cleanTxt = cleanTxt.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
@@ -2150,19 +2123,15 @@
                             cleanTxt = cleanTxt.replace(/^### (.*$)/gim, '<h3 style="margin:16px 0 8px;font-size:16px;">$1</h3>');
                             cleanTxt = cleanTxt.replace(/^## (.*$)/gim, '<h2 style="margin:18px 0 8px;font-size:18px;">$1</h2>');
                             
-                            // FIX: Make ALL links globally clickable, prevent opening context menu
                             cleanTxt = cleanTxt.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">$1</a>');
                             
-                            // NEW: Clickable Mentions (@username)
                             cleanTxt = cleanTxt.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
                         }
 
-                        // Replace media rendering in App.loadMsgs with this:
                         if(m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="window.open(this.src)">`;
                         else if(m.type === 'sticker') inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
                         else inner += cleanTxt;
                         
-                        // --- NEW: INLINE KEYBOARDS ---
                         if (m.reply_markup && m.reply_markup !== 'null') {
                             try {
                                 const rm = JSON.parse(m.reply_markup);
@@ -2171,7 +2140,6 @@
                                     rm.inline_keyboard.forEach(row => {
                                         inner += `<div class="inline-row">`;
                                         row.forEach(btn => {
-                                            // Send callback_data back to server when clicked
                                             inner += `<button class="inline-btn" onclick="App.sendCallback(${m.id}, '${btn.callback_data}')">${btn.text}</button>`;
                                         });
                                         inner += `</div>`;
@@ -2180,17 +2148,13 @@
                                 }
                             } catch(e) {}
                         }
-                        // --- END INLINE KEYBOARDS ---
                         
                         if(m.caption) inner += `<div class="msg-caption">${m.caption.replace(/</g,'&lt;')}</div>`;
 
                         let rxs = JSON.parse(m.reactions||'{}'); let rxH = ''; for(let k in rxs) rxH += rxs[k];
                         if(rxH) inner += `<div style="position:absolute; bottom:-10px; right:8px; background:var(--bg-base); border-radius:12px; padding:2px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:14px; border:1px solid var(--border); z-index:2;">${rxH}</div>`;
 
-                        // Read/Sent Ticks
-                        // Inside loadMsgs, replace the tick definition logic with this:
                         let viewsH = '';
-                        // Render eye icon and views if it's a channel (or in groups if desired, but primarily channels)
                         const c = State.chats.get(id);
                         if (c && c.type === 'channel' && m.views) {
                              viewsH = `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>`;
@@ -2206,7 +2170,6 @@
                             <div class="msg-bubble" style="${bubbleStyle}">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tick}</div></div></div>`;
                     });
                     
-                    // Display Pin Bar if something is pinned
                     const pinEl = document.getElementById('pinned-msg');
                     if(pinEl) {
                         if(pinned) { pinEl.style.display='flex'; document.getElementById('pinned-text').textContent = pinned; }
@@ -2219,7 +2182,6 @@
             },
             async handleMention(username) {
                 try {
-                    // Try to find an exact match in users or chats
                     const {users, chats} = await req(`/api/search?q=${username}`);
                     
                     const exactUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
@@ -2228,24 +2190,23 @@
                     const exactChat = chats.find(c => c.username && c.username.toLowerCase() === username.toLowerCase());
                     if (exactChat) return this.joinChat(exactChat.username);
                     
-                    UI.toast('User or channel not found');
-                } catch(e) { UI.toast('Error finding user'); }
+                    UI.toast(App.t('err_user_not_found'));
+                } catch(e) { UI.toast(App.t('err_find_user')); }
             },
-            // --- MESSAGING ACTIONS ---
-            initReply() { State.replyTo = State.targetId; document.getElementById('reply-preview').style.display='flex'; document.getElementById('reply-preview-text').textContent = App.targetTxt || 'Media'; document.getElementById('ctx-menu').style.transform='translateY(100%)'; document.getElementById('msg-input').focus(); },
+            initReply() { State.replyTo = State.targetId; document.getElementById('reply-preview').style.display='flex'; document.getElementById('reply-preview-text').textContent = App.targetTxt || App.t('attached_media'); document.getElementById('ctx-menu').style.transform='translateY(100%)'; document.getElementById('msg-input').focus(); },
             cancelReply() { State.replyTo = null; document.getElementById('reply-preview').style.display='none'; },
             scrollToPin() { const c = document.getElementById('msgs'); if(c) c.scrollTop = 0; },
 
             prepMedia(e) {
                 const f = e.target.files[0]; if(!f) return;
-                e.target.value = ''; // Reset
+                e.target.value = ''; 
                 const r = new FileReader();
                 r.onload = ev => {
                     const finish = (data, type) => {
                         State.capMedia = data; State.capType = type;
                         document.getElementById('media-preview-img').src = type === 'photo' ? data : 'https://via.placeholder.com/150/333333/FFFFFF?text=File';
                         document.getElementById('media-preview').style.display = 'flex';
-                        document.getElementById('msg-input').focus(); // Ready to type caption
+                        document.getElementById('msg-input').focus(); 
                     };
 
                     if (f.type.startsWith('image/')) {
@@ -2272,7 +2233,6 @@
             },
 
             async sendText() {
-                // If media is attached, automatically route to sendMedia!
                 if (State.capMedia) return this.sendMedia();
                 
                 if (State.chat === 'ai') {
@@ -2291,7 +2251,7 @@
                 const safeTxt = txt.replace(/</g,'&lt;'); 
                 
                 msgsCont.innerHTML += `<div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
-                    <div class="msg-bubble">${safeTxt}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Just now <span class="msg-tick" style="color:gray;">✓</span></div></div>
+                    <div class="msg-bubble">${safeTxt}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${App.t('just_now')} <span class="msg-tick" style="color:gray;">✓</span></div></div>
                 </div>`;
                 msgsCont.scrollTop = msgsCont.scrollHeight;
                 this.cancelReply();
@@ -2310,17 +2270,15 @@
                 } catch(e) {
                     const tempEl = document.getElementById(tempId);
                     if(tempEl) tempEl.style.opacity = '0.4';
-                    UI.toast('Failed to send');
+                    UI.toast(App.t('toast_fail'));
                 }
             },
 
             async sendMedia() {
-                // Get caption directly from the main typing bar
                 const cap = document.getElementById('msg-input').value.trim();
                 const mediaData = State.capMedia;
                 const mediaType = State.capType;
                 
-                // Immediately clear UI
                 this.cancelMedia();
                 document.getElementById('msg-input').value = '';
 
@@ -2332,16 +2290,16 @@
                 const msgsCont = document.getElementById('msgs');
                 const mediaHtml = mediaType === 'photo' 
                     ? `<div style="position:relative; display:inline-block;"><img src="${mediaData}" class="msg-media" style="opacity:0.8;"><div class="media-loading"><div class="media-loading-circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div></div></div>` 
-                    : `📁 File`;
+                    : `📁 ${App.t('file')}`;
                     
                 msgsCont.innerHTML += `<div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
-                    <div class="msg-bubble">${mediaHtml}${cap ? `<div class="msg-caption">${cap.replace(/</g,'&lt;')}</div>` : ''}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Just now <span class="msg-tick" style="color:gray;">✓</span></div></div>
+                    <div class="msg-bubble">${mediaHtml}${cap ? `<div class="msg-caption">${cap.replace(/</g,'&lt;')}</div>` : ''}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${App.t('just_now')} <span class="msg-tick" style="color:gray;">✓</span></div></div>
                 </div>`;
                 msgsCont.scrollTop = msgsCont.scrollHeight;
             
                 try { 
                     const res = await req(`/api/messages/${State.chat}`, 'POST', {content: mediaData, caption: cap, type: mediaType, reply_to_id: State.replyTo}); 
-                    this.cancelReply(); // Also cancel any replies tied to it
+                    this.cancelReply(); 
                     const tempEl = document.getElementById(tempId);
                     if (tempEl) {
                         tempEl.id = 'msg-' + res.id;
@@ -2356,7 +2314,7 @@
                     State.lastMsgId = 0; 
                     this.sync(); 
                 } catch(e) {
-                    UI.toast('Failed to send media');
+                    UI.toast(App.t('toast_fail'));
                     document.getElementById(tempId)?.remove();
                 }
             },
@@ -2365,7 +2323,6 @@
                 try { await req(`/api/messages/${State.targetId}/action`, 'POST', {action:act, emoji}); document.getElementById('ctx-menu').style.transform='translateY(100%)'; State.lastMsgId=0; this.sync(); } catch(e){}
             },
 
-            // --- PROFILE & SETTINGS ---
             viewProfile(chatId) {
                 const c = State.chats.get(chatId); if(!c) return;
                 const isDM = c.type==='dm'; const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
@@ -2376,35 +2333,35 @@
                 document.getElementById('prof-av').src = av;
                 document.getElementById('prof-name').innerText = name;
                 document.getElementById('prof-handle').innerText = handleText;
-                document.getElementById('prof-bio').innerText = isDM ? (c.dm_bio||'No bio') : (c.description||'No description');
+                document.getElementById('prof-bio').innerText = isDM ? (c.dm_bio||App.t('no_bio')) : (c.description||App.t('no_desc'));
                 
                 let acts = '';
                 
                 if (c.type === 'channel') {
                     const link = c.is_private ? `${window.location.origin}${window.location.pathname}?channel=${c.invite_hash}` : `${window.location.origin}${window.location.pathname}?channel=${c.username}`;
-                    acts += `<button class="btn btn-outline" onclick="navigator.clipboard.writeText('${link}'); UI.toast('Link Copied!')">🔗 Copy Link</button>`;
+                    acts += `<button class="btn btn-outline" onclick="navigator.clipboard.writeText('${link}'); UI.toast(App.t('toast_link'))">🔗 ${App.t('copy_link')}</button>`;
                     
                     if (c.my_role === 'admin') {
                         acts += `<div class="settings-card" style="padding:16px; text-align:left; margin-top:16px;">
-                            <div style="font-size:14px; font-weight:600; margin-bottom:12px;">Admin Tools</div>
+                            <div style="font-size:14px; font-weight:600; margin-bottom:12px;" data-i18n="admin_tools">${App.t('admin_tools')}</div>
                             
                             <label style="display:block; margin-bottom:16px; cursor:pointer; text-align:center;">
                                 <img id="edit-chan-av-preview" src="${av}" class="avatar" style="width:60px;height:60px;margin:0 auto 8px;">
-                                <div style="font-size:12px; color:var(--primary); font-weight:600;">Change Photo</div>
+                                <div style="font-size:12px; color:var(--primary); font-weight:600;" data-i18n="change_photo">${App.t('change_photo')}</div>
                                 <input type="file" hidden accept="image/*" onchange="App.prepEditChanAv(event)">
                             </label>
                     
-                            <input type="text" id="edit-chan-name" class="settings-input" value="${name}" placeholder="Name">
-                            <input type="text" id="edit-chan-handle" class="settings-input" value="${c.username||''}" placeholder="Handle" ${c.is_private?'disabled':''}>
-                            <textarea id="edit-chan-desc" class="settings-input" rows="2" placeholder="Description">${c.description||''}</textarea>
-                            <button class="btn" onclick="App.updateChanProfile(${chatId})">Save Changes</button>
+                            <input type="text" id="edit-chan-name" class="settings-input" value="${name}" data-i18n-ph="name_ph" placeholder="Name">
+                            <input type="text" id="edit-chan-handle" class="settings-input" value="${c.username||''}" data-i18n-ph="handle_ph" placeholder="Handle" ${c.is_private?'disabled':''}>
+                            <textarea id="edit-chan-desc" class="settings-input" rows="2" data-i18n-ph="desc_ph" placeholder="Description">${c.description||''}</textarea>
+                            <button class="btn" onclick="App.updateChanProfile(${chatId})" data-i18n="save_changes">${App.t('save_changes')}</button>
                         </div>
-                        <div style="text-align:left; font-size:14px; font-weight:600; margin:16px 0 8px;">Subscribers</div>
-                        <div id="prof-subs-list" style="text-align:left; max-height:200px; overflow-y:auto;">Loading...</div>`;
+                        <div style="text-align:left; font-size:14px; font-weight:600; margin:16px 0 8px;" data-i18n="subs">${App.t('subs')}</div>
+                        <div id="prof-subs-list" style="text-align:left; max-height:200px; overflow-y:auto;">${App.t('loading')}</div>`;
                         this.loadChatMembers(chatId);
                     }
                 } else if(c.type === 'group') {
-                    acts += `<button class="btn" onclick="App.addMember(${chatId})">➕ Add Member</button>`;
+                    acts += `<button class="btn" onclick="App.addMember(${chatId})">${App.t('add_member')}</button>`;
                 }
                 
                 document.getElementById('prof-actions').innerHTML = acts;
@@ -2415,8 +2372,8 @@
                 const handle = document.getElementById('edit-chan-handle').value;
                 const desc = document.getElementById('edit-chan-desc').value;
                 const payload = {name, handle, description:desc};
-                if (State.tmpEditChanAv) payload.avatar = State.tmpEditChanAv; // Include new photo
-                try { await req(`/api/chats/${id}`, 'PUT', payload); UI.toast('Updated'); State.tmpEditChanAv = null; this.sync(); Router.pop(); } catch(e){}
+                if (State.tmpEditChanAv) payload.avatar = State.tmpEditChanAv; 
+                try { await req(`/api/chats/${id}`, 'PUT', payload); UI.toast(App.t('toast_updated')); State.tmpEditChanAv = null; this.sync(); Router.pop(); } catch(e){}
             },
             async loadChatMembers(id) {
                 try {
@@ -2426,19 +2383,19 @@
                         h += `<div class="user-item" style="padding:8px 0;">
                             <img src="${m.avatar||defAv}" class="avatar" style="width:36px;height:36px;">
                             <div class="user-info" style="font-size:14px;"><b>${m.username}</b> <span style="font-size:11px; color:var(--text-muted)">${m.role}</span></div>
-                            ${m.role !== 'admin' ? `<button class="icon-btn" style="width:auto; font-size:12px; color:var(--primary)" onclick="App.promoteMem(${id}, ${m.id})">Promote</button>` : ''}
+                            ${m.role !== 'admin' ? `<button class="icon-btn" style="width:auto; font-size:12px; color:var(--primary)" onclick="App.promoteMem(${id}, ${m.id})">${App.t('promote')}</button>` : ''}
                         </div>`;
                     });
                     document.getElementById('prof-subs-list').innerHTML = h;
                 } catch(e) {}
             },
             async promoteMem(chatId, targetId) {
-                if(!confirm('Make admin?')) return;
+                if(!confirm(App.t('conf_admin'))) return;
                 try { await req(`/api/chats/${chatId}/members/${targetId}`, 'PUT', {role:'admin'}); this.loadChatMembers(chatId); } catch(e){}
             },
             async addMember(chatId) {
-                const u = prompt("Enter username to add:"); if(!u) return;
-                try { await req(`/api/chats/${chatId}/members`, 'POST', {username:u}); UI.toast('Added!'); } catch(e) { UI.toast(e.message); }
+                const u = prompt(App.t('p_user')); if(!u) return;
+                try { await req(`/api/chats/${chatId}/members`, 'POST', {username:u}); UI.toast(App.t('toast_added')); } catch(e) { UI.toast(e.message); }
             },
 
             async updateProfile(e, field) {
@@ -2450,13 +2407,12 @@
                         body.avatar = ev.target.result; 
                         await req('/api/user/profile','PUT',body); 
                         document.getElementById('set-av').src = body.avatar; 
-                        document.getElementById('nav-av').src = body.avatar; // Updates the bottom nav live!
-                        UI.toast('Updated'); 
+                        document.getElementById('nav-av').src = body.avatar; 
+                        UI.toast(App.t('toast_updated')); 
                     };
                     r.readAsDataURL(f); 
                     return;
                 }
-                // Inside App.updateProfile(e, field)
                 if(field==='bio') {
                     body.bio = document.getElementById('set-bio').value;
                     State.u.bio = body.bio;
@@ -2464,14 +2420,13 @@
                 }
                 if(field==='username') { body.username = document.getElementById('set-name').value; State.u.username = body.username; localStorage.setItem('y_u', JSON.stringify(State.u)); }
                 if(field==='privacy') { body.call_privacy = document.getElementById('set-call').value; body.pfp_privacy = document.getElementById('set-pfp').value; }
-                try { await req('/api/user/profile','PUT',body); UI.toast('Updated'); } catch(e){ UI.toast(e.message); }
+                try { await req('/api/user/profile','PUT',body); UI.toast(App.t('toast_updated')); } catch(e){ UI.toast(e.message); }
             },
 
-            // --- SESSIONS ---
             async loadSessions() {
                 Router.push('panel-sessions');
                 const cont = document.getElementById('sessions-list'); if(!cont) return;
-                cont.innerHTML = '<div style="padding:20px; text-align:center;">Loading...</div>';
+                cont.innerHTML = `<div style="padding:20px; text-align:center;">${App.t('loading')}</div>`;
                 try {
                     const sess = await req('/api/sessions'); let h='';
                     sess.forEach(s => {
@@ -2481,15 +2436,18 @@
                             ${!s.is_current ? `<button class="btn btn-outline" style="padding:6px 12px; font-size:12px; margin-top:8px; border-color:var(--danger); color:var(--danger)" onclick="App.revokeSession('${s.token}')">Revoke</button>`:''}
                         </div>`;
                     });
-                    cont.innerHTML = h || '<div style="text-align:center; padding:20px;">No sessions</div>';
+                    cont.innerHTML = h || `<div style="text-align:center; padding:20px;">${App.t('no_sessions')}</div>`;
                 } catch(e){}
             },
             async revokeSession(t) { 
-                try { await req('/api/sessions/revoke', 'POST', {tokenToRevoke: t}); this.loadSessions(); UI.toast('Revoked'); } catch(e){} 
+                try { await req('/api/sessions/revoke', 'POST', {tokenToRevoke: t}); this.loadSessions(); UI.toast(App.t('toast_revoked')); } catch(e){} 
             }
         };
 
-        window.onload = () => { if(State.t) { document.getElementById('panel-auth').classList.remove('active'); App.start(); } };
+        window.onload = () => { 
+            App.setLang(State.lang);
+            if(State.t) { document.getElementById('panel-auth').classList.remove('active'); App.start(); } 
+        };
     </script>
 </body>
 </html>
