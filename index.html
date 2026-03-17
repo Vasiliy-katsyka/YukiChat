@@ -1182,7 +1182,8 @@
             chats: new Map(), chat: null, syncLoop: null, lastMsgId: 0,
             capMedia: null, capType: null, authMode: 'login', regAv: null, replyTo: null,
             notifiedMsgs: new Set(),
-            notifiedCalls: new Set()
+            notifiedCalls: new Set(),
+            firstSyncDone: false // <--- ADD THIS LINE
         };
 
         const req = async (path, m='GET', b=null) => {
@@ -1886,6 +1887,7 @@
             showPush(title, body, icon, isCall = false) {
                 if (!('Notification' in window) || Notification.permission !== 'granted') {
                     if(isCall) UI.toast(`📞 ${title}`);
+                    else UI.toast(`${title}: ${body}`); // Fallback for messages
                     return;
                 }
 
@@ -1894,8 +1896,8 @@
                 const opts = {
                     body: cleanBody,
                     icon: icon !== defAv ? icon : null, 
-                    tag: isCall ? 'call' : 'msg', 
-                    vibrate: isCall ?[500, 1000, 500, 1000, 500] :[200, 100, 200], 
+                    tag: isCall ? 'call' : 'msg_' + Date.now(), // Unique tag for msgs so they stack
+                    vibrate: isCall ? [500, 1000, 500, 1000, 500] : [200, 100, 200], 
                     requireInteraction: isCall 
                 };
 
@@ -1923,6 +1925,10 @@
                     let totalUnread = 0;
                     let html = '';
                     
+                    // Mark if this is the very first time sync() is running after reload
+                    const isFirstSync = !State.firstSyncDone;
+                    State.firstSyncDone = true;
+                    
                     d.chats.forEach(c => {
                         State.chats.set(c.id, c);
                         const isDM = c.type==='dm'; const n = isDM?c.dm_username:c.name; 
@@ -1931,13 +1937,33 @@
 
                         let prevH = c.last_msg ? c.last_msg.replace(/</g,'&lt;') : App.t('start_chat');
                         if(c.last_msg_type === 'photo') prevH = App.t('photo');
+                        if(c.last_msg_type === 'audio') prevH = '🎵 Audio';
                         if(c.last_msg_type === 'file') prevH = App.t('file');
+                        if(c.last_msg_type === 'call') prevH = c.last_msg.includes('Missed') ? '❌📞 Missed Call' : '📞 Call Ended';
                         
                         if(isDM && c.dm_typing == c.id) prevH = `<span style="color:var(--primary)">${App.t('typing')}</span>`;
                         else if(!isDM && c.is_typing == c.id) prevH = `<span style="color:var(--primary)">${App.t('typing')}</span>`;
 
                         const bage = c.unread > 0 ? `<span class="badge">${c.unread}</span>` : '';
                         totalUnread += c.unread || 0; 
+
+                        // --- NEW: MESSAGE NOTIFICATION LOGIC ---
+                        if (c.last_msg_id && !State.notifiedMsgs.has(c.last_msg_id)) {
+                            State.notifiedMsgs.add(c.last_msg_id);
+                            
+                            const isActiveChat = (State.chat === c.id && document.visibilityState === 'visible');
+                            
+                            // Only notify if: Not first load, has unread (we didn't send it), and we aren't looking at this chat
+                            if (!isFirstSync && c.unread > 0 && !isActiveChat) {
+                                let msgPreview = prevH.replace(/<[^>]*>?/gm, ''); // strip HTML
+                                App.showPush(n, msgPreview, av, false);
+                                
+                                // Play a soft notification sound
+                                const msgSound = new Audio('https://actions.google.com/sounds/v1/water/water_drop.ogg');
+                                msgSound.play().catch(()=>{});
+                            }
+                        }
+                        // ----------------------------------------
                         
                         const hasCall = d.calls.find(x => x.chat_id === c.id && (x.status === 'ringing' || x.status === 'connected'));
                         const isVid = (hasCall && hasCall.init_data) ? JSON.parse(hasCall.init_data).video : false;
@@ -2111,98 +2137,139 @@
             async loadMsgs(id) {
                 const cont = document.getElementById('msgs');
                 const cacheKey = `y_cache_msgs_${id}`;
-                if(State.lastMsgId === 0) cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div><div class="skeleton skel-text short" style="height:40px; border-radius:18px; margin-left:auto; margin-top:10px;"></div></div>`;
-                if(State.lastMsgId === 0) {
+                
+                if (State.lastMsgId === 0) {
                     const cachedHtml = localStorage.getItem(cacheKey);
-                    if(cachedHtml) {
+                    if (cachedHtml) {
                         cont.innerHTML = cachedHtml;
                         cont.scrollTop = cont.scrollHeight;
                     } else {
-                        cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div></div>`;
+                        cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div><div class="skeleton skel-text short" style="height:40px; border-radius:18px; margin-left:auto; margin-top:10px;"></div></div>`;
                     }
                 }
+                
                 try {
-                    const msgs = await req(`/api/messages/${id}`); let html = ''; let pinned = null;
+                    const msgs = await req(`/api/messages/${id}`); 
+                    let html = ''; 
+                    let pinned = null;
+
                     msgs.forEach(m => {
-                        const isMine = m.sender_id === State.u.userId; let inner = '';
-                        if(m.is_pinned) pinned = m.content;
+                        try {
+                            const isMine = m.sender_id === State.u.userId; 
+                            let inner = '';
+                            if(m.is_pinned) pinned = m.content;
 
-                        if(m.reply_to_id) {
-                            const repM = msgs.find(x => x.id === m.reply_to_id);
-                            const repTxt = repM ? repM.content.replace(/</g,'&lt;') : App.t('del_msg');
-                            inner += `<div class="reply-block" onclick="document.getElementById('msg-${m.reply_to_id}').scrollIntoView({behavior:'smooth', block:'center'})">${repTxt}</div>`;
-                        }
+                            if(m.reply_to_id) {
+                                const repM = msgs.find(x => x.id === m.reply_to_id);
+                                const repTxt = repM ? (repM.content || '').replace(/</g,'&lt;') : App.t('del_msg');
+                                inner += `<div class="reply-block" onclick="document.getElementById('msg-${m.reply_to_id}').scrollIntoView({behavior:'smooth', block:'center'})">${repTxt}</div>`;
+                            }
 
-                        let cleanTxt = m.content.replace(/</g,'&lt;');
-                        
-                        if (m.type === 'text') {
-                            cleanTxt = cleanTxt.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;">$1</pre>');
-                            cleanTxt = cleanTxt.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
-                            cleanTxt = cleanTxt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                            cleanTxt = cleanTxt.replace(/\*(.*?)\*/g, '<em>$1</em>');
-                            cleanTxt = cleanTxt.replace(/^### (.*$)/gim, '<h3 style="margin:16px 0 8px;font-size:16px;">$1</h3>');
-                            cleanTxt = cleanTxt.replace(/^## (.*$)/gim, '<h2 style="margin:18px 0 8px;font-size:18px;">$1</h2>');
-                            cleanTxt = cleanTxt.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">$1</a>');
-                            cleanTxt = cleanTxt.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
-                        }
+                            // --- CRITICAL FIX: Only process text for actual text messages ---
+                            // This stops the browser from crashing when it tries to format 1MB Base64 images
+                            let cleanTxt = '';
+                            if (m.type === 'text') {
+                                cleanTxt = (m.content || '').replace(/</g,'&lt;');
+                                cleanTxt = cleanTxt.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;">$1</pre>');
+                                cleanTxt = cleanTxt.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
+                                cleanTxt = cleanTxt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                                cleanTxt = cleanTxt.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                                cleanTxt = cleanTxt.replace(/^### (.*$)/gim, '<h3 style="margin:16px 0 8px;font-size:16px;">$1</h3>');
+                                cleanTxt = cleanTxt.replace(/^## (.*$)/gim, '<h2 style="margin:18px 0 8px;font-size:18px;">$1</h2>');
+                                cleanTxt = cleanTxt.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">$1</a>');
+                                cleanTxt = cleanTxt.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
+                                
+                                inner += cleanTxt;
+                            } 
+                            else if(m.type === 'photo') {
+                                inner += `<img src="${m.content}" loading="lazy" class="msg-media" onclick="window.open(this.src)">`;
+                            } 
+                            else if(m.type === 'audio') {
+                                inner += `<audio controls src="${m.content}" style="max-width: 100%; margin-top: 4px; height: 40px; outline: none; border-radius: 20px;"></audio>`;
+                            } 
+                            else if(m.type === 'sticker') {
+                                inner += `<img src="${m.content}" loading="lazy" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
+                            } 
+                            else if(m.type === 'call') {
+                                const callContent = m.content || '';
+                                const isMissed = callContent.includes('Missed') || callContent.includes('Canceled');
+                                const title = isMine ? (isMissed ? 'Canceled Call' : 'Outgoing Call') : (isMissed ? 'Missed Call' : 'Incoming Call');
+                                
+                                const arrowColor = isMissed ? 'var(--danger)' : 'var(--text-muted)';
+                                const arrowIcon = isMine 
+                                    ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${arrowColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>` 
+                                    : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${arrowColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="7" x2="7" y2="17"></line><polyline points="17 17 7 17 7 7"></polyline></svg>`;
 
-                        if(m.type === 'photo') inner += `<img src="${m.content}" loading="lazy" class="msg-media" onclick="window.open(this.src)">`;
-                        else if(m.type === 'audio') inner += `<audio controls src="${m.content}" style="max-width: 100%; margin-top: 4px; height: 40px; outline: none; border-radius: 20px;"></audio>`;
-                        else if(m.type === 'sticker') inner += `<img src="${m.content}" loading="lazy" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
-                        else if(m.type === 'call') {
-                            const isMissed = m.content.includes('Missed');
-                            inner += `<div style="display: flex; align-items: center; gap: 12px; font-weight: 500;">
-                                        <div style="font-size: 24px;">${isMissed ? '❌📞' : '📞'}</div>
-                                        <div>
-                                            <div style="font-size: 15px; color: ${isMissed ? 'var(--danger)' : 'inherit'};">${m.content}</div>
-                                            ${m.caption ? `<div style="font-size: 12px; color: var(--text-muted); opacity: 0.8;">${m.caption}</div>` : ''}
-                                        </div>
-                                      </div>`;
-                        }
-                        else inner += cleanTxt;
-                        
-                        if (m.reply_markup && m.reply_markup !== 'null') {
-                            try {
-                                const rm = JSON.parse(m.reply_markup);
-                                if (rm.inline_keyboard) {
-                                    inner += `<div class="inline-kb">`;
-                                    rm.inline_keyboard.forEach(row => {
-                                        inner += `<div class="inline-row">`;
-                                        row.forEach(btn => {
-                                            if (btn.callback_data === 'call_back') {
-                                                inner += `<button class="inline-btn" onclick="event.stopPropagation(); RTC.startCall()">${btn.text}</button>`;
-                                            } else if (btn.callback_data === 'call_back_video') {
-                                                inner += `<button class="inline-btn" onclick="event.stopPropagation(); RTC.startCall(true)">${btn.text}</button>`;
-                                            } else {
-                                                inner += `<button class="inline-btn" onclick="event.stopPropagation(); App.sendCallback(${m.id}, '${btn.callback_data}')">${btn.text}</button>`;
-                                            }
+                                const timeStr = m.caption ? m.caption.replace('Duration: ', '') : '';
+                                const statusText = timeStr ? timeStr : (isMissed ? 'Missed' : 'Canceled');
+
+                                inner += `
+                                <div style="display: flex; justify-content: space-between; align-items: center; min-width: 170px; gap: 16px;">
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <span style="font-size: 16px; font-weight: 600; color: var(--text-main);">${title}</span>
+                                        <span style="font-size: 14px; display: flex; align-items: center; gap: 4px;">
+                                            ${arrowIcon} <span style="color: ${arrowColor}">${statusText}</span>
+                                        </span>
+                                    </div>
+                                    <div style="color: var(--primary);">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                                    </div>
+                                </div>`;
+                            }
+                            else {
+                                inner += (m.content || '').replace(/</g,'&lt;'); // Fallback
+                            }
+                            
+                            if (m.reply_markup && m.reply_markup !== 'null') {
+                                try {
+                                    const rm = JSON.parse(m.reply_markup);
+                                    if (rm.inline_keyboard) {
+                                        inner += `<div class="inline-kb">`;
+                                        rm.inline_keyboard.forEach(row => {
+                                            inner += `<div class="inline-row">`;
+                                            row.forEach(btn => {
+                                                if (btn.callback_data === 'call_back') {
+                                                    inner += `<button class="inline-btn" onclick="event.stopPropagation(); RTC.startCall()">${btn.text}</button>`;
+                                                } else if (btn.callback_data === 'call_back_video') {
+                                                    inner += `<button class="inline-btn" onclick="event.stopPropagation(); RTC.startCall(true)">${btn.text}</button>`;
+                                                } else {
+                                                    inner += `<button class="inline-btn" onclick="event.stopPropagation(); App.sendCallback(${m.id}, '${btn.callback_data}')">${btn.text}</button>`;
+                                                }
+                                            });
+                                            inner += `</div>`;
                                         });
                                         inner += `</div>`;
-                                    });
-                                    inner += `</div>`;
-                                }
-                            } catch(e) {}
-                        }
+                                    }
+                                } catch(e) {}
+                            }
+                            
+                            if(m.caption && m.type !== 'call') inner += `<div class="msg-caption">${m.caption.replace(/</g,'&lt;')}</div>`;
+
+                            let rxs = JSON.parse(m.reactions||'{}'); let rxH = ''; for(let k in rxs) rxH += rxs[k];
+                            if(rxH) inner += `<div style="position:absolute; bottom:-10px; right:8px; background:var(--bg-base); border-radius:12px; padding:2px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:14px; border:1px solid var(--border); z-index:2;">${rxH}</div>`;
+
+                            const tick = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
+
+                            const senderName = (!isMine && State.chats.get(id)?.type !== 'dm') 
+                                ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
+
+                            let bubbleClass = "msg-bubble";
+                            let bubbleStyle = "";
+                            
+                            if (m.type === 'sticker') {
+                                bubbleStyle = "background: transparent; padding: 0; box-shadow: none;";
+                            } else if (m.type === 'call') {
+                                bubbleClass += " liquid-glass n-glass-border";
+                                bubbleStyle = "background: transparent; box-shadow: none;";
+                            }
+                            
+                            html += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">
+                                <div class="${bubbleClass}" style="${bubbleStyle}">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tick}</div></div></div>`;
                         
-                        if(m.caption && m.type !== 'call') inner += `<div class="msg-caption">${m.caption.replace(/</g,'&lt;')}</div>`;
-
-                        let rxs = JSON.parse(m.reactions||'{}'); let rxH = ''; for(let k in rxs) rxH += rxs[k];
-                        if(rxH) inner += `<div style="position:absolute; bottom:-10px; right:8px; background:var(--bg-base); border-radius:12px; padding:2px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:14px; border:1px solid var(--border); z-index:2;">${rxH}</div>`;
-
-                        let viewsH = '';
-                        const c = State.chats.get(id);
-                        if (c && c.type === 'channel' && m.views) {
-                             viewsH = `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>`;
+                        } catch (msgError) {
+                            console.error("Error rendering message:", m.id, msgError);
+                            // If one message corrupts, skip it instead of crashing the whole chat!
                         }
-                        const tick = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
-
-                        const senderName = (!isMine && State.chats.get(id)?.type !== 'dm') 
-                            ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
-
-                        const bubbleStyle = (m.type === 'sticker' || m.type === 'call') ? 'background: transparent; padding: 0; box-shadow: none;' : '';
-                        
-                        html += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">
-                            <div class="msg-bubble" style="${bubbleStyle}">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tick}</div></div></div>`;
                     });
                     
                     const pinEl = document.getElementById('pinned-msg');
@@ -2211,9 +2278,25 @@
                         else pinEl.style.display='none';
                     }
 
-                    cont.innerHTML = html; cont.scrollTop = cont.scrollHeight;
-                    localStorage.setItem(cacheKey, html);
-                } catch(e){}
+                    cont.innerHTML = html; 
+                    cont.scrollTop = cont.scrollHeight;
+                    
+                    try {
+                        localStorage.setItem(cacheKey, html);
+                    } catch(quotaExceeded) {
+                        console.warn("Local storage full, skipping cache save.");
+                    }
+
+                } catch(e){
+                    console.error("Critical Chat Load Error:", e);
+                    // --- NEW: Display the error on screen so you aren't stuck on skeletons ---
+                    cont.innerHTML = `
+                        <div style="padding: 40px 20px; text-align: center;">
+                            <div style="color: var(--danger); font-weight: bold; font-size: 16px; margin-bottom: 8px;">Failed to load chat</div>
+                            <div style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">${e.message || 'Network error or payload too large'}</div>
+                            <button class="btn" onclick="App.clearCache(); location.reload();">Clear Cache & Reload</button>
+                        </div>`;
+                }
             },
             async handleMention(username) {
                 try {
@@ -2235,12 +2318,19 @@
             prepMedia(e) {
                 const f = e.target.files[0]; if(!f) return;
                 e.target.value = ''; 
+                
+                // --- FIX: Prevent audio from disappearing ---
+                // D1 Database limit is 1MB. Base64 strings over ~700KB will crash the save.
+                if (f.size > 700 * 1024 && !f.type.startsWith('image/')) {
+                    UI.toast("File too large! Database limit is 700KB. Send a smaller file.");
+                    return;
+                }
+
                 const r = new FileReader();
                 r.onload = ev => {
                     const finish = (data, type) => {
                         State.capMedia = data; State.capType = type;
                         
-                        // Set preview icon based on type
                         let previewImg = 'https://via.placeholder.com/150/333333/FFFFFF?text=File';
                         if (type === 'photo') previewImg = data;
                         if (type === 'audio') previewImg = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23334155" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>';
@@ -2258,7 +2348,7 @@
                             if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
                             canvas.width = w; canvas.height = h;
                             canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                            finish(canvas.toDataURL('image/jpeg', 0.85), 'photo'); // Compression helps loading speed
+                            finish(canvas.toDataURL('image/jpeg', 0.85), 'photo');
                         };
                         img.src = ev.target.result;
                     } else if (f.type.startsWith('audio/')) {
