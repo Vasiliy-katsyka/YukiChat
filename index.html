@@ -590,14 +590,19 @@
         <div class="liquid-glass n-glass-header" style="position: absolute; width: 100%; top: 0; z-index: 50;">
             <div class="root-header" style="background: transparent;">
                 <h1>Messages</h1>
-                <button class="icon-btn" onclick="App.toggleTheme()">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                </button>
-            </div>
-            <div class="search-wrap" style="background: transparent;">
-                <div class="search-bar" style="background: color-mix(in srgb, var(--text-main) 8%, transparent);">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    <input type="text" placeholder="Search" oninput="App.searchGlobal(this.value)">
+                <div style="display:flex; gap: 8px; align-items: center;">
+                    <!-- NEW Install Button (Hidden by default) -->
+                    <button class="icon-btn" id="header-install-btn" style="display:none;" onclick="App.installPWA()">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
+                    <!-- Existing Theme Button -->
+                    <button class="icon-btn" onclick="App.toggleTheme()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -728,7 +733,16 @@
             <div style="width:40px"></div>
         </div>
         <div class="panel-body" style="padding: 0 20px;">
-            
+            <!-- NEW Settings Install Button -->
+            <div class="settings-header" id="settings-install-header" style="display:none;">App</div>
+            <div class="settings-card" id="settings-install-card" style="display:none;">
+                <div class="settings-row" style="margin:0; background:transparent; cursor:pointer;" onclick="App.installPWA()">
+                    <div style="display:flex; align-items:center; gap:10px; color:var(--primary); font-weight:600;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        Install App (PWA)
+                    </div>
+                </div>
+            </div>
             <div class="settings-header">Profile</div>
             <div class="settings-card" style="padding: 1px 20px 20px;">
                 <label class="profile-av-wrap" style="display:block; cursor:pointer;">
@@ -1058,19 +1072,60 @@
         };
         const API = 'https://yukichat.kviappsgames.workers.dev'; 
         const verifiedTick = `<svg style="width:16px; height:16px; vertical-align:text-bottom; fill:#0088cc; margin-left:4px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M23,12L20.56,9.22L20.9,5.54L17.29,4.72L15.4,1.54L12,3L8.6,1.54L6.71,4.72L3.1,5.53L3.44,9.21L1,12L3.44,14.78L3.1,18.47L6.71,19.29L8.6,22.47L12,21L15.4,22.46L17.29,19.28L20.9,18.46L20.56,14.78L23,12M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z" /></svg>`;
-        // Dynamic PWA Manifest Generation for Installation
-
         
-        const manifest = { name:"YukiChat Pro", short_name:"YukiChat", start_url:".", display:"standalone", background_color:"#0f172a", theme_color:"#0f172a", icons:[{src:defAv, sizes:"192x192", type:"image/svg+xml"}] };
+        // Prevent iOS/Android from purging LocalStorage (Fixes random logouts)
+        if (navigator.storage && navigator.storage.persist) {
+            navigator.storage.persist().then(granted => {
+                if (granted) console.log("Storage will not be cleared by the OS.");
+            });
+        }
+        
+        // Dynamic PWA Manifest Generation for Installation
+        const manifest = { 
+            name: "YukiChat Pro", 
+            short_name: "YukiChat", 
+            start_url: "/", // FIX: Prevents path-isolation logout bugs
+            display: "standalone", 
+            background_color: "#0f172a", 
+            theme_color: "#0f172a", 
+            icons:[
+                { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
+                { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
+                { src: defAv, sizes: "192x192", type: "image/svg+xml" } // Fallback SVG
+            ] 
+        };
         document.getElementById('pwa-manifest').href = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifest));
+        
+        // Register Service Worker correctly (points to root /sw.js)
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/YukiChat/sw.js')
+            navigator.serviceWorker.register('/sw.js')
                 .then(() => console.log('SW Registered'))
                 .catch(err => console.error('SW Failed:', err));
         }
-
+        
+        // PWA Install Prompt Handlers
         let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('install-btn').style.display='flex'; });
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        
+        window.addEventListener('beforeinstallprompt', (e) => { 
+            e.preventDefault(); 
+            deferredPrompt = e; 
+            
+            // Only show install buttons if we are NOT already running inside the PWA
+            if (!isStandalone) {
+                document.getElementById('header-install-btn').style.display='flex'; 
+                document.getElementById('settings-install-card').style.display='block';
+                document.getElementById('settings-install-header').style.display='block';
+            }
+        });
+        
+        window.addEventListener('appinstalled', () => {
+            document.getElementById('header-install-btn').style.display='none';
+            document.getElementById('settings-install-card').style.display='none';
+            document.getElementById('settings-install-header').style.display='none';
+            deferredPrompt = null;
+            UI.toast("App successfully installed!");
+        });
 
         const State = { 
             t: localStorage.getItem('y_t'), u: JSON.parse(localStorage.getItem('y_u')||'{}'), 
@@ -1547,7 +1602,21 @@
             async auth(isLog) { State.authMode = isLog ? 'login' : 'register'; await this.submitAuth(); },
 
             logout() { localStorage.clear(); location.reload(); },
-            installPWA() { if(deferredPrompt) deferredPrompt.prompt(); },
+            installPWA() { 
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            document.getElementById('header-install-btn').style.display = 'none';
+                            document.getElementById('settings-install-card').style.display = 'none';
+                            document.getElementById('settings-install-header').style.display = 'none';
+                        }
+                        deferredPrompt = null;
+                    });
+                } else {
+                    UI.toast("App is already installed or browser blocked it.");
+                }
+            },
             async sendToAI(text, type, mediaData) {
                 const msgsCont = document.getElementById('msgs');
                 
