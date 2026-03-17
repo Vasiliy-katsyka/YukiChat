@@ -1090,7 +1090,7 @@
         <div class="settings-row" id="ctx-del" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; color:var(--danger); cursor:pointer;" onclick="App.msgAct('delete')">🗑️ Delete Message</div>
     </div>
     
-    <div class="bottom-nav liquid-glass" id="bottom-nav">
+    <div class="bottom-nav liquid-glass" id="bottom-nav" style="display: none;">
         <div class="nav-item active" id="nav-chats" onclick="App.switchTab('chats')">
             <div class="icon-wrap">
                 <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
@@ -2643,7 +2643,14 @@
             }
         };
 
-        window.onload = () => { if(State.t) { document.getElementById('panel-auth').classList.remove('active'); App.start(); } };
+        window.onload = () => { 
+            if(State.t) { 
+                document.getElementById('panel-auth').classList.remove('active'); 
+                App.start(); 
+            } else {
+                Router.updateNav(); // Forces the nav bar to hide if not logged in
+            }
+        };
     </script>
 </body>
 </html>
