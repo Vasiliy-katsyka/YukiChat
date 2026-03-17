@@ -1837,20 +1837,26 @@
             },
 
             showCtx(e, id, isMine) {
+                // 1. If the click was on a button or link, do nothing
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button')) {
+                    return;
+                }
+                
+                // 2. Check if text is selected (for native copy)
                 if (window.getSelection().toString().trim().length > 0) return; 
-
+            
                 e.preventDefault();
                 e.stopPropagation();
-
+            
                 State.targetId = id;
                 const msgEl = document.getElementById('msg-'+id);
                 const bubble = msgEl ? msgEl.querySelector('.msg-bubble') : null;
-                State.targetTxt = bubble ? Array.from(bubble.childNodes).filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() : '';
+                State.targetTxt = bubble ? Array.from(bubble.childNodes)
+                    .filter(n => n.nodeType === 3)
+                    .map(n => n.textContent).join('').trim() : '';
                 
                 document.getElementById('n-ctx-backdrop').style.display = 'block';
-                
-                const ctxMenu = document.getElementById('ctx-menu');
-                ctxMenu.style.transform = 'translateY(0)';
+                document.getElementById('ctx-menu').style.transform = 'translateY(0)';
             },
 
             closeCtx() {
@@ -2154,7 +2160,7 @@
                                     rm.inline_keyboard.forEach(row => {
                                         inner += `<div class="inline-row">`;
                                         row.forEach(btn => {
-                                            inner += `<button class="inline-btn" onclick="App.sendCallback(${m.id}, '${btn.callback_data}')">${btn.text}</button>`;
+                                            inner += `<button class="inline-btn" onclick="event.stopPropagation(); App.sendCallback(${m.id}, '${btn.callback_data}')">${btn.text}</button>`;
                                         });
                                         inner += `</div>`;
                                     });
