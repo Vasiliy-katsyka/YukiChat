@@ -2142,14 +2142,23 @@
                             cleanTxt = cleanTxt.replace(/\*(.*?)\*/g, '<em>$1</em>');
                             cleanTxt = cleanTxt.replace(/^### (.*$)/gim, '<h3 style="margin:16px 0 8px;font-size:16px;">$1</h3>');
                             cleanTxt = cleanTxt.replace(/^## (.*$)/gim, '<h2 style="margin:18px 0 8px;font-size:18px;">$1</h2>');
-                            
                             cleanTxt = cleanTxt.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">$1</a>');
-                            
                             cleanTxt = cleanTxt.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
                         }
 
-                        if(m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="window.open(this.src)">`;
-                        else if(m.type === 'sticker') inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
+                        if(m.type === 'photo') inner += `<img src="${m.content}" loading="lazy" class="msg-media" onclick="window.open(this.src)">`;
+                        else if(m.type === 'audio') inner += `<audio controls src="${m.content}" style="max-width: 100%; margin-top: 4px; height: 40px; outline: none; border-radius: 20px;"></audio>`;
+                        else if(m.type === 'sticker') inner += `<img src="${m.content}" loading="lazy" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
+                        else if(m.type === 'call') {
+                            const isMissed = m.content.includes('Missed');
+                            inner += `<div style="display: flex; align-items: center; gap: 12px; font-weight: 500;">
+                                        <div style="font-size: 24px;">${isMissed ? '❌📞' : '📞'}</div>
+                                        <div>
+                                            <div style="font-size: 15px; color: ${isMissed ? 'var(--danger)' : 'inherit'};">${m.content}</div>
+                                            ${m.caption ? `<div style="font-size: 12px; color: var(--text-muted); opacity: 0.8;">${m.caption}</div>` : ''}
+                                        </div>
+                                      </div>`;
+                        }
                         else inner += cleanTxt;
                         
                         if (m.reply_markup && m.reply_markup !== 'null') {
@@ -2160,7 +2169,13 @@
                                     rm.inline_keyboard.forEach(row => {
                                         inner += `<div class="inline-row">`;
                                         row.forEach(btn => {
-                                            inner += `<button class="inline-btn" onclick="event.stopPropagation(); App.sendCallback(${m.id}, '${btn.callback_data}')">${btn.text}</button>`;
+                                            if (btn.callback_data === 'call_back') {
+                                                inner += `<button class="inline-btn" onclick="event.stopPropagation(); RTC.startCall()">${btn.text}</button>`;
+                                            } else if (btn.callback_data === 'call_back_video') {
+                                                inner += `<button class="inline-btn" onclick="event.stopPropagation(); RTC.startCall(true)">${btn.text}</button>`;
+                                            } else {
+                                                inner += `<button class="inline-btn" onclick="event.stopPropagation(); App.sendCallback(${m.id}, '${btn.callback_data}')">${btn.text}</button>`;
+                                            }
                                         });
                                         inner += `</div>`;
                                     });
@@ -2169,7 +2184,7 @@
                             } catch(e) {}
                         }
                         
-                        if(m.caption) inner += `<div class="msg-caption">${m.caption.replace(/</g,'&lt;')}</div>`;
+                        if(m.caption && m.type !== 'call') inner += `<div class="msg-caption">${m.caption.replace(/</g,'&lt;')}</div>`;
 
                         let rxs = JSON.parse(m.reactions||'{}'); let rxH = ''; for(let k in rxs) rxH += rxs[k];
                         if(rxH) inner += `<div style="position:absolute; bottom:-10px; right:8px; background:var(--bg-base); border-radius:12px; padding:2px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:14px; border:1px solid var(--border); z-index:2;">${rxH}</div>`;
@@ -2184,7 +2199,7 @@
                         const senderName = (!isMine && State.chats.get(id)?.type !== 'dm') 
                             ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
 
-                        const bubbleStyle = m.type === 'sticker' ? 'background: transparent; padding: 0; box-shadow: none;' : '';
+                        const bubbleStyle = (m.type === 'sticker' || m.type === 'call') ? 'background: transparent; padding: 0; box-shadow: none;' : '';
                         
                         html += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">
                             <div class="msg-bubble" style="${bubbleStyle}">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tick}</div></div></div>`;
@@ -2224,7 +2239,13 @@
                 r.onload = ev => {
                     const finish = (data, type) => {
                         State.capMedia = data; State.capType = type;
-                        document.getElementById('media-preview-img').src = type === 'photo' ? data : 'https://via.placeholder.com/150/333333/FFFFFF?text=File';
+                        
+                        // Set preview icon based on type
+                        let previewImg = 'https://via.placeholder.com/150/333333/FFFFFF?text=File';
+                        if (type === 'photo') previewImg = data;
+                        if (type === 'audio') previewImg = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23334155" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>';
+                        
+                        document.getElementById('media-preview-img').src = previewImg;
                         document.getElementById('media-preview').style.display = 'flex';
                         document.getElementById('msg-input').focus(); 
                     };
@@ -2237,9 +2258,11 @@
                             if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
                             canvas.width = w; canvas.height = h;
                             canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                            finish(canvas.toDataURL('image/jpeg', 0.85), 'photo');
+                            finish(canvas.toDataURL('image/jpeg', 0.85), 'photo'); // Compression helps loading speed
                         };
                         img.src = ev.target.result;
+                    } else if (f.type.startsWith('audio/')) {
+                        finish(ev.target.result, 'audio');
                     } else {
                         finish(ev.target.result, 'file');
                     }
@@ -2308,9 +2331,15 @@
                 
                 const tempId = 'temp-' + Date.now();
                 const msgsCont = document.getElementById('msgs');
-                const mediaHtml = mediaType === 'photo' 
-                    ? `<div style="position:relative; display:inline-block;"><img src="${mediaData}" class="msg-media" style="opacity:0.8;"><div class="media-loading"><div class="media-loading-circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div></div></div>` 
-                    : `📁 ${App.t('file')}`;
+                
+                let mediaHtml = '';
+                if (mediaType === 'photo') {
+                    mediaHtml = `<div style="position:relative; display:inline-block;"><img src="${mediaData}" loading="lazy" class="msg-media" style="opacity:0.8;"><div class="media-loading"><div class="media-loading-circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div></div></div>`;
+                } else if (mediaType === 'audio') {
+                    mediaHtml = `<audio controls src="${mediaData}" style="max-width: 100%; margin-top: 4px; height: 40px; outline: none; border-radius: 20px;"></audio>`;
+                } else {
+                    mediaHtml = `📁 ${App.t('file')}`;
+                }
                     
                 msgsCont.innerHTML += `<div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
                     <div class="msg-bubble">${mediaHtml}${cap ? `<div class="msg-caption">${cap.replace(/</g,'&lt;')}</div>` : ''}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${App.t('just_now')} <span class="msg-tick" style="color:gray;">✓</span></div></div>
