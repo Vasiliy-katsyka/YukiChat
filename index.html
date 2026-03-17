@@ -876,6 +876,16 @@
                         Change Password
                     </div>
                 </div>
+                
+                <!-- ADD THIS NEW ROW FOR BIOMETRICS -->
+                <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0; cursor:pointer;" onclick="App.addBiometrics()">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                        Enable Biometric Login
+                    </div>
+                </div>
+                <!-- END NEW ROW -->
+                
             </div>
             <div class="settings-header">Privacy</div>
             <div class="settings-card" style="padding: 16px;">
@@ -1585,6 +1595,25 @@
                     await req('/api/user/password', 'PUT', { old_password: oldPass, new_password: newPass });
                     UI.toast("Password changed successfully.");
                 } catch(e) { UI.toast(e.message); }
+            },
+            // NEW: Add Biometrics to an existing account
+            async addBiometrics() {
+                if (!window.PublicKeyCredential) {
+                    return UI.toast("Biometrics not supported on this device/browser.");
+                }
+                
+                try {
+                    // Reuse the generator we built for sign-up
+                    const bioData = await this.createBiometricKey(State.u.username);
+                    
+                    // Send to the new API endpoint
+                    await req('/api/user/biometrics', 'POST', bioData);
+                    UI.toast("Biometric login enabled successfully!");
+                    
+                } catch(e) {
+                    UI.toast("Biometric setup failed or cancelled.");
+                    console.error(e);
+                }
             },
             authAv(e) {
                 const f = e.target.files[0]; if(!f) return; const r = new FileReader();
