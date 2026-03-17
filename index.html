@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#ffffff" id="meta-theme-color">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" id="pwa-manifest">
     <title>YukiChat</title>
     <style>
@@ -1705,13 +1705,22 @@
                 document.documentElement.setAttribute('data-theme', t); 
                 localStorage.setItem('y_theme', t); 
                 
+                // FIX: Dynamically update the Phone's Status Bar & Bottom Nav Bar!
+                setTimeout(() => {
+                    // Reads the exact background color of the current theme
+                    const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-base').trim();
+                    const metaThemeColor = document.getElementById('meta-theme-color');
+                    if (metaThemeColor) {
+                        metaThemeColor.setAttribute('content', bgColor);
+                    }
+                }, 10); // Tiny delay to allow CSS to apply first
+            
                 // Outline the currently selected theme preview
                 document.querySelectorAll('.theme-preview').forEach(el => {
                     if(el.getAttribute('data-theme-val') === t) {
                         el.classList.add('active');
                         
-                        // FIX: Only scroll into view if the Settings Panel is actually open!
-                        // This prevents the browser from breaking the layout on app startup.
+                        // Only scroll into view if the Settings Panel is actually open
                         const settingsPanel = document.getElementById('panel-settings');
                         if (settingsPanel && settingsPanel.classList.contains('active')) {
                             el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
