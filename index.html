@@ -1502,6 +1502,12 @@
                     }, 500); // Wait 500ms so it doesn't freeze the UI
                 }
             },
+            async findAndPreviewSticker(url) {
+                try {
+                    const res = await req(`/api/stickers/find?url=${encodeURIComponent(url)}`);
+                    if(res.set_name) this.previewStickerPack(res.set_name);
+                } catch(e) { UI.toast('Sticker pack not found'); }
+            },
             prepEditChanAv(e) {
                 const f = e.target.files[0]; if(!f) return;
                 const r = new FileReader();
@@ -1528,7 +1534,7 @@
                 msgsCont.innerHTML += `
                     <div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
                         <div class="msg-bubble" style="background: transparent; padding: 0; box-shadow: none;">
-                            <img src="${url}" class="msg-sticker">
+                            <img src="${url}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${url}')">
                             <div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;color:var(--text-muted);">
                                 Just now <span class="msg-tick" style="color:gray;">✓</span>
                             </div>
@@ -1762,15 +1768,21 @@
 
                 // Route Handlers for ?channel= / ?group=
                 // Replace the "Route Handlers for ?channel= / ?group=" block with this:
+                // Route Handlers for deep links
                 const p = new URLSearchParams(window.location.search);
+                const basePath = window.location.pathname; // FIX: Preserves /YukiChat/ folder!
+
                 if(p.get('channel') || p.get('group')) {
                     const h = p.get('channel') || p.get('group');
                     req('/api/chats/join', 'POST', {handle: h}).then(r => this.openChat(r.chat_id)).catch(e=>UI.toast("Join failed"));
-                    window.history.replaceState({}, document.title, "/");
+                    window.history.replaceState({}, document.title, basePath);
                 } else if (p.get('stickerpack')) {
                     const sp = p.get('stickerpack');
                     this.previewStickerPack(sp);
-                    window.history.replaceState({}, document.title, "/");
+                    window.history.replaceState({}, document.title, basePath);
+                } else if (p.get('user')) {
+                    this.handleMention(p.get('user'));
+                    window.history.replaceState({}, document.title, basePath);
                 }
                 
                 // Add this right before "this.sync();" at the end of App.start()
@@ -2129,29 +2141,25 @@
                         let cleanTxt = m.content.replace(/</g,'&lt;');
                         
                         // Simple Markdown Parser
+                        // Simple Markdown Parser
                         if (m.type === 'text') {
-                            // Code blocks: ```code```
                             cleanTxt = cleanTxt.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;">$1</pre>');
-                            // Inline code: `code`
                             cleanTxt = cleanTxt.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
-                            // Bold: **text**
                             cleanTxt = cleanTxt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                            // Italic: *text*
                             cleanTxt = cleanTxt.replace(/\*(.*?)\*/g, '<em>$1</em>');
-                            // Headers: ### Header
                             cleanTxt = cleanTxt.replace(/^### (.*$)/gim, '<h3 style="margin:16px 0 8px;font-size:16px;">$1</h3>');
                             cleanTxt = cleanTxt.replace(/^## (.*$)/gim, '<h2 style="margin:18px 0 8px;font-size:18px;">$1</h2>');
                             
-                            // Link parsing
-                            const urlMatch = cleanTxt.match(/(https?:\/\/[^\s]+)/g);
-                            if(urlMatch) {
-                                cleanTxt = cleanTxt.replace(urlMatch[0], `<a href="${urlMatch[0]}" target="_blank" style="color:#0088cc; text-decoration:underline;">${urlMatch[0]}</a>`);
-                            }
+                            // FIX: Make ALL links globally clickable, prevent opening context menu
+                            cleanTxt = cleanTxt.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">$1</a>');
+                            
+                            // NEW: Clickable Mentions (@username)
+                            cleanTxt = cleanTxt.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
                         }
 
                         // Replace media rendering in App.loadMsgs with this:
                         if(m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="window.open(this.src)">`;
-                        else if(m.type === 'sticker') inner += `<img src="${m.content}" class="msg-sticker">`;
+                        else if(m.type === 'sticker') inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
                         else inner += cleanTxt;
                         
                         // --- NEW: INLINE KEYBOARDS ---
@@ -2209,7 +2217,20 @@
                     localStorage.setItem(cacheKey, html);
                 } catch(e){}
             },
-
+            async handleMention(username) {
+                try {
+                    // Try to find an exact match in users or chats
+                    const {users, chats} = await req(`/api/search?q=${username}`);
+                    
+                    const exactUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+                    if (exactUser) return this.startDM(exactUser.id);
+                    
+                    const exactChat = chats.find(c => c.username && c.username.toLowerCase() === username.toLowerCase());
+                    if (exactChat) return this.joinChat(exactChat.username);
+                    
+                    UI.toast('User or channel not found');
+                } catch(e) { UI.toast('Error finding user'); }
+            },
             // --- MESSAGING ACTIONS ---
             initReply() { State.replyTo = State.targetId; document.getElementById('reply-preview').style.display='flex'; document.getElementById('reply-preview-text').textContent = App.targetTxt || 'Media'; document.getElementById('ctx-menu').style.transform='translateY(100%)'; document.getElementById('msg-input').focus(); },
             cancelReply() { State.replyTo = null; document.getElementById('reply-preview').style.display='none'; },
