@@ -557,26 +557,53 @@
     </svg>
     <div class="toast" id="toast">Message</div>
 
-    <!-- AUTH PANEL -->
+    <!-- UPDATED AUTH PANEL -->
     <div id="panel-auth" class="panel active" style="justify-content: center; padding: 32px; overflow-y: auto;">
         <div style="max-width: 360px; width: 100%; margin: auto; text-align: center;">
             <h1 style="font-size: 32px; font-weight: 800; margin-bottom: 40px;">YukiChat</h1>
             
-            <div id="auth-reg-fields" style="display:none; margin-bottom: 24px;">
-                <label style="position:relative; display:inline-block; margin-bottom:12px; cursor:pointer;">
-                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOTRhM2I4IiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PHBhdGggZD0iTTEyIDh2OG0tNCA0aDgiLz48L3N2Zz4=" id="auth-av-preview" class="avatar" style="width:80px;height:80px; border:2px solid var(--border)">
-                    <input type="file" hidden accept="image/*" onchange="App.authAv(event)">
-                </label>
-                <div style="color:var(--text-muted); font-size:13px;">Upload Photo</div>
+            <!-- Registration Fields (Default) -->
+            <div id="auth-signup-view">
+                <div id="auth-reg-fields" style="margin-bottom: 24px;">
+                    <label style="position:relative; display:inline-block; margin-bottom:12px; cursor:pointer;">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOTRhM2I4IiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PHBhdGggZD0iTTEyIDh2OG0tNCA0aDgiLz48L3N2Zz4=" id="auth-av-preview" class="avatar" style="width:80px;height:80px; border:2px solid var(--border)">
+                        <input type="file" hidden accept="image/*" onchange="App.authAv(event)">
+                    </label>
+                    <div style="color:var(--text-muted); font-size:13px;">Upload Photo</div>
+                </div>
+    
+                <input type="text" id="reg-u" class="settings-input" placeholder="Choose Username">
+                
+                <select id="reg-auth-method" class="settings-input" onchange="App.toggleRegMethod(this.value)">
+                    <option value="biometric">Use Biometrics (FaceID/Fingerprint)</option>
+                    <option value="password">Use Password</option>
+                </select>
+                
+                <input type="password" id="reg-p" class="settings-input" placeholder="Create Password" style="display:none;">
+                
+                <div style="margin-top: 16px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-muted);">Account Recovery</div>
+                <input type="text" id="reg-sq" class="settings-input" placeholder="e.g., First pet's name?" style="margin-top: 4px;">
+                <input type="text" id="reg-sa" class="settings-input" placeholder="Answer (Secret)">
+    
+                <button class="btn" style="margin-top: 16px;" onclick="App.submitRegister()">Create Account</button>
             </div>
-
-            <input type="text" id="auth-u" class="settings-input" placeholder="Username">
-            <input type="password" id="auth-p" class="settings-input" placeholder="Password" style="margin-bottom: 24px;">
-            
-            <button class="btn" id="btn-auth-main" onclick="App.submitAuth()">Log In</button>
-            <div style="margin-top: 24px; color:var(--text-muted); font-size:14px;">
-                <span id="auth-toggle-txt">Don't have an account?</span> 
-                <span style="color:var(--primary); cursor:pointer; font-weight:600;" onclick="App.toggleAuthMode()">Sign Up</span>
+    
+            <!-- Login View (Hidden initially) -->
+            <div id="auth-login-view" style="display:none;">
+                <input type="text" id="log-u" class="settings-input" placeholder="Username">
+                <input type="password" id="log-p" class="settings-input" placeholder="Password (Leave blank if using Biometrics)">
+                
+                <div style="display:flex; gap:12px; margin-top: 16px;">
+                    <button class="btn" onclick="App.submitLogin('password')" style="flex:1; background:var(--bg-input); color:var(--text-main);">Password</button>
+                    <button class="btn" onclick="App.submitLogin('biometric')" style="flex:1;">Biometrics</button>
+                </div>
+                
+                <div style="margin-top: 16px; cursor: pointer; color: var(--primary); font-size: 13px; font-weight: 600;" onclick="App.showRecovery()">Forgot Password?</div>
+            </div>
+    
+            <div style="margin-top: 32px; color:var(--text-muted); font-size:14px;">
+                <span id="auth-toggle-txt">Already have an account?</span> 
+                <span style="color:var(--primary); cursor:pointer; font-weight:600;" onclick="App.toggleAuthMode()">Log In</span>
             </div>
         </div>
     </div>
@@ -838,6 +865,15 @@
                     <div style="display:flex; align-items:center; gap:10px;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="2"><path d="M22 2L11 13M22 2L15 22 11 13 2 9 22 2z"/></svg>
                         Enable Telegram Notifications
+                    </div>
+                </div>
+            </div>
+            <div class="settings-header">Security</div>
+            <div class="settings-card">
+                <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0; cursor:pointer;" onclick="App.promptChangePassword()">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        Change Password
                     </div>
                 </div>
             </div>
@@ -1425,12 +1461,130 @@
 
         const App = {
             // --- AUTHENTICATION ---
+            // NEW/REPLACED AUTH LOGIC
             toggleAuthMode() {
-                State.authMode = State.authMode === 'login' ? 'register' : 'login';
-                document.getElementById('auth-reg-fields').style.display = State.authMode === 'register' ? 'block' : 'none';
-                document.getElementById('btn-auth-main').textContent = State.authMode === 'register' ? 'Create Account' : 'Log In';
+                State.authMode = State.authMode === 'register' ? 'login' : 'register'; // Default is register now
+                document.getElementById('auth-signup-view').style.display = State.authMode === 'register' ? 'block' : 'none';
+                document.getElementById('auth-login-view').style.display = State.authMode === 'login' ? 'block' : 'none';
                 document.getElementById('auth-toggle-txt').textContent = State.authMode === 'register' ? 'Already have an account?' : "Don't have an account?";
                 document.getElementById('auth-toggle-txt').nextElementSibling.textContent = State.authMode === 'register' ? 'Log In' : 'Sign Up';
+            },
+            
+            toggleRegMethod(val) {
+                document.getElementById('reg-p').style.display = val === 'password' ? 'block' : 'none';
+            },
+            
+            async createBiometricKey(username) {
+                if (!window.PublicKeyCredential) throw new Error("Biometrics not supported on this device/browser.");
+                const challenge = new Uint8Array(32); crypto.getRandomValues(challenge);
+                const userId = new Uint8Array(16); crypto.getRandomValues(userId);
+                
+                const credential = await navigator.credentials.create({
+                    publicKey: {
+                        challenge: challenge,
+                        rp: { name: "YukiChat", id: window.location.hostname },
+                        user: { id: userId, name: username, displayName: username },
+                        pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+                        authenticatorSelection: { userVerification: "required" },
+                        timeout: 60000
+                    }
+                });
+                // Convert ArrayBuffer to Base64 for the backend
+                const credId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+                return { credential_id: credId, public_key: 'mock_pub_key_for_now' }; // Simplified for Worker compat
+            },
+            
+            async submitRegister() {
+                const u = document.getElementById('reg-u').value.trim();
+                const method = document.getElementById('reg-auth-method').value;
+                const p = document.getElementById('reg-p').value;
+                const sq = document.getElementById('reg-sq').value.trim();
+                const sa = document.getElementById('reg-sa').value.trim();
+                
+                if(!u || !sq || !sa) return UI.toast("Please fill all required fields");
+                if(method === 'password' && !p) return UI.toast("Please enter a password");
+            
+                let bioData = {};
+                if (method === 'biometric') {
+                    try { bioData = await this.createBiometricKey(u); } 
+                    catch (e) { return UI.toast("Biometric setup failed. Try password."); }
+                }
+            
+                try {
+                    const payload = { username: u, auth_method: method, security_q: sq, security_a: sa, device: navigator.userAgent.substring(0,30) };
+                    if (method === 'password') payload.password = p;
+                    else { payload.credential_id = bioData.credential_id; payload.public_key = bioData.public_key; }
+                    if (State.regAv) payload.avatar = State.regAv;
+            
+                    const d = await req('/api/register', 'POST', payload);
+                    this.finishLogin(d);
+                } catch(e) { UI.toast(e.message); }
+            },
+            
+            async submitLogin(method) {
+                const u = document.getElementById('log-u').value.trim();
+                const p = document.getElementById('log-p').value;
+                if(!u) return UI.toast("Enter username");
+            
+                let payload = { username: u, device: navigator.userAgent.substring(0,30) };
+                
+                if (method === 'biometric') {
+                    try {
+                        if (!window.PublicKeyCredential) throw new Error("Not supported");
+                        const challenge = new Uint8Array(32); crypto.getRandomValues(challenge);
+                        const assertion = await navigator.credentials.get({
+                            publicKey: { challenge: challenge, rpId: window.location.hostname, userVerification: "required" }
+                        });
+                        payload.credential_id = btoa(String.fromCharCode(...new Uint8Array(assertion.rawId)));
+                    } catch (e) { return UI.toast("Biometrics failed. Try password or recover."); }
+                } else {
+                    if(!p) return UI.toast("Enter password");
+                    payload.password = p;
+                }
+            
+                try {
+                    const d = await req('/api/login', 'POST', payload);
+                    this.finishLogin(d);
+                } catch(e) { UI.toast(e.message); }
+            },
+            
+            finishLogin(d) {
+                State.t = d.token; State.u = d; 
+                localStorage.setItem('y_t', d.token); localStorage.setItem('y_u', JSON.stringify(d));
+                document.getElementById('panel-auth').classList.remove('active'); 
+                this.start();
+            },
+            
+            // NEW RECOVERY LOGIC
+            async showRecovery() {
+                const u = prompt("Enter your username to recover your account:");
+                if (!u) return;
+                
+                try {
+                    const d = await req('/api/recover/question', 'POST', { username: u });
+                    const ans = prompt(`Security Question:\n${d.question}\n\nEnter your answer:`);
+                    if (!ans) return;
+                    
+                    const newPass = prompt("Answer accepted! Enter your NEW password:");
+                    if (!newPass) return;
+            
+                    await req('/api/recover/reset', 'POST', { username: u, security_a: ans, new_password: newPass });
+                    UI.toast("Password reset! You can now log in.");
+                } catch(e) { UI.toast(e.message); }
+            },
+            
+            // NEW CHANGE PASSWORD LOGIC (For Settings)
+            async promptChangePassword() {
+                const oldPass = prompt("To change your password, verify your CURRENT password:");
+                if (!oldPass) return;
+                
+                const newPass = prompt("Enter your NEW password:");
+                if (!newPass) return;
+                
+                try {
+                    await req('/api/user/password', 'PUT', { old_password: oldPass, new_password: newPass });
+                    UI.toast("Password changed successfully.");
+                } catch(e) { UI.toast(e.message); }
             },
             authAv(e) {
                 const f = e.target.files[0]; if(!f) return; const r = new FileReader();
