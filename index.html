@@ -751,6 +751,13 @@
             
             <div class="settings-header" data-i18n="appearance">Appearance</div>
             <div class="settings-card">
+                <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0; justify-content: space-between;">
+                    <span data-i18n="language">Language</span>
+                    <div style="display:flex; background: var(--bg-input); border-radius: 20px; padding: 4px;">
+                        <button class="lang-btn-set" data-lang="en" onclick="App.setLang('en')" style="padding: 6px 16px; border-radius: 16px; font-weight: 600; font-size: 13px; transition: 0.2s;">EN</button>
+                        <button class="lang-btn-set" data-lang="ru" onclick="App.setLang('ru')" style="padding: 6px 16px; border-radius: 16px; font-weight: 600; font-size: 13px; transition: 0.2s;">RU</button>
+                    </div>
+                </div>
                 <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
                     <span data-i18n="wallpaper">Wallpaper</span>
                     <label style="cursor:pointer; width:60px; height:36px; background:var(--bg-input); border-radius:8px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; overflow:hidden;">
@@ -1130,7 +1137,7 @@
                 mute_chan: "Mute Channel", unmute_chan: "Unmute Channel", pack_not_found: "Sticker pack not found",
                 pack_installed: "Pack Installed!", err_user_not_found: "User or channel not found", err_find_user: "Error finding user",
                 wall_updated: "Wallpaper Updated", vid_call_from: "📹 Video Call from", aud_call_from: "📞 Audio Call from",
-                tap_answer: "Tap to answer", start_chat: "Start chatting...", toast_installed: "App successfully installed!"
+                tap_answer: "Tap to answer", start_chat: "Start chatting...", toast_installed: "App successfully installed!", language: "Language"
             },
             ru: {
                 app_title: "YukiChat", upload_photo: "Загрузить фото", username: "Имя пользователя", password: "Пароль",
@@ -1165,7 +1172,7 @@
                 mute_chan: "Выключить звук", unmute_chan: "Включить звук", pack_not_found: "Набор стикеров не найден",
                 pack_installed: "Набор установлен!", err_user_not_found: "Пользователь или канал не найден", err_find_user: "Ошибка поиска",
                 wall_updated: "Обои обновлены", vid_call_from: "📹 Видеозвонок от", aud_call_from: "📞 Аудиозвонок от",
-                tap_answer: "Нажмите, чтобы ответить", start_chat: "Начать чат...", toast_installed: "Успешно установлено!"
+                tap_answer: "Нажмите, чтобы ответить", start_chat: "Начать чат...", toast_installed: "Успешно установлено!", language: "Язык",
             }
         };
 
@@ -1447,9 +1454,16 @@
                 State.lang = l;
                 localStorage.setItem('y_lang', l);
 
-                document.querySelectorAll('.lang-btn').forEach(b => b.style.borderColor = 'transparent');
-                const activeBtn = document.querySelector(`.lang-btn[data-lang="${l}"]`);
-                if(activeBtn) activeBtn.style.borderColor = 'var(--text-main)';
+                // Add this inside App.setLang(l) to handle the beautiful settings toggle:
+                document.querySelectorAll('.lang-btn-set').forEach(b => {
+                    b.style.background = 'transparent';
+                    b.style.color = 'var(--text-muted)';
+                });
+                const activeSetBtn = document.querySelector(`.lang-btn-set[data-lang="${l}"]`);
+                if(activeSetBtn) {
+                    activeSetBtn.style.background = 'var(--primary)';
+                    activeSetBtn.style.color = 'var(--bg-base)';
+                }
 
                 document.querySelectorAll('[data-i18n]').forEach(el => {
                     const trans = App.t(el.getAttribute('data-i18n'));
