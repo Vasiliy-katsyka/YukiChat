@@ -1495,13 +1495,17 @@
                         rp: { name: "YukiChat", id: window.location.hostname },
                         user: { id: userId, name: username, displayName: username },
                         pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-                        authenticatorSelection: { userVerification: "required" },
+                        authenticatorSelection: { 
+                            authenticatorAttachment: "platform", // Forces FaceID/Fingerprint instead of USB keys
+                            residentKey: "required",             // THIS IS THE MAGIC FIX: Forces it to save as a Passkey!
+                            userVerification: "required" 
+                        },
                         timeout: 60000
                     }
                 });
                 // Convert ArrayBuffer to Base64 for the backend
                 const credId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
-                return { credential_id: credId, public_key: 'mock_pub_key_for_now' }; // Simplified for Worker compat
+                return { credential_id: credId, public_key: 'mock_pub_key_for_now' }; 
             },
             
             async submitRegister() {
