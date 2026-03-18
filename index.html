@@ -8,6 +8,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" id="pwa-manifest">
     <title>YukiChat</title>
+    <meta name="description" content="YukiChat - A fast, secure, modern real-time messaging app.">
+    <meta name="keywords" content="YukiChat, messenger, chat app, real-time chat, open source messenger">
+    <meta property="og:title" content="YukiChat">
+    <meta property="og:description" content="A fast, secure, modern real-time messaging app.">
+    <meta property="og:image" content="https://yukichat.lol/icon-512.png">
+    <meta property="og:url" content="https://yukichat.lol">
+    <link rel="canonical" href="https://yukichat.lol/">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
@@ -1082,7 +1089,7 @@
             const l = (name || '?').charAt(0).toUpperCase();
             return `data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='45' font-weight='bold' fill='%23888888' dominant-baseline='central' text-anchor='middle'%3E${l}%3C/text%3E%3C/svg%3E`;
         };
-        const API = 'https://yukichat.kviappsgames.workers.dev';
+        const API = 'https://api.yukichat.lol';
         const verifiedTick = `<svg style="width:16px; height:16px; vertical-align:text-bottom; fill:#0088cc; margin-left:4px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M23,12L20.56,9.22L20.9,5.54L17.29,4.72L15.4,1.54L12,3L8.6,1.54L6.71,4.72L3.1,5.53L3.44,9.21L1,12L3.44,14.78L3.1,18.47L6.71,19.29L8.6,22.47L12,21L15.4,22.46L17.29,19.28L20.9,18.46L20.56,14.78L23,12M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z" /></svg>`;
         
         // Prevent iOS/Android from purging LocalStorage (Fixes random logouts)
@@ -1097,16 +1104,16 @@
         
         // Dynamic PWA Manifest Generation for Installation
         const manifest = { 
-            name: "YukiChat Pro", 
+            name: "YukiChat", 
             short_name: "YukiChat", 
-            start_url: baseUrl, // Absolute URL fixes the 'invalid URL' error
+            start_url: "/", // Forces PWA to open at the exact root of yukichat.lol
             display: "standalone", 
             background_color: "#0f172a", 
             theme_color: "#0f172a", 
             icons:[
-                { src: baseUrl + "icon-192.png", sizes: "192x192", type: "image/png" }, // Absolute URL
-                { src: baseUrl + "icon-512.png", sizes: "512x512", type: "image/png" }, // Absolute URL
-                { src: defAv, sizes: "192x192", type: "image/svg+xml" } // Data URIs are naturally fine
+                { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
+                { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
+                { src: defAv, sizes: "192x192", type: "image/svg+xml" }
             ] 
         };
         document.getElementById('pwa-manifest').href = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifest));
