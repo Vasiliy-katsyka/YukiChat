@@ -40,7 +40,7 @@
         [data-theme="dracula"] { --bg-base: #282a36; --bg-panel: #282a36; --bg-input: #44475a; --border: #6272a4; --primary: #ff79c6; --text-main: #f8f8f2; --msg-sent: #ff79c6; --msg-sent-txt: #282a36; --msg-recv: #44475a; --msg-recv-txt: #f8f8f2; --chat-bg: #282a36; }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; }
-        body { background: var(--bg-base); color: var(--text-main); height: 100dvh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; }
+        body { background: var(--bg-base); color: var(--text-main); height: 100dvh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; position: fixed; inset: 0; }
         
         button { cursor: pointer; border: none; background: transparent; color: inherit; }
         input, textarea, select { font-family: inherit; }
@@ -83,8 +83,8 @@
         .icon-btn:active { background: var(--bg-hover); }
 
         /* Panels & Layout */
-        .panel { position: absolute; inset: 0; background: var(--bg-panel); z-index: 10; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); height: 100%; width: 100%; }
-        .panel.active { transform: translateX(0); }
+        .panel { position: absolute; inset: 0; background: var(--bg-panel); z-index: 10; display: flex; flex-direction: column; transform: translateX(100%); visibility: hidden; transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0.35s; height: 100%; width: 100%; }
+        .panel.active { transform: translateX(0); visibility: visible; transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0s; }
         .panel.root { transform: translateX(0); z-index: 5; }
 
         .panel-header { flex-shrink: 0; height: calc(60px + var(--safe-top)); padding-top: var(--safe-top); display: flex; align-items: center; padding: 0 20px; gap: 12px; background: var(--bg-panel); z-index: 20; }
@@ -558,25 +558,25 @@
     <div class="toast" id="toast">Message</div>
 
     <!-- AUTH PANEL -->
-    <div id="panel-auth" class="panel active" style="justify-content: center; padding: 32px; overflow-y: auto;">
-        <div style="max-width: 360px; width: 100%; margin: auto; text-align: center;">
-            <h1 style="font-size: 32px; font-weight: 800; margin-bottom: 40px;">YukiChat</h1>
+    <div id="panel-auth" class="panel active" style="justify-content: center; padding: 24px; overflow-y: auto; background: var(--chat-bg); background-size: cover;">
+        <div class="liquid-glass n-glass-border" style="max-width: 360px; width: 100%; margin: auto; text-align: center; padding: 40px 24px; border-radius: 32px; box-shadow: var(--shadow);">
+            <h1 style="font-size: 32px; font-weight: 800; margin-bottom: 30px;">YukiChat</h1>
             
-            <div id="auth-reg-fields" style="display:none; margin-bottom: 24px;">
+            <div id="auth-reg-fields" style="display:block; margin-bottom: 24px;">
                 <label style="position:relative; display:inline-block; margin-bottom:12px; cursor:pointer;">
-                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOTRhM2I4IiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PHBhdGggZD0iTTEyIDh2OG0tNCA0aDgiLz48L3N2Zz4=" id="auth-av-preview" class="avatar" style="width:80px;height:80px; border:2px solid var(--border)">
+                    <img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 8v8M8 12h8'/%3E%3C/svg%3E" id="auth-av-preview" class="avatar" style="width:80px;height:80px; border:2px solid var(--border); background: var(--bg-input) !important; padding: 10px;">
                     <input type="file" hidden accept="image/*" onchange="App.authAv(event)">
                 </label>
-                <div style="color:var(--text-muted); font-size:13px;">Upload Photo</div>
+                <div style="color:var(--text-muted); font-size:13px; font-weight:600;">Upload Photo</div>
             </div>
 
-            <input type="text" id="auth-u" class="settings-input" placeholder="Username">
-            <input type="password" id="auth-p" class="settings-input" placeholder="Password" style="margin-bottom: 24px;">
+            <input type="text" id="auth-u" class="settings-input n-glass-border" style="background: color-mix(in srgb, var(--bg-input) 50%, transparent);" placeholder="Username">
+            <input type="password" id="auth-p" class="settings-input n-glass-border" style="background: color-mix(in srgb, var(--bg-input) 50%, transparent); margin-bottom: 24px;" placeholder="Password">
             
-            <button class="btn" id="btn-auth-main" onclick="App.submitAuth()">Log In</button>
+            <button class="btn n-glass-border" id="btn-auth-main" onclick="App.submitAuth()">Create Account</button>
             <div style="margin-top: 24px; color:var(--text-muted); font-size:14px;">
-                <span id="auth-toggle-txt">Don't have an account?</span> 
-                <span style="color:var(--primary); cursor:pointer; font-weight:600;" onclick="App.toggleAuthMode()">Sign Up</span>
+                <span id="auth-toggle-txt">Already have an account?</span> 
+                <span style="color:var(--primary); cursor:pointer; font-weight:700;" onclick="App.toggleAuthMode()">Log In</span>
             </div>
         </div>
     </div>
@@ -1054,7 +1054,7 @@
         <div class="settings-row" id="ctx-del" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; color:var(--danger); cursor:pointer;" onclick="App.msgAct('delete')">🗑️ Delete Message</div>
     </div>
     
-    <div class="bottom-nav liquid-glass" id="bottom-nav">
+    <div class="bottom-nav liquid-glass" id="bottom-nav" style="display: none;">
         <div class="nav-item active" id="nav-chats" onclick="App.switchTab('chats')">
             <div class="icon-wrap">
                 <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
@@ -1143,7 +1143,7 @@
         const State = { 
             t: localStorage.getItem('y_t'), u: JSON.parse(localStorage.getItem('y_u')||'{}'), 
             chats: new Map(), chat: null, syncLoop: null, lastMsgId: 0,
-            capMedia: null, capType: null, authMode: 'login', regAv: null, replyTo: null,
+            capMedia: null, capType: null, authMode: 'register', regAv: null, replyTo: null,
             // ADD THESE TWO LINES:
             notifiedMsgs: new Set(),
             notifiedCalls: new Set()
