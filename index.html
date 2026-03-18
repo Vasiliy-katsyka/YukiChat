@@ -40,7 +40,7 @@
         [data-theme="dracula"] { --bg-base: #282a36; --bg-panel: #282a36; --bg-input: #44475a; --border: #6272a4; --primary: #ff79c6; --text-main: #f8f8f2; --msg-sent: #ff79c6; --msg-sent-txt: #282a36; --msg-recv: #44475a; --msg-recv-txt: #f8f8f2; --chat-bg: #282a36; }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; }
-        body { background: var(--bg-base); color: var(--text-main); height: 100dvh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; position: fixed; inset: 0; }
+        body { background: var(--bg-base); color: var(--text-main); height: 100dvh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; }
         
         button { cursor: pointer; border: none; background: transparent; color: inherit; }
         input, textarea, select { font-family: inherit; }
@@ -83,9 +83,9 @@
         .icon-btn:active { background: var(--bg-hover); }
 
         /* Panels & Layout */
-        .panel { position: absolute; inset: 0; background: var(--bg-panel); z-index: 10; display: flex; flex-direction: column; transform: translateX(100%); visibility: hidden; transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0.35s; height: 100%; width: 100%; }
-        .panel.active { transform: translateX(0); visibility: visible; transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0s; }
-        .panel.root { transform: translateX(0); z-index: 5; }
+        .panel { position: absolute; inset: 0; background: var(--bg-panel); z-index: 10; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0.35s; height: 100%; width: 100%; visibility: hidden; pointer-events: none; }
+        .panel.active { transform: translateX(0); visibility: visible; pointer-events: auto; transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0s; }
+        .panel.root { transform: translateX(0); z-index: 5; visibility: visible; pointer-events: auto; transition: none; }
 
         .panel-header { flex-shrink: 0; height: calc(60px + var(--safe-top)); padding-top: var(--safe-top); display: flex; align-items: center; padding: 0 20px; gap: 12px; background: var(--bg-panel); z-index: 20; }
         .panel-title { font-size: 18px; font-weight: 600; flex: 1; text-align: center; }
@@ -481,6 +481,8 @@
                 width: auto !important; 
                 z-index: 0; 
                 transform: none !important; 
+                visibility: visible !important;
+                pointer-events: auto !important;
             }
             
             /* Hide the back button in the desktop chat header */
@@ -558,25 +560,28 @@
     <div class="toast" id="toast">Message</div>
 
     <!-- AUTH PANEL -->
-    <div id="panel-auth" class="panel active" style="justify-content: center; padding: 24px; overflow-y: auto; background: var(--chat-bg); background-size: cover;">
-        <div class="liquid-glass n-glass-border" style="max-width: 360px; width: 100%; margin: auto; text-align: center; padding: 40px 24px; border-radius: 32px; box-shadow: var(--shadow);">
-            <h1 style="font-size: 32px; font-weight: 800; margin-bottom: 30px;">YukiChat</h1>
+    <div id="panel-auth" class="panel active" style="justify-content: center; padding: 32px; overflow-y: auto; background: var(--bg-base);">
+        <div class="liquid-glass n-liquid" style="max-width: 360px; width: 100%; margin: auto; text-align: center; padding: 40px 24px; border-radius: 24px; border: 1px solid var(--border);">
+            <h1 style="font-size: 32px; font-weight: 800; margin-bottom: 40px;">YukiChat</h1>
             
             <div id="auth-reg-fields" style="display:block; margin-bottom: 24px;">
                 <label style="position:relative; display:inline-block; margin-bottom:12px; cursor:pointer;">
-                    <img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 8v8M8 12h8'/%3E%3C/svg%3E" id="auth-av-preview" class="avatar" style="width:80px;height:80px; border:2px solid var(--border); background: var(--bg-input) !important; padding: 10px;">
+                    <div style="width:80px; height:80px; border-radius:50%; background:var(--bg-input); border:2px solid var(--border); display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                        <img src="" id="auth-av-preview" class="avatar" style="width:100%; height:100%; display:none; border:none; border-radius:0;">
+                        <svg id="auth-av-svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted)"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    </div>
                     <input type="file" hidden accept="image/*" onchange="App.authAv(event)">
                 </label>
-                <div style="color:var(--text-muted); font-size:13px; font-weight:600;">Upload Photo</div>
+                <div style="color:var(--text-muted); font-size:13px;">Upload Photo</div>
             </div>
 
-            <input type="text" id="auth-u" class="settings-input n-glass-border" style="background: color-mix(in srgb, var(--bg-input) 50%, transparent);" placeholder="Username">
-            <input type="password" id="auth-p" class="settings-input n-glass-border" style="background: color-mix(in srgb, var(--bg-input) 50%, transparent); margin-bottom: 24px;" placeholder="Password">
+            <input type="text" id="auth-u" class="settings-input liquid-glass n-glass-border" placeholder="Username" style="background:transparent;">
+            <input type="password" id="auth-p" class="settings-input liquid-glass n-glass-border" placeholder="Password" style="margin-bottom: 24px; background:transparent;">
             
-            <button class="btn n-glass-border" id="btn-auth-main" onclick="App.submitAuth()">Create Account</button>
+            <button class="btn liquid-glass n-glass-border" id="btn-auth-main" onclick="App.submitAuth()">Create Account</button>
             <div style="margin-top: 24px; color:var(--text-muted); font-size:14px;">
                 <span id="auth-toggle-txt">Already have an account?</span> 
-                <span style="color:var(--primary); cursor:pointer; font-weight:700;" onclick="App.toggleAuthMode()">Log In</span>
+                <span style="color:var(--primary); cursor:pointer; font-weight:600;" onclick="App.toggleAuthMode()">Log In</span>
             </div>
         </div>
     </div>
@@ -1144,7 +1149,6 @@
             t: localStorage.getItem('y_t'), u: JSON.parse(localStorage.getItem('y_u')||'{}'), 
             chats: new Map(), chat: null, syncLoop: null, lastMsgId: 0,
             capMedia: null, capType: null, authMode: 'register', regAv: null, replyTo: null,
-            // ADD THESE TWO LINES:
             notifiedMsgs: new Set(),
             notifiedCalls: new Set()
         };
@@ -1434,7 +1438,13 @@
             },
             authAv(e) {
                 const f = e.target.files[0]; if(!f) return; const r = new FileReader();
-                r.onload = ev => { State.regAv = ev.target.result; document.getElementById('auth-av-preview').src = State.regAv; };
+                r.onload = ev => { 
+                    State.regAv = ev.target.result; 
+                    document.getElementById('auth-av-preview').src = State.regAv; 
+                    document.getElementById('auth-av-preview').style.display = 'block';
+                    const svg = document.getElementById('auth-av-svg');
+                    if(svg) svg.style.display = 'none';
+                };
                 r.readAsDataURL(f);
             },
             async previewStickerPack(name) {
