@@ -15,6 +15,7 @@
     <meta property="og:image" content="https://yukichat.lol/icon-512.png">
     <meta property="og:url" content="https://yukichat.lol">
     <link rel="canonical" href="https://yukichat.lol/">
+    <link rel="apple-touch-icon" href="/icon-192.png">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
@@ -1106,14 +1107,23 @@
         const manifest = { 
             name: "YukiChat", 
             short_name: "YukiChat", 
-            start_url: "/", // Forces PWA to open at the exact root of yukichat.lol
+            start_url: "/", 
             display: "standalone", 
             background_color: "#0f172a", 
             theme_color: "#0f172a", 
             icons:[
-                { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
-                { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
-                { src: defAv, sizes: "192x192", type: "image/svg+xml" }
+                { 
+                    src: "/icon-192.png", 
+                    sizes: "192x192", 
+                    type: "image/png",
+                    purpose: "any maskable" // This helps icons look better on Android
+                },
+                { 
+                    src: "/icon-512.png", 
+                    sizes: "512x512", 
+                    type: "image/png",
+                    purpose: "any maskable"
+                }
             ] 
         };
         document.getElementById('pwa-manifest').href = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifest));
