@@ -1880,22 +1880,13 @@
                 document.getElementById('cache-size').innerText = (totalBytes / 1024).toFixed(1) + ' KB';
                 this.sync(); 
                 // Increased to 15 seconds to save limits (cuts rows read in half)
-                this.sync(); 
-                
-                // 1. Slow background sync for chat list (every 15 seconds)
                 State.syncLoop = setInterval(() => {
-                    if (document.visibilityState === 'visible') this.sync();
-                }, 15000);
-
-                // 2. FAST active chat sync (every 3 seconds). No lag!
-                State.fastSyncLoop = setInterval(() => {
-                    if (document.visibilityState === 'visible' && State.chat && State.chat !== 'ai') {
-                        this.loadMsgs(State.chat);
+                    // Only sync if the tab is visible to save huge amounts of D1 reads
+                    if (document.visibilityState === 'visible') {
+                        this.sync();
                     }
-                }, 3000);
-
+                }, 15000);
                 this.requestNotifyPerms();
-                this.subscribeToPush(); // <-- NEW: Start PWA Push
             },
 
             showCtx(e, id, isMine) {
@@ -1921,38 +1912,6 @@
                 // Instantly hide backdrop and slide menu down
                 document.getElementById('n-ctx-backdrop').style.display = 'none';
                 document.getElementById('ctx-menu').style.transform = 'translateY(100%)';
-            },
-
-            async subscribeToPush() {
-                if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-                
-                try {
-                    const reg = await navigator.serviceWorker.ready;
-                    
-                    // Public VAPID Key (Replace with your own or generate one later for security)
-                    // You can use a temporary valid dummy key to test the browser prompt
-                    const publicVapidKey = 'BEohQ3O-_U-ClaCjgy-WP_6oOX2WJ0gjxa1T3Qkut2L8gOnbdXHp5XF6uO1SGtfHs-A2jr0YeY5vFOoI8B_uehY';
-                    
-                    const urlBase64ToUint8Array = (base64String) => {
-                        const padding = '='.repeat((4 - base64String.length % 4) % 4);
-                        const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-                        const rawData = window.atob(base64);
-                        const outputArray = new Uint8Array(rawData.length);
-                        for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
-                        return outputArray;
-                    };
-
-                    const subscription = await reg.pushManager.subscribe({
-                        userVisibleOnly: true,
-                        applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
-                    });
-
-                    // Send to backend
-                    await req('/api/subscribe', 'POST', subscription);
-                    console.log("Successfully subscribed to background pushes!");
-                } catch (e) {
-                    console.warn("Push subscription failed:", e);
-                }
             },
             
             // --- NOTIFICATIONS ---
@@ -2232,68 +2191,110 @@
 
             async loadMsgs(id) {
                 const cont = document.getElementById('msgs');
-                
+                const cacheKey = `y_cache_msgs_${id}`;
+                if(State.lastMsgId === 0) cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div><div class="skeleton skel-text short" style="height:40px; border-radius:18px; margin-left:auto; margin-top:10px;"></div></div>`;
+                // Load from cache INSTANTLY before network finishes
                 if(State.lastMsgId === 0) {
-                    cont.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted);">Loading...</div>';
+                    const cachedHtml = localStorage.getItem(cacheKey);
+                    if(cachedHtml) {
+                        cont.innerHTML = cachedHtml;
+                        cont.scrollTop = cont.scrollHeight;
+                    } else {
+                        cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div></div>`;
+                    }
                 }
-
                 try {
-                    // Only fetch messages AFTER the last one we have
-                    const msgs = await req(`/api/messages/${id}?after=${State.lastMsgId}`); 
-                    
-                    if(State.lastMsgId === 0) cont.innerHTML = ''; // Clear loading spinner
-                    
-                    let addedNew = false;
-
+                    const msgs = await req(`/api/messages/${id}`); let html = ''; let pinned = null;
                     msgs.forEach(m => {
-                        // FIX: If message already exists (optimistic UI), DO NOT duplicate it!
-                        if (document.getElementById(`msg-${m.id}`)) return;
+                        const isMine = m.sender_id === State.u.userId; let inner = '';
+                        if(m.is_pinned) pinned = m.content;
 
-                        const isMine = m.sender_id === State.u.userId; 
-                        let inner = '';
-
-                        // Format Reply
+                        // Reply Block
                         if(m.reply_to_id) {
-                            inner += `<div class="reply-block" onclick="document.getElementById('msg-${m.reply_to_id}')?.scrollIntoView({behavior:'smooth', block:'center'})">Replying to message...</div>`;
+                            const repM = msgs.find(x => x.id === m.reply_to_id);
+                            const repTxt = repM ? repM.content.replace(/</g,'&lt;') : 'Deleted message';
+                            inner += `<div class="reply-block" onclick="document.getElementById('msg-${m.reply_to_id}').scrollIntoView({behavior:'smooth', block:'center'})">${repTxt}</div>`;
                         }
 
-                        // Format Content
+                        // Link parsing & HTML escape
+                        // HTML escape first
                         let cleanTxt = m.content.replace(/</g,'&lt;');
+                        
+                        // Simple Markdown Parser
+                        // Simple Markdown Parser
                         if (m.type === 'text') {
+                            cleanTxt = cleanTxt.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;">$1</pre>');
+                            cleanTxt = cleanTxt.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
+                            cleanTxt = cleanTxt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                            cleanTxt = cleanTxt.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                            cleanTxt = cleanTxt.replace(/^### (.*$)/gim, '<h3 style="margin:16px 0 8px;font-size:16px;">$1</h3>');
+                            cleanTxt = cleanTxt.replace(/^## (.*$)/gim, '<h2 style="margin:18px 0 8px;font-size:18px;">$1</h2>');
+                            
+                            // FIX: Make ALL links globally clickable, prevent opening context menu
                             cleanTxt = cleanTxt.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">$1</a>');
+                            
+                            // NEW: Clickable Mentions (@username)
                             cleanTxt = cleanTxt.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
                         }
 
+                        // Replace media rendering in App.loadMsgs with this:
                         if(m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="window.open(this.src)">`;
-                        else if(m.type === 'sticker') inner += `<img src="${m.content}" class="msg-sticker">`;
+                        else if(m.type === 'sticker') inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
                         else inner += cleanTxt;
+                        
+                        // --- NEW: INLINE KEYBOARDS ---
+                        if (m.reply_markup && m.reply_markup !== 'null') {
+                            try {
+                                const rm = JSON.parse(m.reply_markup);
+                                if (rm.inline_keyboard) {
+                                    inner += `<div class="inline-kb">`;
+                                    rm.inline_keyboard.forEach(row => {
+                                        inner += `<div class="inline-row">`;
+                                        row.forEach(btn => {
+                                            // Send callback_data back to server when clicked
+                                            inner += `<button class="inline-btn" onclick="App.sendCallback(${m.id}, '${btn.callback_data}')">${btn.text}</button>`;
+                                        });
+                                        inner += `</div>`;
+                                    });
+                                    inner += `</div>`;
+                                }
+                            } catch(e) {}
+                        }
+                        // --- END INLINE KEYBOARDS ---
                         
                         if(m.caption) inner += `<div class="msg-caption">${m.caption.replace(/</g,'&lt;')}</div>`;
 
+                        let rxs = JSON.parse(m.reactions||'{}'); let rxH = ''; for(let k in rxs) rxH += rxs[k];
+                        if(rxH) inner += `<div style="position:absolute; bottom:-10px; right:8px; background:var(--bg-base); border-radius:12px; padding:2px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:14px; border:1px solid var(--border); z-index:2;">${rxH}</div>`;
+
+                        // Read/Sent Ticks
+                        // Inside loadMsgs, replace the tick definition logic with this:
+                        let viewsH = '';
+                        // Render eye icon and views if it's a channel (or in groups if desired, but primarily channels)
+                        const c = State.chats.get(id);
+                        if (c && c.type === 'channel' && m.views) {
+                             viewsH = `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>`;
+                        }
                         const tick = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
+
                         const senderName = (!isMine && State.chats.get(id)?.type !== 'dm') 
                             ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
 
                         const bubbleStyle = m.type === 'sticker' ? 'background: transparent; padding: 0; box-shadow: none;' : '';
                         
-                        // FIX: USE APPEND CHILD SO WE DON'T DESTROY THE DOM
-                        const div = document.createElement('div');
-                        div.className = `msg-row ${isMine ? 'sent' : 'received'}`;
-                        div.id = `msg-${m.id}`;
-                        div.onclick = (e) => App.showCtx(e, m.id, isMine);
-                        div.oncontextmenu = (e) => App.showCtx(e, m.id, isMine);
-                        
-                        div.innerHTML = `<div class="msg-bubble" style="${bubbleStyle}">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tick}</div></div>`;
-                        
-                        cont.appendChild(div);
-                        addedNew = true;
-
-                        if (m.id > State.lastMsgId) State.lastMsgId = m.id;
+                        html += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">
+                            <div class="msg-bubble" style="${bubbleStyle}">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tick}</div></div></div>`;
                     });
                     
-                    if (addedNew) {
-                        cont.scrollTop = cont.scrollHeight;
+                    // Display Pin Bar if something is pinned
+                    const pinEl = document.getElementById('pinned-msg');
+                    if(pinEl) {
+                        if(pinned) { pinEl.style.display='flex'; document.getElementById('pinned-text').textContent = pinned; }
+                        else pinEl.style.display='none';
                     }
+
+                    cont.innerHTML = html; cont.scrollTop = cont.scrollHeight;
+                    localStorage.setItem(cacheKey, html);
                 } catch(e){}
             },
             async handleMention(username) {
