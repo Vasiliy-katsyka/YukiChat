@@ -1489,6 +1489,76 @@
                 };
                 r.readAsDataURL(f);
             },
+            // --- NEW HELPERS ---
+            buildMsgHTML(m, isMine, chatType) {
+                let inner = '';
+                if (m.reply_to_id) {
+                    let repTxt = 'Replied message';
+                    const repEl = document.getElementById(`msg-${m.reply_to_id}`);
+                    if (repEl) {
+                        const bubble = repEl.querySelector('.msg-bubble');
+                        if (bubble) repTxt = Array.from(bubble.childNodes).filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() || 'Media';
+                    }
+                    inner += `<div class="reply-block" onclick="document.getElementById('msg-${m.reply_to_id}')?.scrollIntoView({behavior:'smooth', block:'center'})">${repTxt.substring(0, 40)}</div>`;
+                }
+
+                let cleanTxt = m.content.replace(/</g,'&lt;');
+                if (m.type === 'text') {
+                    cleanTxt = cleanTxt.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;">$1</pre>');
+                    cleanTxt = cleanTxt.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
+                    cleanTxt = cleanTxt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    cleanTxt = cleanTxt.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                    cleanTxt = cleanTxt.replace(/^### (.*$)/gim, '<h3 style="margin:16px 0 8px;font-size:16px;">$1</h3>');
+                    cleanTxt = cleanTxt.replace(/^## (.*$)/gim, '<h2 style="margin:18px 0 8px;font-size:18px;">$1</h2>');
+                    cleanTxt = cleanTxt.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">$1</a>');
+                    cleanTxt = cleanTxt.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
+                }
+
+                if (m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="window.open(this.src)">`;
+                else if (m.type === 'sticker') inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
+                else inner += cleanTxt;
+
+                if (m.reply_markup && m.reply_markup !== 'null') {
+                    try {
+                        const rm = JSON.parse(m.reply_markup);
+                        if (rm.inline_keyboard) {
+                            inner += `<div class="inline-kb">`;
+                            rm.inline_keyboard.forEach(row => {
+                                inner += `<div class="inline-row">`;
+                                row.forEach(btn => { inner += `<button class="inline-btn" onclick="App.sendCallback(${m.id}, '${btn.callback_data}')">${btn.text}</button>`; });
+                                inner += `</div>`;
+                            });
+                            inner += `</div>`;
+                        }
+                    } catch(e) {}
+                }
+
+                if(m.caption) inner += `<div class="msg-caption">${m.caption.replace(/</g,'&lt;')}</div>`;
+
+                let rxs = JSON.parse(m.reactions||'{}'); let rxH = ''; for(let k in rxs) rxH += rxs[k];
+                if(rxH) inner += `<div style="position:absolute; bottom:-10px; right:8px; background:var(--bg-base); border-radius:12px; padding:2px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:14px; border:1px solid var(--border); z-index:2;">${rxH}</div>`;
+
+                let viewsH = (chatType === 'channel' && m.views) ? `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>` : '';
+                const tickHtml = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
+                const senderName = (!isMine && chatType !== 'dm') ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
+                const bubbleStyle = m.type === 'sticker' ? 'background: transparent; padding: 0; box-shadow: none;' : '';
+
+                return `<div class="msg-bubble" style="${bubbleStyle}">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tickHtml}${viewsH}</div></div>`;
+            },
+
+            updateChatStatusUI(c) {
+                const statusEl = document.getElementById('chat-status');
+                if (!statusEl) return;
+                const isDM = c.type === 'dm';
+                const isOnline = isDM && c.dm_last_seen && (new Date() - new Date(c.dm_last_seen + (c.dm_last_seen.includes('Z')?'':'Z')) < 60000);
+
+                if (c.type === 'channel') statusEl.innerHTML = `${c.sub_count} subscribers`;
+                else if (c.is_bot) statusEl.innerHTML = 'Bot';
+                else if (isDM && c.dm_typing == c.id) statusEl.innerHTML = 'typing...';
+                else if (!isDM && c.is_typing == c.id) statusEl.innerHTML = 'typing...';
+                else if (isDM) statusEl.innerHTML = isOnline ? '<span style="color:var(--success)">Online</span>' : UI.formatTime(c.dm_last_seen);
+                else statusEl.innerHTML = 'Group';
+            },
             async previewStickerPack(name) {
                 try {
                     const pack = await req(`/api/stickers/${name}`);
@@ -2053,26 +2123,8 @@
 
                         // Inside App.sync()
                         if(State.chat === c.id) {
-                            if (c.type === 'channel') {
-                                document.getElementById('chat-status').innerHTML = `${c.sub_count} subscribers`;
-                            } else {
-                                if (c.is_bot) {
-                                    document.getElementById('chat-status').innerHTML = 'Bot';
-                                } else if (isDM && c.dm_typing == c.id) {
-                                    document.getElementById('chat-status').innerHTML = 'typing...';
-                                } else if (!isDM && c.is_typing == c.id) {
-                                    document.getElementById('chat-status').innerHTML = 'typing...';
-                                } else if (isDM) {
-                                    document.getElementById('chat-status').innerHTML = isOnline 
-                                        ? '<span style="color:var(--success)">Online</span>' 
-                                        : UI.formatTime(c.dm_last_seen);
-                                }
-                                
-                                // FIX: Do NOT overwrite State.lastMsgId here! Let loadMsgs handle it.
-                                if (c.last_msg_id > State.lastMsgId) { 
-                                    this.loadMsgs(c.id); 
-                                }
-                            }
+                            this.updateChatStatusUI(c);
+                            this.loadMsgs(c.id); // Triggers the flawless background diffing every 15s!
                         }
                     });
 
@@ -2134,34 +2186,24 @@
 
             // --- CHAT INTERFACE ---
             openChat(id) {
-                // 1. Fix the String vs Number mismatch for the Map lookup
                 if (id !== 'ai') id = Number(id);
-                
                 State.chat = id; 
                 const c = State.chats.get(id); 
-                
-                if (!c) return; // Safety fallback
+                if (!c) return; 
                 
                 Router.push('panel-chat');
                 
                 const isDM = c.type === 'dm'; 
                 const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
-                
                 const isVerified = isDM ? c.dm_verified : c.is_verified;
+                
                 document.getElementById('chat-title').innerHTML = (isDM ? c.dm_username : c.name) + (isVerified || c.id === 'ai' ? verifiedTick : '');
                 document.getElementById('chat-av').src = canSeePfp ? (isDM ? (c.dm_avatar||getDefAv(c.dm_username)) : (c.avatar||getDefAv(c.name))) : getDefAv('?');
-                const chatAv = document.getElementById('chat-av');
-                if (id === 'ai') {
-                    chatAv.classList.add('ai-avatar');
-                    chatAv.parentElement.classList.add('ai-wrap');
-                } else {
-                    chatAv.classList.remove('ai-avatar');
-                    chatAv.parentElement.classList.remove('ai-wrap');
-                }
                 
-                // Channel Admin Check
-                // Inside App.openChat(id)
-                // Replace Channel Admin Check block with this:
+                const chatAv = document.getElementById('chat-av');
+                if (id === 'ai') { chatAv.classList.add('ai-avatar'); chatAv.parentElement.classList.add('ai-wrap'); } 
+                else { chatAv.classList.remove('ai-avatar'); chatAv.parentElement.classList.remove('ai-wrap'); }
+                
                 if (c.type === 'channel' && c.my_role !== 'admin') {
                     document.getElementById('input-bar').style.display = 'none'; 
                     document.getElementById('channel-bar').innerHTML = `<button class="btn btn-outline" style="border-radius:12px; padding:10px; width:100%" onclick="App.toggleMute(${c.id})">${c.muted ? '🔇 Unmute Channel' : '🔊 Mute Channel'}</button>`;
@@ -2171,142 +2213,76 @@
                     document.getElementById('channel-bar').style.display = 'none';
                 }
                 
-                // AI & Call Button Logic
-                // AI Clear Button Logic
                 const clearBtn = document.getElementById('ai-clear-btn');
-                if (clearBtn) {
-                    clearBtn.style.display = (id === 'ai') ? 'flex' : 'none';
-                }
+                if (clearBtn) clearBtn.style.display = (id === 'ai') ? 'flex' : 'none';
                 
-                State.lastMsgId = 0; 
+                this.updateChatStatusUI(c); // Fixes endless connecting instantly!
                 this.loadMsgs(id);
             },
 
             async loadMsgs(id) {
-                const cont = document.getElementById('msgs');
-                const cacheKey = `y_cache_msgs_${id}`;
-                
-                const isFirstLoad = State.lastMsgId === 0;
-                const hasExistingContent = cont.innerHTML.includes('msg-row');
+                if (State.chat !== id) return; // Prevent race conditions
+                if (State.isFetchingMsgs) return;
+                State.isFetchingMsgs = true;
 
-                // Only show skeletons/cache if it's the very first time opening this chat
-                if (isFirstLoad && !hasExistingContent) {
-                    const cachedHtml = localStorage.getItem(cacheKey);
+                const cont = document.getElementById('msgs');
+                const chatType = State.chats.get(id)?.type;
+
+                // Only show skeletons if the container is totally empty
+                if (!cont.innerHTML.includes('msg-row')) {
+                    const cachedHtml = localStorage.getItem(`y_cache_msgs_${id}`);
                     if (cachedHtml) {
                         cont.innerHTML = cachedHtml;
                         cont.scrollTop = cont.scrollHeight;
                     } else {
-                        cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div><div class="skeleton skel-text short" style="height:40px; border-radius:18px; margin-left:auto; margin-top:10px;"></div></div>`;
+                        cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div></div>`;
                     }
                 }
 
                 try {
-                    // FINALLY utilize the backend's ?after parameter!
-                    const msgs = await req(`/api/messages/${id}?after=${State.lastMsgId}`);
-                    if (!msgs || msgs.length === 0) return;
+                    const msgs = await req(`/api/messages/${id}?after=0`);
+                    if (State.chat !== id) return; 
 
-                    let html = ''; 
                     let pinned = null;
                     let addedNew = false;
+                    const fetchedIds = new Set(msgs.map(m => `msg-${m.id}`));
 
                     msgs.forEach(m => {
                         if (m.is_pinned) pinned = m.content;
-
-                        // Keep track of the highest ID we've seen
-                        if (m.id > State.lastMsgId) State.lastMsgId = m.id;
-
-                        // IMPORTANT: If optimistic UI already added this message, just update read ticks and skip!
-                        const existingEl = document.getElementById(`msg-${m.id}`);
+                        
+                        const isMine = m.sender_id === State.u.userId;
+                        const elId = `msg-${m.id}`;
+                        const existingEl = document.getElementById(elId);
+                        
+                        const innerHTML = this.buildMsgHTML(m, isMine, chatType);
+                        
                         if (existingEl) {
-                            const tick = existingEl.querySelector('.msg-tick');
-                            if (tick && m.is_read) {
-                                tick.classList.add('read');
-                                tick.innerText = '✓✓';
+                            // DOM DIFFING: Only updates the UI if the message actually changed (like a read tick)
+                            if (existingEl.innerHTML !== innerHTML) {
+                                existingEl.innerHTML = innerHTML;
                             }
-                            return; 
+                        } else {
+                            // Safely append new messages
+                            const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="${elId}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
+                            const isNearBottom = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 150;
+                            
+                            cont.insertAdjacentHTML('beforeend', rowHtml);
+                            if (isNearBottom) cont.scrollTop = cont.scrollHeight;
+                            addedNew = true;
                         }
-
-                        addedNew = true;
-                        const isMine = m.sender_id === State.u.userId; 
-                        let inner = '';
-
-                        // Smarter Reply Block (Looks up text from the DOM directly)
-                        if (m.reply_to_id) {
-                            let repTxt = 'Replied message';
-                            const repEl = document.getElementById(`msg-${m.reply_to_id}`);
-                            if (repEl) {
-                                const bubble = repEl.querySelector('.msg-bubble');
-                                if (bubble) {
-                                    repTxt = Array.from(bubble.childNodes)
-                                        .filter(n => n.nodeType === 3)
-                                        .map(n => n.textContent).join('').trim() || 'Media';
-                                }
-                            }
-                            inner += `<div class="reply-block" onclick="document.getElementById('msg-${m.reply_to_id}')?.scrollIntoView({behavior:'smooth', block:'center'})">${repTxt.substring(0, 40)}</div>`;
-                        }
-
-                        // Text formatting
-                        let cleanTxt = m.content.replace(/</g,'&lt;');
-                        if (m.type === 'text') {
-                            cleanTxt = cleanTxt.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;">$1</pre>');
-                            cleanTxt = cleanTxt.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
-                            cleanTxt = cleanTxt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                            cleanTxt = cleanTxt.replace(/\*(.*?)\*/g, '<em>$1</em>');
-                            cleanTxt = cleanTxt.replace(/^### (.*$)/gim, '<h3 style="margin:16px 0 8px;font-size:16px;">$1</h3>');
-                            cleanTxt = cleanTxt.replace(/^## (.*$)/gim, '<h2 style="margin:18px 0 8px;font-size:18px;">$1</h2>');
-                            cleanTxt = cleanTxt.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">$1</a>');
-                            cleanTxt = cleanTxt.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
-                        }
-
-                        if (m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="window.open(this.src)">`;
-                        else if (m.type === 'sticker') inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
-                        else inner += cleanTxt;
-
-                        if (m.reply_markup && m.reply_markup !== 'null') {
-                            try {
-                                const rm = JSON.parse(m.reply_markup);
-                                if (rm.inline_keyboard) {
-                                    inner += `<div class="inline-kb">`;
-                                    rm.inline_keyboard.forEach(row => {
-                                        inner += `<div class="inline-row">`;
-                                        row.forEach(btn => {
-                                            inner += `<button class="inline-btn" onclick="App.sendCallback(${m.id}, '${btn.callback_data}')">${btn.text}</button>`;
-                                        });
-                                        inner += `</div>`;
-                                    });
-                                    inner += `</div>`;
-                                }
-                            } catch(e) {}
-                        }
-
-                        if(m.caption) inner += `<div class="msg-caption">${m.caption.replace(/</g,'&lt;')}</div>`;
-
-                        let rxs = JSON.parse(m.reactions||'{}'); let rxH = ''; for(let k in rxs) rxH += rxs[k];
-                        if(rxH) inner += `<div style="position:absolute; bottom:-10px; right:8px; background:var(--bg-base); border-radius:12px; padding:2px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:14px; border:1px solid var(--border); z-index:2;">${rxH}</div>`;
-
-                        let viewsH = '';
-                        const c = State.chats.get(id);
-                        if (c && c.type === 'channel' && m.views) viewsH = `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>`;
-                        
-                        const tick = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
-                        const senderName = (!isMine && State.chats.get(id)?.type !== 'dm') ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
-                        const bubbleStyle = m.type === 'sticker' ? 'background: transparent; padding: 0; box-shadow: none;' : '';
-                        
-                        html += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">
-                            <div class="msg-bubble" style="${bubbleStyle}">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tick}${viewsH}</div></div></div>`;
                     });
 
-                    // Append new HTML smoothly without wiping the screen!
-                    if (addedNew) {
-                        if (isFirstLoad) {
-                            cont.innerHTML = html;
-                        } else {
-                            // Smart Auto-Scroll: Only scroll down if user is near the bottom
-                            const isNearBottom = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 150;
-                            cont.insertAdjacentHTML('beforeend', html);
-                            if (isNearBottom) cont.scrollTop = cont.scrollHeight;
+                    // Remove messages that were deleted in the database
+                    Array.from(cont.children).forEach(child => {
+                        if (child.id && child.id.startsWith('msg-') && !fetchedIds.has(child.id)) {
+                            child.remove();
                         }
-                        localStorage.setItem(cacheKey, cont.innerHTML);
+                    });
+
+                    document.querySelectorAll('.skeleton').forEach(el => el.remove());
+
+                    if (addedNew || msgs.length > 0) {
+                        localStorage.setItem(`y_cache_msgs_${id}`, cont.innerHTML);
                     }
 
                     const pinEl = document.getElementById('pinned-msg');
@@ -2314,8 +2290,11 @@
                         if (pinned) { pinEl.style.display='flex'; document.getElementById('pinned-text').textContent = pinned; }
                         else pinEl.style.display='none';
                     }
-
-                } catch(e){}
+                } catch (e) {
+                    console.error("loadMsgs error", e);
+                } finally {
+                    State.isFetchingMsgs = false;
+                }
             },
             async handleMention(username) {
                 try {
@@ -2398,14 +2377,16 @@
                 try { 
                     const res = await req(`/api/messages/${State.chat}`, 'POST', {content:txt, type:'text', reply_to_id: State.replyTo}); 
                     const tempEl = document.getElementById(tempId);
-                    if(tempEl) {
+                    const existingEl = document.getElementById('msg-' + res.id);
+                    
+                    if (existingEl && tempEl) {
+                        tempEl.remove(); // The 15s sync loop beat us to it, safely remove the temp!
+                    } else if (tempEl) {
                         tempEl.id = 'msg-' + res.id;
-                        tempEl.style.opacity = '1';
                         const tick = tempEl.querySelector('.msg-tick');
                         if(tick) tick.style.color = 'var(--msg-sent-txt)';
                     }
-                    // FIX: Don't wipe the screen! Just advance the pointer.
-                    if (res.id > State.lastMsgId) State.lastMsgId = res.id;
+                    this.loadMsgs(State.chat); // Quick UI update
                 } catch(e) {
                     const tempEl = document.getElementById(tempId);
                     if(tempEl) tempEl.style.opacity = '0.4';
@@ -2438,7 +2419,11 @@
                     const res = await req(`/api/messages/${State.chat}`, 'POST', {content: mediaData, caption: cap, type: mediaType, reply_to_id: State.replyTo}); 
                     this.cancelReply();
                     const tempEl = document.getElementById(tempId);
-                    if (tempEl) {
+                    const existingEl = document.getElementById('msg-' + res.id);
+                    
+                    if (existingEl && tempEl) {
+                        tempEl.remove(); 
+                    } else if (tempEl) {
                         tempEl.id = 'msg-' + res.id;
                         tempEl.style.opacity = '1';
                         const loadOverlay = tempEl.querySelector('.media-loading');
@@ -2448,7 +2433,7 @@
                         const tick = tempEl.querySelector('.msg-tick');
                         if (tick) tick.style.color = 'var(--msg-sent-txt)';
                     }
-                    if (res.id > State.lastMsgId) State.lastMsgId = res.id;
+                    this.loadMsgs(State.chat);
                 } catch(e) {
                     UI.toast('Failed to send media');
                     document.getElementById(tempId)?.remove();
@@ -2459,8 +2444,7 @@
                 try { 
                     await req(`/api/messages/${State.targetId}/action`, 'POST', {action:act, emoji}); 
                     document.getElementById('ctx-menu').style.transform='translateY(100%)'; 
-                    State.lastMsgId = 0; // Force a refresh to show deleted message/reactions
-                    this.loadMsgs(State.chat); // Our new logic guarantees no skeleton flash here!
+                    this.loadMsgs(State.chat); // Instantly updates via Diffing (no flashing!)
                 } catch(e){}
             },
 
