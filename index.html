@@ -46,7 +46,19 @@
         [data-theme="dark"] { --bg-base: #0f172a; --bg-panel: #1e293b; --bg-input: #334155; --bg-hover: rgba(255,255,255,0.05); --border: #334155; --primary: #ffffff; --text-main: #f8fafc; --text-muted: #94a3b8; --msg-sent: #ffffff; --msg-sent-txt: #000000; --msg-recv: #334155; --msg-recv-txt: #ffffff; --chat-bg: #0f172a; }
         [data-theme="oled"] { --bg-base: #000000; --bg-panel: #000000; --bg-input: #111111; --border: #222222; --primary: #ffffff; --text-main: #ffffff; --text-muted: #666666; --msg-sent: #ffffff; --msg-sent-txt: #000000; --msg-recv: #111111; --msg-recv-txt: #ffffff; --chat-bg: #000000; }
         [data-theme="dracula"] { --bg-base: #282a36; --bg-panel: #282a36; --bg-input: #44475a; --border: #6272a4; --primary: #ff79c6; --text-main: #f8f8f2; --msg-sent: #ff79c6; --msg-sent-txt: #282a36; --msg-recv: #44475a; --msg-recv-txt: #f8f8f2; --chat-bg: #282a36; }
-
+        /* --- 5 NEW LIGHT THEMES --- */
+        [data-theme="rose"] { --bg-base: #fff5f7; --bg-panel: #ffffff; --bg-input: #ffe4e9; --border: #fbcfe8; --primary: #db2777; --text-main: #831843; --text-muted: #be185d; --msg-sent: #db2777; --msg-sent-txt: #ffffff; --msg-recv: #ffffff; --msg-recv-txt: #831843; --chat-bg: #fff1f2; --glass-glow: rgba(255,255,255,0.8); }
+        [data-theme="sky"] { --bg-base: #f0f9ff; --bg-panel: #ffffff; --bg-input: #e0f2fe; --border: #bae6fd; --primary: #0284c7; --text-main: #0c4a6e; --text-muted: #0369a1; --msg-sent: #0284c7; --msg-sent-txt: #ffffff; --msg-recv: #ffffff; --msg-recv-txt: #0c4a6e; --chat-bg: #f0f9ff; --glass-glow: rgba(255,255,255,0.8); }
+        [data-theme="sage"] { --bg-base: #f0fdf4; --bg-panel: #ffffff; --bg-input: #dcfce7; --border: #bbf7d0; --primary: #16a34a; --text-main: #14532d; --text-muted: #15803d; --msg-sent: #16a34a; --msg-sent-txt: #ffffff; --msg-recv: #ffffff; --msg-recv-txt: #14532d; --chat-bg: #f0fdf4; --glass-glow: rgba(255,255,255,0.8); }
+        [data-theme="honey"] { --bg-base: #fffbeb; --bg-panel: #ffffff; --bg-input: #fef3c7; --border: #fde68a; --primary: #d97706; --text-main: #78350f; --text-muted: #b45309; --msg-sent: #d97706; --msg-sent-txt: #ffffff; --msg-recv: #ffffff; --msg-recv-txt: #78350f; --chat-bg: #fffbeb; --glass-glow: rgba(255,255,255,0.8); }
+        [data-theme="lilac"] { --bg-base: #f5f3ff; --bg-panel: #ffffff; --bg-input: #ede9fe; --border: #ddd6fe; --primary: #7c3aed; --text-main: #4c1d95; --text-muted: #6d28d9; --msg-sent: #7c3aed; --msg-sent-txt: #ffffff; --msg-recv: #ffffff; --msg-recv-txt: #4c1d95; --chat-bg: #f5f3ff; --glass-glow: rgba(255,255,255,0.8); }
+        
+        /* --- 5 NEW DARK THEMES --- */
+        [data-theme="midnight"] { --bg-base: #020617; --bg-panel: #0f172a; --bg-input: #1e293b; --border: #334155; --primary: #38bdf8; --text-main: #f1f5f9; --text-muted: #94a3b8; --msg-sent: #38bdf8; --msg-sent-txt: #020617; --msg-recv: #1e293b; --msg-recv-txt: #f1f5f9; --chat-bg: #020617; --glass-glow: #1e293b; }
+        [data-theme="emerald"] { --bg-base: #022c22; --bg-panel: #064e3b; --bg-input: #065f46; --border: #059669; --primary: #34d399; --text-main: #ecfdf5; --text-muted: #a7f3d0; --msg-sent: #10b981; --msg-sent-txt: #022c22; --msg-recv: #065f46; --msg-recv-txt: #ecfdf5; --chat-bg: #022c22; --glass-glow: #065f46; }
+        [data-theme="crimson"] { --bg-base: #1c0000; --bg-panel: #2d0000; --bg-input: #4a0000; --border: #7f0000; --primary: #ff4d4d; --text-main: #ffebeb; --text-muted: #ff9999; --msg-sent: #ff4d4d; --msg-sent-txt: #1c0000; --msg-recv: #4a0000; --msg-recv-txt: #ffebeb; --chat-bg: #1c0000; --glass-glow: #4a0000; }
+        [data-theme="space"] { --bg-base: #111111; --bg-panel: #1a1a1a; --bg-input: #2a2a2a; --border: #3a3a3a; --primary: #e0e0e0; --text-main: #ffffff; --text-muted: #aaaaaa; --msg-sent: #ffffff; --msg-sent-txt: #000000; --msg-recv: #2a2a2a; --msg-recv-txt: #ffffff; --chat-bg: #111111; --glass-glow: #2a2a2a; }
+        [data-theme="navy"] { --bg-base: #001220; --bg-panel: #001f35; --bg-input: #002d4d; --border: #004d80; --primary: #00aaff; --text-main: #e6f7ff; --text-muted: #80d4ff; --msg-sent: #00aaff; --msg-sent-txt: #001220; --msg-recv: #002d4d; --msg-recv-txt: #e6f7ff; --chat-bg: #001220; --glass-glow: #002d4d; }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; }
         body { background: var(--bg-base); color: var(--text-main); height: 100dvh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; }
         
@@ -813,6 +825,7 @@
                 <div class="settings-row" style="margin:0; background:transparent; flex-direction:column; align-items:flex-start; gap:16px;">
                     <span>Color Theme</span>
                     <div class="theme-scroll-wrapper">
+                        <!-- Keep Original 4 -->
                         <div class="theme-preview" data-theme-val="light" onclick="App.setTheme('light')">
                             <div class="theme-preview-inner" style="background:#ffffff; border:1px solid #e5e7eb;">
                                 <div class="mini-bubble right" style="background:#000000"></div><div class="mini-bubble left" style="background:#f4f4f5"></div>
@@ -833,35 +846,57 @@
                                 <div class="mini-bubble right" style="background:#ff79c6"></div><div class="mini-bubble left" style="background:#44475a"></div>
                             </div><span class="theme-label">Dracula</span>
                         </div>
-                        <div class="theme-preview" data-theme-val="ocean" onclick="App.setTheme('ocean')">
-                            <div class="theme-preview-inner" style="background:#0c4a6e;">
-                                <div class="mini-bubble right" style="background:#0284c7"></div><div class="mini-bubble left" style="background:#082f49"></div>
-                            </div><span class="theme-label">Ocean</span>
+                        <!-- 5 New Light -->
+                        <div class="theme-preview" data-theme-val="rose" onclick="App.setTheme('rose')">
+                            <div class="theme-preview-inner" style="background:#fff5f7;">
+                                <div class="mini-bubble right" style="background:#db2777"></div><div class="mini-bubble left" style="background:#ffe4e9"></div>
+                            </div><span class="theme-label">Rose</span>
                         </div>
-                        <div class="theme-preview" data-theme-val="forest" onclick="App.setTheme('forest')">
-                            <div class="theme-preview-inner" style="background:#166534;">
-                                <div class="mini-bubble right" style="background:#15803d"></div><div class="mini-bubble left" style="background:#14532d"></div>
-                            </div><span class="theme-label">Forest</span>
+                        <div class="theme-preview" data-theme-val="sky" onclick="App.setTheme('sky')">
+                            <div class="theme-preview-inner" style="background:#f0f9ff;">
+                                <div class="mini-bubble right" style="background:#0284c7"></div><div class="mini-bubble left" style="background:#e0f2fe"></div>
+                            </div><span class="theme-label">Sky</span>
                         </div>
-                        <div class="theme-preview" data-theme-val="sunset" onclick="App.setTheme('sunset')">
-                            <div class="theme-preview-inner" style="background:#7f1d1d;">
-                                <div class="mini-bubble right" style="background:#991b1b"></div><div class="mini-bubble left" style="background:#450a0a"></div>
-                            </div><span class="theme-label">Sunset</span>
+                        <div class="theme-preview" data-theme-val="sage" onclick="App.setTheme('sage')">
+                            <div class="theme-preview-inner" style="background:#f0fdf4;">
+                                <div class="mini-bubble right" style="background:#16a34a"></div><div class="mini-bubble left" style="background:#dcfce7"></div>
+                            </div><span class="theme-label">Sage</span>
                         </div>
-                        <div class="theme-preview" data-theme-val="cyber" onclick="App.setTheme('cyber')">
-                            <div class="theme-preview-inner" style="background:#18181b;">
-                                <div class="mini-bubble right" style="background:#ec4899"></div><div class="mini-bubble left" style="background:#27272a"></div>
-                            </div><span class="theme-label">Cyber</span>
+                        <div class="theme-preview" data-theme-val="honey" onclick="App.setTheme('honey')">
+                            <div class="theme-preview-inner" style="background:#fffbeb;">
+                                <div class="mini-bubble right" style="background:#d97706"></div><div class="mini-bubble left" style="background:#fef3c7"></div>
+                            </div><span class="theme-label">Honey</span>
                         </div>
-                        <div class="theme-preview" data-theme-val="coffee" onclick="App.setTheme('coffee')">
-                            <div class="theme-preview-inner" style="background:#4e342e;">
-                                <div class="mini-bubble right" style="background:#5d4037"></div><div class="mini-bubble left" style="background:#3e2723"></div>
-                            </div><span class="theme-label">Coffee</span>
+                        <div class="theme-preview" data-theme-val="lilac" onclick="App.setTheme('lilac')">
+                            <div class="theme-preview-inner" style="background:#f5f3ff;">
+                                <div class="mini-bubble right" style="background:#7c3aed"></div><div class="mini-bubble left" style="background:#ede9fe"></div>
+                            </div><span class="theme-label">Lilac</span>
                         </div>
-                        <div class="theme-preview" data-theme-val="lavender" onclick="App.setTheme('lavender')">
-                            <div class="theme-preview-inner" style="background:#312e81;">
-                                <div class="mini-bubble right" style="background:#4338ca"></div><div class="mini-bubble left" style="background:#1e1b4b"></div>
-                            </div><span class="theme-label">Lavender</span>
+                        <!-- 5 New Dark -->
+                        <div class="theme-preview" data-theme-val="midnight" onclick="App.setTheme('midnight')">
+                            <div class="theme-preview-inner" style="background:#020617;">
+                                <div class="mini-bubble right" style="background:#38bdf8"></div><div class="mini-bubble left" style="background:#1e293b"></div>
+                            </div><span class="theme-label">Midnight</span>
+                        </div>
+                        <div class="theme-preview" data-theme-val="emerald" onclick="App.setTheme('emerald')">
+                            <div class="theme-preview-inner" style="background:#022c22;">
+                                <div class="mini-bubble right" style="background:#34d399"></div><div class="mini-bubble left" style="background:#065f46"></div>
+                            </div><span class="theme-label">Emerald</span>
+                        </div>
+                        <div class="theme-preview" data-theme-val="crimson" onclick="App.setTheme('crimson')">
+                            <div class="theme-preview-inner" style="background:#1c0000;">
+                                <div class="mini-bubble right" style="background:#ff4d4d"></div><div class="mini-bubble left" style="background:#4a0000"></div>
+                            </div><span class="theme-label">Crimson</span>
+                        </div>
+                        <div class="theme-preview" data-theme-val="space" onclick="App.setTheme('space')">
+                            <div class="theme-preview-inner" style="background:#111111;">
+                                <div class="mini-bubble right" style="background:#ffffff"></div><div class="mini-bubble left" style="background:#2a2a2a"></div>
+                            </div><span class="theme-label">Space</span>
+                        </div>
+                        <div class="theme-preview" data-theme-val="navy" onclick="App.setTheme('navy')">
+                            <div class="theme-preview-inner" style="background:#001220;">
+                                <div class="mini-bubble right" style="background:#00aaff"></div><div class="mini-bubble left" style="background:#002d4d"></div>
+                            </div><span class="theme-label">Navy</span>
                         </div>
                     </div>
                 </div>
