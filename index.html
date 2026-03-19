@@ -1246,9 +1246,13 @@
                 
                 const el = document.getElementById(id);
                 el.classList.remove('active');
-                setTimeout(() => el.style.zIndex = '', 350); // Reset z-index after closing animation finishes
+                setTimeout(() => el.style.zIndex = '', 350); 
                 
-                if(id==='panel-chat') { State.chat=null; State.lastMsgId=0; }
+                if(id==='panel-chat') { 
+                    State.chat=null; 
+                    State.lastMsgId=0; 
+                    document.getElementById('msgs').innerHTML = ''; // Prevent ghosting flashes
+                }
                 this.updateNav();
             }
         };
@@ -1718,34 +1722,29 @@
             },
             async sendToAI(text, type, mediaData) {
                 const msgsCont = document.getElementById('msgs');
-                
-                // 1. Instantly display the user's message on screen (Optimistic UI)
                 const displayTxt = type === 'text' ? text.replace(/</g,'&lt;') : '🖼️ Photo Sent';
-                msgsCont.innerHTML += `
+                msgsCont.insertAdjacentHTML('beforeend', `
                     <div class="msg-row sent">
                         <div class="msg-bubble">${displayTxt}
                             <div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px">Just now ✓</div>
                         </div>
-                    </div>`;
+                    </div>`);
                 
-                // 2. Instantly display the AI's animated generating dots
                 const typingId = 'ai-typing-' + Date.now();
-                msgsCont.innerHTML += `
+                msgsCont.insertAdjacentHTML('beforeend', `
                     <div class="msg-row received" id="${typingId}">
                         <div class="msg-bubble" style="padding: 14px 16px;">
                             <div class="typing-dots"><span></span><span></span><span></span></div>
                         </div>
-                    </div>`;
-                
-                msgsCont.scrollTop = msgsCont.scrollHeight; // Scroll to bottom
+                    </div>`);
+                msgsCont.scrollTop = msgsCont.scrollHeight;
             
-                // 3. Actually send the request to the server in the background
                 try {
                     await req('/api/ai/chat', 'POST', { text, type, media_data: mediaData });
-                    State.lastMsgId = 0; 
-                    this.loadMsgs('ai'); // This will reload the chat, replacing the dots with the real answer!
+                    document.getElementById(typingId)?.remove(); // Remove fake dots
+                    this.loadMsgs('ai'); // Seamlessly appends real AI response
                 } catch(e) { 
-                    document.getElementById(typingId)?.remove(); // Remove dots on error
+                    document.getElementById(typingId)?.remove(); 
                     UI.toast(e.message); 
                 }
             },
@@ -1832,25 +1831,20 @@
             start() {
                 document.getElementById('set-av').src = State.u.avatar || getDefAv(State.u.username);
                 document.getElementById('nav-av').src = State.u.avatar || getDefAv(State.u.username);
-                Router.updateNav(); // Fix visibility instantly
+                Router.updateNav();
 
                 const nameEl = document.getElementById('set-name');
                 if(nameEl.tagName === 'INPUT') nameEl.value = State.u.username; else nameEl.textContent = State.u.username;
                 document.getElementById('set-bio').value = State.u.bio || '';
                 
-                // Load saved appearance
                 const t = localStorage.getItem('y_theme') || 'dark'; this.setTheme(t);
                 const w = localStorage.getItem('y_wall') || ''; this.setWallpaper(w);
 
-                // Initial UI Loading Skeletons for Chat List
                 let skels=''; for(let i=0;i<6;i++) skels+=`<div class="user-item"><div class="skel-av skeleton"></div><div class="user-info"><div class="skel-text skeleton"></div><div class="skel-text short skeleton"></div></div></div>`;
                 document.getElementById('chat-list').innerHTML = skels;
 
-                // Route Handlers for ?channel= / ?group=
-                // Replace the "Route Handlers for ?channel= / ?group=" block with this:
-                // Route Handlers for deep links
                 const p = new URLSearchParams(window.location.search);
-                const basePath = window.location.pathname; // FIX: Preserves /YukiChat/ folder!
+                const basePath = window.location.pathname;
 
                 if(p.get('channel') || p.get('group')) {
                     const h = p.get('channel') || p.get('group');
@@ -1865,27 +1859,28 @@
                     window.history.replaceState({}, document.title, basePath);
                 }
                 
-                // Add this right before "this.sync();" at the end of App.start()
                 this.loadStickerKeyboard();
-                // Show Admin Panel if username is vasiliy
-                if(State.u.username === 'vasiliy') {
-                    document.getElementById('admin-panel').style.display = 'block';
-                }
+                if(State.u.username === 'vasiliy') document.getElementById('admin-panel').style.display = 'block';
 
-                // Calculate Cache Size
                 let totalBytes = 0;
-                for(let key in localStorage) {
-                    if(localStorage.hasOwnProperty(key)) totalBytes += ((localStorage[key].length + key.length) * 2);
-                }
+                for(let key in localStorage) if(localStorage.hasOwnProperty(key)) totalBytes += ((localStorage[key].length + key.length) * 2);
                 document.getElementById('cache-size').innerText = (totalBytes / 1024).toFixed(1) + ' KB';
+                
                 this.sync(); 
-                // Increased to 15 seconds to save limits (cuts rows read in half)
+                
+                // Keep the 15-second loop for sidebar / typing status
                 State.syncLoop = setInterval(() => {
-                    // Only sync if the tab is visible to save huge amounts of D1 reads
-                    if (document.visibilityState === 'visible') {
-                        this.sync();
-                    }
+                    if (document.visibilityState === 'visible') this.sync();
                 }, 15000);
+                
+                // NEW: 3-Second Lightning Fast Poll for Active Chats!
+                // Because of the 'id > ?' SQL index, this costs literally 0 read capacity if no message exists!
+                State.fastPollLoop = setInterval(() => {
+                    if (document.visibilityState === 'visible' && State.chat && State.chat !== 'ai') {
+                        this.loadMsgs(State.chat);
+                    }
+                }, 3000);
+
                 this.requestNotifyPerms();
             },
 
@@ -2061,7 +2056,6 @@
                             if (c.type === 'channel') {
                                 document.getElementById('chat-status').innerHTML = `${c.sub_count} subscribers`;
                             } else {
-                                // --- UPDATED LOGIC HERE ---
                                 if (c.is_bot) {
                                     document.getElementById('chat-status').innerHTML = 'Bot';
                                 } else if (isDM && c.dm_typing == c.id) {
@@ -2073,10 +2067,9 @@
                                         ? '<span style="color:var(--success)">Online</span>' 
                                         : UI.formatTime(c.dm_last_seen);
                                 }
-                                // --- END UPDATED LOGIC ---
                                 
-                                if(c.last_msg_id > State.lastMsgId) { 
-                                    State.lastMsgId = c.last_msg_id; 
+                                // FIX: Do NOT overwrite State.lastMsgId here! Let loadMsgs handle it.
+                                if (c.last_msg_id > State.lastMsgId) { 
                                     this.loadMsgs(c.id); 
                                 }
                             }
@@ -2192,36 +2185,68 @@
             async loadMsgs(id) {
                 const cont = document.getElementById('msgs');
                 const cacheKey = `y_cache_msgs_${id}`;
-                if(State.lastMsgId === 0) cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div><div class="skeleton skel-text short" style="height:40px; border-radius:18px; margin-left:auto; margin-top:10px;"></div></div>`;
-                // Load from cache INSTANTLY before network finishes
-                if(State.lastMsgId === 0) {
+                
+                const isFirstLoad = State.lastMsgId === 0;
+                const hasExistingContent = cont.innerHTML.includes('msg-row');
+
+                // Only show skeletons/cache if it's the very first time opening this chat
+                if (isFirstLoad && !hasExistingContent) {
                     const cachedHtml = localStorage.getItem(cacheKey);
-                    if(cachedHtml) {
+                    if (cachedHtml) {
                         cont.innerHTML = cachedHtml;
                         cont.scrollTop = cont.scrollHeight;
                     } else {
-                        cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div></div>`;
+                        cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div><div class="skeleton skel-text short" style="height:40px; border-radius:18px; margin-left:auto; margin-top:10px;"></div></div>`;
                     }
                 }
-                try {
-                    const msgs = await req(`/api/messages/${id}`); let html = ''; let pinned = null;
-                    msgs.forEach(m => {
-                        const isMine = m.sender_id === State.u.userId; let inner = '';
-                        if(m.is_pinned) pinned = m.content;
 
-                        // Reply Block
-                        if(m.reply_to_id) {
-                            const repM = msgs.find(x => x.id === m.reply_to_id);
-                            const repTxt = repM ? repM.content.replace(/</g,'&lt;') : 'Deleted message';
-                            inner += `<div class="reply-block" onclick="document.getElementById('msg-${m.reply_to_id}').scrollIntoView({behavior:'smooth', block:'center'})">${repTxt}</div>`;
+                try {
+                    // FINALLY utilize the backend's ?after parameter!
+                    const msgs = await req(`/api/messages/${id}?after=${State.lastMsgId}`);
+                    if (!msgs || msgs.length === 0) return;
+
+                    let html = ''; 
+                    let pinned = null;
+                    let addedNew = false;
+
+                    msgs.forEach(m => {
+                        if (m.is_pinned) pinned = m.content;
+
+                        // Keep track of the highest ID we've seen
+                        if (m.id > State.lastMsgId) State.lastMsgId = m.id;
+
+                        // IMPORTANT: If optimistic UI already added this message, just update read ticks and skip!
+                        const existingEl = document.getElementById(`msg-${m.id}`);
+                        if (existingEl) {
+                            const tick = existingEl.querySelector('.msg-tick');
+                            if (tick && m.is_read) {
+                                tick.classList.add('read');
+                                tick.innerText = '✓✓';
+                            }
+                            return; 
                         }
 
-                        // Link parsing & HTML escape
-                        // HTML escape first
+                        addedNew = true;
+                        const isMine = m.sender_id === State.u.userId; 
+                        let inner = '';
+
+                        // Smarter Reply Block (Looks up text from the DOM directly)
+                        if (m.reply_to_id) {
+                            let repTxt = 'Replied message';
+                            const repEl = document.getElementById(`msg-${m.reply_to_id}`);
+                            if (repEl) {
+                                const bubble = repEl.querySelector('.msg-bubble');
+                                if (bubble) {
+                                    repTxt = Array.from(bubble.childNodes)
+                                        .filter(n => n.nodeType === 3)
+                                        .map(n => n.textContent).join('').trim() || 'Media';
+                                }
+                            }
+                            inner += `<div class="reply-block" onclick="document.getElementById('msg-${m.reply_to_id}')?.scrollIntoView({behavior:'smooth', block:'center'})">${repTxt.substring(0, 40)}</div>`;
+                        }
+
+                        // Text formatting
                         let cleanTxt = m.content.replace(/</g,'&lt;');
-                        
-                        // Simple Markdown Parser
-                        // Simple Markdown Parser
                         if (m.type === 'text') {
                             cleanTxt = cleanTxt.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;">$1</pre>');
                             cleanTxt = cleanTxt.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
@@ -2229,20 +2254,14 @@
                             cleanTxt = cleanTxt.replace(/\*(.*?)\*/g, '<em>$1</em>');
                             cleanTxt = cleanTxt.replace(/^### (.*$)/gim, '<h3 style="margin:16px 0 8px;font-size:16px;">$1</h3>');
                             cleanTxt = cleanTxt.replace(/^## (.*$)/gim, '<h2 style="margin:18px 0 8px;font-size:18px;">$1</h2>');
-                            
-                            // FIX: Make ALL links globally clickable, prevent opening context menu
                             cleanTxt = cleanTxt.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">$1</a>');
-                            
-                            // NEW: Clickable Mentions (@username)
                             cleanTxt = cleanTxt.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
                         }
 
-                        // Replace media rendering in App.loadMsgs with this:
-                        if(m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="window.open(this.src)">`;
-                        else if(m.type === 'sticker') inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
+                        if (m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="window.open(this.src)">`;
+                        else if (m.type === 'sticker') inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
                         else inner += cleanTxt;
-                        
-                        // --- NEW: INLINE KEYBOARDS ---
+
                         if (m.reply_markup && m.reply_markup !== 'null') {
                             try {
                                 const rm = JSON.parse(m.reply_markup);
@@ -2251,7 +2270,6 @@
                                     rm.inline_keyboard.forEach(row => {
                                         inner += `<div class="inline-row">`;
                                         row.forEach(btn => {
-                                            // Send callback_data back to server when clicked
                                             inner += `<button class="inline-btn" onclick="App.sendCallback(${m.id}, '${btn.callback_data}')">${btn.text}</button>`;
                                         });
                                         inner += `</div>`;
@@ -2260,41 +2278,43 @@
                                 }
                             } catch(e) {}
                         }
-                        // --- END INLINE KEYBOARDS ---
-                        
+
                         if(m.caption) inner += `<div class="msg-caption">${m.caption.replace(/</g,'&lt;')}</div>`;
 
                         let rxs = JSON.parse(m.reactions||'{}'); let rxH = ''; for(let k in rxs) rxH += rxs[k];
                         if(rxH) inner += `<div style="position:absolute; bottom:-10px; right:8px; background:var(--bg-base); border-radius:12px; padding:2px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:14px; border:1px solid var(--border); z-index:2;">${rxH}</div>`;
 
-                        // Read/Sent Ticks
-                        // Inside loadMsgs, replace the tick definition logic with this:
                         let viewsH = '';
-                        // Render eye icon and views if it's a channel (or in groups if desired, but primarily channels)
                         const c = State.chats.get(id);
-                        if (c && c.type === 'channel' && m.views) {
-                             viewsH = `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>`;
-                        }
+                        if (c && c.type === 'channel' && m.views) viewsH = `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>`;
+                        
                         const tick = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
-
-                        const senderName = (!isMine && State.chats.get(id)?.type !== 'dm') 
-                            ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
-
+                        const senderName = (!isMine && State.chats.get(id)?.type !== 'dm') ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
                         const bubbleStyle = m.type === 'sticker' ? 'background: transparent; padding: 0; box-shadow: none;' : '';
                         
                         html += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">
-                            <div class="msg-bubble" style="${bubbleStyle}">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tick}</div></div></div>`;
+                            <div class="msg-bubble" style="${bubbleStyle}">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tick}${viewsH}</div></div></div>`;
                     });
-                    
-                    // Display Pin Bar if something is pinned
+
+                    // Append new HTML smoothly without wiping the screen!
+                    if (addedNew) {
+                        if (isFirstLoad) {
+                            cont.innerHTML = html;
+                        } else {
+                            // Smart Auto-Scroll: Only scroll down if user is near the bottom
+                            const isNearBottom = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 150;
+                            cont.insertAdjacentHTML('beforeend', html);
+                            if (isNearBottom) cont.scrollTop = cont.scrollHeight;
+                        }
+                        localStorage.setItem(cacheKey, cont.innerHTML);
+                    }
+
                     const pinEl = document.getElementById('pinned-msg');
-                    if(pinEl) {
-                        if(pinned) { pinEl.style.display='flex'; document.getElementById('pinned-text').textContent = pinned; }
+                    if (pinEl) {
+                        if (pinned) { pinEl.style.display='flex'; document.getElementById('pinned-text').textContent = pinned; }
                         else pinEl.style.display='none';
                     }
 
-                    cont.innerHTML = html; cont.scrollTop = cont.scrollHeight;
-                    localStorage.setItem(cacheKey, html);
                 } catch(e){}
             },
             async handleMention(username) {
@@ -2352,7 +2372,6 @@
             },
 
             async sendText() {
-                // If media is attached, automatically route to sendMedia!
                 if (State.capMedia) return this.sendMedia();
                 
                 if (State.chat === 'ai') {
@@ -2370,9 +2389,9 @@
                 const msgsCont = document.getElementById('msgs');
                 const safeTxt = txt.replace(/</g,'&lt;'); 
                 
-                msgsCont.innerHTML += `<div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
+                msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
                     <div class="msg-bubble">${safeTxt}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Just now <span class="msg-tick" style="color:gray;">✓</span></div></div>
-                </div>`;
+                </div>`);
                 msgsCont.scrollTop = msgsCont.scrollHeight;
                 this.cancelReply();
 
@@ -2385,8 +2404,8 @@
                         const tick = tempEl.querySelector('.msg-tick');
                         if(tick) tick.style.color = 'var(--msg-sent-txt)';
                     }
-                    State.lastMsgId=0; 
-                    this.sync(); 
+                    // FIX: Don't wipe the screen! Just advance the pointer.
+                    if (res.id > State.lastMsgId) State.lastMsgId = res.id;
                 } catch(e) {
                     const tempEl = document.getElementById(tempId);
                     if(tempEl) tempEl.style.opacity = '0.4';
@@ -2395,18 +2414,14 @@
             },
 
             async sendMedia() {
-                // Get caption directly from the main typing bar
                 const cap = document.getElementById('msg-input').value.trim();
                 const mediaData = State.capMedia;
                 const mediaType = State.capType;
                 
-                // Immediately clear UI
                 this.cancelMedia();
                 document.getElementById('msg-input').value = '';
 
-                if (State.chat === 'ai') {
-                    return this.sendToAI(cap, mediaType, mediaData);
-                }
+                if (State.chat === 'ai') return this.sendToAI(cap, mediaType, mediaData);
                 
                 const tempId = 'temp-' + Date.now();
                 const msgsCont = document.getElementById('msgs');
@@ -2414,14 +2429,14 @@
                     ? `<div style="position:relative; display:inline-block;"><img src="${mediaData}" class="msg-media" style="opacity:0.8;"><div class="media-loading"><div class="media-loading-circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div></div></div>` 
                     : `📁 File`;
                     
-                msgsCont.innerHTML += `<div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
+                msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
                     <div class="msg-bubble">${mediaHtml}${cap ? `<div class="msg-caption">${cap.replace(/</g,'&lt;')}</div>` : ''}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Just now <span class="msg-tick" style="color:gray;">✓</span></div></div>
-                </div>`;
+                </div>`);
                 msgsCont.scrollTop = msgsCont.scrollHeight;
             
                 try { 
                     const res = await req(`/api/messages/${State.chat}`, 'POST', {content: mediaData, caption: cap, type: mediaType, reply_to_id: State.replyTo}); 
-                    this.cancelReply(); // Also cancel any replies tied to it
+                    this.cancelReply();
                     const tempEl = document.getElementById(tempId);
                     if (tempEl) {
                         tempEl.id = 'msg-' + res.id;
@@ -2433,8 +2448,7 @@
                         const tick = tempEl.querySelector('.msg-tick');
                         if (tick) tick.style.color = 'var(--msg-sent-txt)';
                     }
-                    State.lastMsgId = 0; 
-                    this.sync(); 
+                    if (res.id > State.lastMsgId) State.lastMsgId = res.id;
                 } catch(e) {
                     UI.toast('Failed to send media');
                     document.getElementById(tempId)?.remove();
@@ -2442,7 +2456,12 @@
             },
 
             async msgAct(act, emoji=null) {
-                try { await req(`/api/messages/${State.targetId}/action`, 'POST', {action:act, emoji}); document.getElementById('ctx-menu').style.transform='translateY(100%)'; State.lastMsgId=0; this.sync(); } catch(e){}
+                try { 
+                    await req(`/api/messages/${State.targetId}/action`, 'POST', {action:act, emoji}); 
+                    document.getElementById('ctx-menu').style.transform='translateY(100%)'; 
+                    State.lastMsgId = 0; // Force a refresh to show deleted message/reactions
+                    this.loadMsgs(State.chat); // Our new logic guarantees no skeleton flash here!
+                } catch(e){}
             },
 
             // --- PROFILE & SETTINGS ---
