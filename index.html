@@ -1978,15 +1978,27 @@
                 
                 this.sync(); 
                 
-                // Keep the 15-second loop for sidebar / typing status
-                State.syncLoop = setInterval(() => {
-                    if (document.visibilityState === 'visible') this.sync();
-                }, 15000);
+                // Lightning fast sync loop for sidebar, read receipts, and online status
+                State.syncLoop = setInterval(async () => {
+                    if (document.visibilityState === 'visible') {
+                        if (State.isSyncing) return;
+                        State.isSyncing = true;
+                        await this.sync().catch(e=>{});
+                        State.isSyncing = false;
+                    }
+                }, 3000);
                 
-                // NEW: Run the lightweight active chat fetch every 2.5 seconds
-                State.fastPollLoop = setInterval(() => {
-                    this.fastPoll();
-                }, 2500);
+                // Hyper fast active chat polling for instant messaging
+                State.fastPollLoop = setInterval(async () => {
+                    if (document.visibilityState === 'visible') {
+                        if (State.isPolling) return;
+                        State.isPolling = true;
+                        await this.fastPoll().catch(e=>{});
+                        State.isPolling = false;
+                    }
+                }, 1000);
+
+                this.requestNotifyPerms();
 
                 this.requestNotifyPerms();
             },
@@ -2224,6 +2236,7 @@
             // --- CHAT INTERFACE ---
             openChat(id) {
                 if (id !== 'ai') id = Number(id);
+                State.lastMsgId = 0;
                 State.chat = id; 
                 const c = State.chats.get(id); 
                 if (!c) return; 
@@ -2286,6 +2299,7 @@
 
                     msgs.forEach(m => {
                         if (m.is_pinned) pinned = m.content;
+                        if (m.id > State.lastMsgId) State.lastMsgId = m.id; // FIX: Activates hyper-fast polling!
                         
                         const isMine = m.sender_id === State.u.userId;
                         const elId = `msg-${m.id}`;
