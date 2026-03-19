@@ -1192,7 +1192,8 @@
         };
 
         const req = async (path, m='GET', b=null) => {
-            const opt = { method:m, headers:{} };
+            // FIX: Add cache: 'no-store' to stop Chrome/Safari from caching chat history!
+            const opt = { method:m, headers:{}, cache: 'no-store' };
             if(State.t) opt.headers['Authorization'] = `Bearer ${State.t}`;
             if(b) { opt.headers['Content-Type']='application/json'; opt.body=JSON.stringify(b); }
             const res = await fetch(API+path, opt);
@@ -1488,6 +1489,45 @@
                     if(svg) svg.style.display = 'none';
                 };
                 r.readAsDataURL(f);
+            },
+            // --- LIGHTNING FAST ACTIVE CHAT POLL ---
+            async fastPoll() {
+                // Only poll if the user is actively looking at a chat right now
+                if (!State.chat || State.chat === 'ai' || document.visibilityState !== 'visible') return;
+                if (State.lastMsgId === 0) return; // Wait for initial loadMsgs to finish
+
+                try {
+                    // Ask backend ONLY for messages newer than our lastMsgId
+                    const msgs = await req(`/api/messages/${State.chat}?after=${State.lastMsgId}`);
+                    if (!msgs || msgs.length === 0) return;
+
+                    const cont = document.getElementById('msgs');
+                    const chatType = State.chats.get(State.chat)?.type;
+                    let addedNew = false;
+
+                    msgs.forEach(m => {
+                        if (m.id > State.lastMsgId) State.lastMsgId = m.id;
+                        
+                        // If it's already on screen (Optimistic UI), skip it
+                        if (document.getElementById(`msg-${m.id}`)) return;
+
+                        const isMine = m.sender_id === State.u.userId;
+                        const innerHTML = this.buildMsgHTML(m, isMine, chatType);
+                        const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
+                        
+                        // Smart scroll: Only force scroll down if user isn't scrolling up reading old history
+                        const isNearBottom = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 150;
+                        cont.insertAdjacentHTML('beforeend', rowHtml);
+                        if (isNearBottom) cont.scrollTop = cont.scrollHeight;
+                        
+                        addedNew = true;
+                    });
+
+                    // Update local cache quietly
+                    if (addedNew) {
+                        localStorage.setItem(`y_cache_msgs_${State.chat}`, cont.innerHTML);
+                    }
+                } catch(e) {}
             },
             // --- NEW HELPERS ---
             buildMsgHTML(m, isMine, chatType) {
@@ -1943,13 +1983,10 @@
                     if (document.visibilityState === 'visible') this.sync();
                 }, 15000);
                 
-                // NEW: 3-Second Lightning Fast Poll for Active Chats!
-                // Because of the 'id > ?' SQL index, this costs literally 0 read capacity if no message exists!
+                // NEW: Run the lightweight active chat fetch every 2.5 seconds
                 State.fastPollLoop = setInterval(() => {
-                    if (document.visibilityState === 'visible' && State.chat && State.chat !== 'ai') {
-                        this.loadMsgs(State.chat);
-                    }
-                }, 3000);
+                    this.fastPoll();
+                }, 2500);
 
                 this.requestNotifyPerms();
             },
