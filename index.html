@@ -710,6 +710,31 @@
         <div style="width: 60px; height: 60px; border-radius: 20px; background: var(--primary); animation: bounce-spin 1.5s infinite cubic-bezier(0.68, -0.55, 0.265, 1.55);"></div>
         <div style="margin-top: 24px; font-weight: 700; color: var(--text-main); font-size: 18px; letter-spacing: 2px;">YUKICHAT</div>
     </div>
+
+    <!-- SELECTION ACTION BAR -->
+    <div id="selection-bar" class="liquid-glass" style="display:none; position:fixed; top:0; left:0; width:100%; height:calc(60px + var(--safe-top)); padding-top:var(--safe-top); z-index:9000; justify-content:space-between; align-items:center; px-20px;">
+        <div style="display:flex; align-items:center; gap:16px; padding: 0 20px;">
+            <button class="icon-btn" onclick="App.clearSelection()">✕</button>
+            <span id="selection-count" style="font-weight:700; font-size:18px;">1 Selected</span>
+        </div>
+        <div style="display:flex; align-items:center; padding: 0 20px;">
+            <button class="icon-btn" style="color:var(--danger)" onclick="App.deleteSelected()">🗑️</button>
+        </div>
+    </div>
+
+    <!-- OLED MEDIA VIEWER -->
+    <div id="media-viewer" style="display:none; position:fixed; inset:0; background:#000; z-index:99999; flex-direction:column;">
+        <div style="position:absolute; top:0; left:0; right:0; padding:calc(20px + var(--safe-top)) 20px; display:flex; justify-content:space-between; z-index:10; background:linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);">
+            <button class="icon-btn" style="color:#fff;" onclick="App.closeMedia()">✕</button>
+            <div style="display:flex; gap:16px;">
+                <button class="icon-btn" style="color:#fff;" id="btn-fullscreen" onclick="App.toggleFullscreen()">⛶</button>
+                <button class="icon-btn" style="color:#fff;" onclick="App.saveMedia()">⬇️</button>
+            </div>
+        </div>
+        <div id="media-content-container" style="flex:1; display:flex; align-items:center; justify-content:center; overflow:hidden; touch-action:none;">
+            <!-- Media injected here -->
+        </div>
+    </div>
     
     <!-- AUTH PANEL -->
     <div id="panel-auth" class="panel active" style="justify-content: center; padding: 32px; overflow-y: auto; background: var(--bg-base);">
@@ -1172,16 +1197,21 @@
     </div>
 
     <!-- CONTEXT MENU -->
-    <div id="n-ctx-backdrop" class="n-ctx-backdrop" onclick="App.closeCtx()"></div>
-    <div id="ctx-menu" style="position:fixed; bottom:0; left:0; width:100%; background:var(--bg-panel); border-top-left-radius:24px; border-top-right-radius:24px; transform:translateY(100%); transition:0.3s; z-index:9000; padding:24px 20px calc(24px + var(--safe-bottom)); box-shadow:0 -10px 40px rgba(0,0,0,0.1);" onclick="this.style.transform='translateY(100%)'">
-        <div style="display:flex; justify-content:space-between; margin-bottom:24px; font-size:28px; padding:0 10px;">
-            <span onclick="App.msgAct('react','❤️')">❤️</span><span onclick="App.msgAct('react','😂')">😂</span><span onclick="App.msgAct('react','👍')">👍</span>
-            <span onclick="App.msgAct('react','😢')">😢</span><span onclick="App.msgAct('react','🔥')">🔥</span>
+    <div id="n-ctx-backdrop" class="n-ctx-backdrop" onclick="App.closeCtx()" style="backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: 0.2s;"></div>
+    <div id="ctx-menu" style="position:absolute; background:var(--bg-panel); border-radius:16px; transform:scale(0.9); opacity:0; transition:0.2s cubic-bezier(0.2, 0.8, 0.2, 1); z-index:9000; box-shadow:0 10px 40px rgba(0,0,0,0.2); width:240px; pointer-events:none;">
+        <div style="display:flex; justify-content:space-around; padding:12px; background:var(--bg-input); border-top-left-radius:16px; border-top-right-radius:16px; font-size:24px;">
+            <span style="cursor:pointer; transition:0.2s;" onclick="App.msgAct('react','❤️')">❤️</span>
+            <span style="cursor:pointer; transition:0.2s;" onclick="App.msgAct('react','😂')">😂</span>
+            <span style="cursor:pointer; transition:0.2s;" onclick="App.msgAct('react','👍')">👍</span>
+            <span style="cursor:pointer; transition:0.2s;" onclick="App.msgAct('react','😢')">😢</span>
+            <span style="cursor:pointer; transition:0.2s;" onclick="App.msgAct('react','🔥')">🔥</span>
         </div>
-        <div class="settings-row" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; cursor:pointer;" onclick="App.initReply()">↩️ Reply</div>
-        <div class="settings-row" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; cursor:pointer;" onclick="App.msgAct('pin')">📌 Pin / Unpin</div>
-        <div class="settings-row" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; cursor:pointer;" onclick="navigator.clipboard.writeText(App.targetTxt); UI.toast('Copied')">📋 Copy Text</div>
-        <div class="settings-row" id="ctx-del" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; color:var(--danger); cursor:pointer;" onclick="App.msgAct('delete')">🗑️ Delete Message</div>
+        <div style="padding: 8px 0;">
+            <div class="settings-row" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; cursor:pointer; border-radius:0; padding:12px 20px;" onclick="App.initReply()">↩️ Reply</div>
+            <div class="settings-row" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; cursor:pointer; border-radius:0; padding:12px 20px;" onclick="App.msgAct('pin')">📌 Pin / Unpin</div>
+            <div class="settings-row" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; cursor:pointer; border-radius:0; padding:12px 20px;" onclick="navigator.clipboard.writeText(App.targetTxt); UI.toast('Copied'); App.closeCtx();">📋 Copy Text</div>
+            <div class="settings-row" id="ctx-del" style="margin:0; background:transparent; justify-content:flex-start; gap:16px; color:var(--danger); cursor:pointer; border-radius:0; padding:12px 20px;" onclick="App.msgAct('delete')">🗑️ Delete</div>
+        </div>
     </div>
     
     <div class="bottom-nav liquid-glass" id="bottom-nav" style="display: none;">
@@ -1586,6 +1616,81 @@
                 };
                 r.readAsDataURL(f);
             },
+            // --- OLED MEDIA VIEWER ---
+            openMedia(url, type) {
+                State.activeMediaUrl = url;
+                const container = document.getElementById('media-content-container');
+                container.innerHTML = '';
+                
+                if (type === 'photo') {
+                    // Basic pinch-to-zoom is supported natively by browsers on standalone images, 
+                    // but we ensure object-fit contain here for standard viewing.
+                    container.innerHTML = `<img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain; transition: transform 0.2s;" id="active-viewer-img">`;
+                    document.getElementById('btn-fullscreen').style.display = 'none';
+                } else if (type === 'video') {
+                    container.innerHTML = `<video src="${url}" controls autoplay playsinline style="max-width:100%; max-height:100%; object-fit:contain; outline:none;" id="active-viewer-vid"></video>`;
+                    document.getElementById('btn-fullscreen').style.display = 'block';
+                }
+                
+                document.getElementById('media-viewer').style.display = 'flex';
+            },
+
+            closeMedia() {
+                document.getElementById('media-viewer').style.display = 'none';
+                document.getElementById('media-content-container').innerHTML = '';
+                State.activeMediaUrl = null;
+                if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+            },
+
+            toggleFullscreen() {
+                const vid = document.getElementById('active-viewer-vid');
+                if (!vid) return;
+                if (vid.requestFullscreen) vid.requestFullscreen();
+                else if (vid.webkitEnterFullscreen) vid.webkitEnterFullscreen(); // iOS native player
+            },
+
+            saveMedia() {
+                if(!State.activeMediaUrl) return;
+                const a = document.createElement('a');
+                a.href = State.activeMediaUrl;
+                a.download = `YukiChat_Media_${Date.now()}`;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            },
+
+            // --- CHAT SELECTION & PINNING ---
+            toggleSelect(chatId) {
+                if(!State.selectedChats) State.selectedChats = new Set();
+                
+                if (State.selectedChats.has(chatId)) State.selectedChats.delete(chatId);
+                else State.selectedChats.add(chatId);
+                
+                const bar = document.getElementById('selection-bar');
+                if (State.selectedChats.size > 0) {
+                    bar.style.display = 'flex';
+                    document.getElementById('selection-count').innerText = `${State.selectedChats.size} Selected`;
+                } else {
+                    bar.style.display = 'none';
+                }
+                
+                this.sync(); // Re-renders the list to show selected states
+            },
+
+            clearSelection() {
+                State.selectedChats = new Set();
+                document.getElementById('selection-bar').style.display = 'none';
+                this.sync();
+            },
+            
+            async toggleChatPin(chatId) {
+                try {
+                    await req(`/api/chats/${chatId}/pin`, 'POST');
+                    this.clearSelection();
+                    this.sync();
+                } catch(e) {}
+            },
             // --- LIGHTNING FAST ACTIVE CHAT POLL ---
             async fastPoll() {
                 // Only poll if the user is actively looking at a chat right now
@@ -1628,46 +1733,33 @@
             // --- NEW HELPERS ---
             buildMsgHTML(m, isMine, chatType) {
                 let inner = '';
+                // RAW String for context menu
+                const rawContentAttr = `data-raw="${encodeURIComponent(m.content || '')}"`;
+
                 if (m.reply_to_id) {
                     let repTxt = 'Replied message';
                     const repEl = document.getElementById(`msg-${m.reply_to_id}`);
                     if (repEl) {
                         const bubble = repEl.querySelector('.msg-bubble');
-                        if (bubble) repTxt = Array.from(bubble.childNodes).filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() || 'Media';
+                        if (bubble) repTxt = decodeURIComponent(bubble.getAttribute('data-raw') || 'Media');
                     }
                     inner += `<div class="reply-block" onclick="document.getElementById('msg-${m.reply_to_id}')?.scrollIntoView({behavior:'smooth', block:'center'})">${repTxt.substring(0, 40)}</div>`;
                 }
 
-                let cleanTxt = m.content.replace(/</g,'&lt;');
+                let cleanTxt = (m.content || '').replace(/</g,'&lt;');
                 if (m.type === 'text') {
                     cleanTxt = cleanTxt.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;">$1</pre>');
                     cleanTxt = cleanTxt.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
                     cleanTxt = cleanTxt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                     cleanTxt = cleanTxt.replace(/\*(.*?)\*/g, '<em>$1</em>');
-                    cleanTxt = cleanTxt.replace(/^### (.*$)/gim, '<h3 style="margin:16px 0 8px;font-size:16px;">$1</h3>');
-                    cleanTxt = cleanTxt.replace(/^## (.*$)/gim, '<h2 style="margin:18px 0 8px;font-size:18px;">$1</h2>');
                     cleanTxt = cleanTxt.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">$1</a>');
                     cleanTxt = cleanTxt.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
                 }
 
-                if (m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="window.open(this.src)">`;
+                if (m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="event.stopPropagation(); App.openMedia('${m.content}', 'photo')">`;
+                else if (m.type === 'video') inner += `<div style="position:relative; cursor:pointer;" onclick="event.stopPropagation(); App.openMedia('${m.content}', 'video')"><video src="${m.content}" class="msg-media" style="pointer-events:none;"></video><div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.3); border-radius:12px;"><span style="font-size:32px; color:white;">▶</span></div></div>`;
                 else if (m.type === 'sticker') inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
                 else inner += cleanTxt;
-
-                if (m.reply_markup && m.reply_markup !== 'null') {
-                    try {
-                        const rm = JSON.parse(m.reply_markup);
-                        if (rm.inline_keyboard) {
-                            inner += `<div class="inline-kb">`;
-                            rm.inline_keyboard.forEach(row => {
-                                inner += `<div class="inline-row">`;
-                                row.forEach(btn => { inner += `<button class="inline-btn" onclick="App.sendCallback(${m.id}, '${btn.callback_data}')">${btn.text}</button>`; });
-                                inner += `</div>`;
-                            });
-                            inner += `</div>`;
-                        }
-                    } catch(e) {}
-                }
 
                 if(m.caption) inner += `<div class="msg-caption">${m.caption.replace(/</g,'&lt;')}</div>`;
 
@@ -1679,7 +1771,7 @@
                 const senderName = (!isMine && chatType !== 'dm') ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
                 const bubbleStyle = m.type === 'sticker' ? 'background: transparent; padding: 0; box-shadow: none;' : '';
 
-                return `<div class="msg-bubble" style="${bubbleStyle}">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tickHtml}${viewsH}</div></div>`;
+                return `<div class="msg-bubble" ${rawContentAttr} style="${bubbleStyle}">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tickHtml}${viewsH}</div></div>`;
             },
 
             updateChatStatusUI(c) {
@@ -1708,16 +1800,15 @@
                 } catch(e) { UI.toast('Sticker pack not found'); }
             },
             
-            installStickerPack() {
+            async installStickerPack() {
                 if (!State.previewPack) return;
-                let packs = JSON.parse(localStorage.getItem('y_packs') || '[]');
-                // Remove if already exists so we don't duplicate
-                packs = packs.filter(p => p.name !== State.previewPack.name);
-                packs.push(State.previewPack);
-                localStorage.setItem('y_packs', JSON.stringify(packs));
-                UI.toast('Pack Installed!');
-                Router.pop();
-                this.loadStickerKeyboard();
+                try {
+                    // Install on backend D1 Database
+                    await req('/api/stickers/install', 'POST', { pack_name: State.previewPack.name });
+                    UI.toast('Pack Installed!');
+                    Router.pop();
+                    this.sync(); // Sync will fetch the new packs and rebuild keyboard
+                } catch(e) { UI.toast('Failed to install pack'); }
             },
             
             loadStickerKeyboard() {
@@ -2143,27 +2234,49 @@
 
             showCtx(e, id, isMine) {
                 if (window.getSelection().toString().trim().length > 0) return; 
-
-                e.preventDefault();
-                e.stopPropagation();
+                e.preventDefault(); e.stopPropagation();
 
                 State.targetId = id;
                 const msgEl = document.getElementById('msg-'+id);
                 const bubble = msgEl ? msgEl.querySelector('.msg-bubble') : null;
-                State.targetTxt = bubble ? Array.from(bubble.childNodes).filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() : '';
                 
-                // Show the invisible backdrop to reliably catch taps outside
+                // Extracts the raw text, preventing DOM element contamination on Copy
+                State.targetTxt = bubble ? decodeURIComponent(bubble.getAttribute('data-raw') || '') : '';
+                
                 document.getElementById('n-ctx-backdrop').style.display = 'block';
                 
-                // Show the context menu (Delete button is now permanently visible in HTML)
                 const ctxMenu = document.getElementById('ctx-menu');
-                ctxMenu.style.transform = 'translateY(0)';
+                ctxMenu.style.pointerEvents = 'auto';
+                
+                const menuWidth = 240;
+                const menuHeight = 260;
+                let left = e.clientX || (e.touches ? e.touches[0].clientX : window.innerWidth / 2);
+                let top = e.clientY || (e.touches ? e.touches[0].clientY : window.innerHeight / 2);
+                
+                // Smart boundary detection
+                if (left + menuWidth > window.innerWidth) left = window.innerWidth - menuWidth - 20;
+                if (top + menuHeight > window.innerHeight) top = window.innerHeight - menuHeight - 20;
+                if (left < 10) left = 10;
+                if (top < 10) top = 10;
+                
+                ctxMenu.style.left = left + 'px';
+                ctxMenu.style.top = top + 'px';
+                
+                // Animate in
+                setTimeout(() => {
+                    ctxMenu.style.transform = 'scale(1)';
+                    ctxMenu.style.opacity = '1';
+                }, 10);
             },
 
             closeCtx() {
-                // Instantly hide backdrop and slide menu down
-                document.getElementById('n-ctx-backdrop').style.display = 'none';
-                document.getElementById('ctx-menu').style.transform = 'translateY(100%)';
+                const ctxMenu = document.getElementById('ctx-menu');
+                ctxMenu.style.transform = 'scale(0.9)';
+                ctxMenu.style.opacity = '0';
+                ctxMenu.style.pointerEvents = 'none';
+                setTimeout(() => {
+                    document.getElementById('n-ctx-backdrop').style.display = 'none';
+                }, 200);
             },
             
             // --- NOTIFICATIONS ---
@@ -2220,10 +2333,17 @@
                     const isTyping = State.chat && document.getElementById('msg-input') && document.getElementById('msg-input').value.trim().length > 0;
                     const d = await req('/api/sync', 'POST', {typingIn: isTyping ? State.chat : null});
                     
-                    // Sort chats by last message time (descending)
+                    // --- NEW: SERVER-DRIVEN STICKERS INJECTION ---
+                    if (d.sticker_packs) {
+                        localStorage.setItem('y_packs', JSON.stringify(d.sticker_packs));
+                        this.loadStickerKeyboard(); // Instantly update keyboard
+                    }
+
+                    // --- NEW: ADVANCED SORTING (AI > Pinned > Time) ---
                     d.chats.sort((a, b) => {
                         if (a.id === 'ai') return -1;
                         if (b.id === 'ai') return 1;
+                        if (a.is_pinned !== b.is_pinned) return b.is_pinned - a.is_pinned;
                         return new Date(b.last_msg_time || 0) - new Date(a.last_msg_time || 0);
                     });
 
@@ -2235,34 +2355,30 @@
                     
                     d.chats.forEach(c => {
                         State.chats.set(c.id, c);
-                        const isDM = c.type==='dm'; const n = isDM?c.dm_username:c.name; 
+                        const isDM = c.type === 'dm'; 
+                        const n = isDM ? c.dm_username : c.name; 
                         const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
-                        const av = canSeePfp ? (isDM?(c.dm_avatar||getDefAv(c.dm_username)):(c.avatar||getDefAv(c.name))) : getDefAv('?');
+                        const av = canSeePfp ? (isDM ? (c.dm_avatar||getDefAv(c.dm_username)) : (c.avatar||getDefAv(c.name))) : getDefAv('?');
 
+                        // Preview Text Logic
                         let prevH = c.last_msg ? c.last_msg.replace(/</g,'&lt;') : 'Start chatting...';
                         if(c.last_msg_type === 'photo') prevH = '🖼️ Photo';
+                        if(c.last_msg_type === 'video') prevH = '🎥 Video';
                         if(c.last_msg_type === 'file') prevH = '📁 File';
+                        if(c.last_msg_type === 'call') prevH = '📞 Call';
                         
                         if(isDM && c.dm_typing == c.id) prevH = '<span style="color:var(--primary)">typing...</span>';
                         else if(!isDM && c.is_typing == c.id) prevH = '<span style="color:var(--primary)">typing...</span>';
 
                         const bage = c.unread > 0 ? `<span class="badge">${c.unread}</span>` : '';
-                        totalUnread += c.unread || 0; // Fixed: Keep track of total unread
+                        totalUnread += c.unread || 0;
                         
-                        // NEW: Strict Server-Driven Call Logic
-                        // Find active calls (ringing or connected)
-                        // Find active calls (ringing or connected)
+                        // --- ORIGINAL RESTORED: CALL LOGIC ---
                         const hasCall = d.calls.find(x => x.chat_id === c.id && (x.status === 'ringing' || x.status === 'connected'));
-                        
-                        // NEW: Extract the video flag correctly so BOTH the popup and the green Join Badge use it!
                         const isVid = (hasCall && hasCall.init_data) ? JSON.parse(hasCall.init_data).video : false;
-
-                        // Render join button in chat list if there is an active call we aren't part of yet
                         const callBtn = (hasCall && hasCall.id !== RTC.activeCall) ? `<span class="call-badge" onclick="event.stopPropagation(); RTC.incomingIsVideo=${isVid}; RTC.incomingCallId=${hasCall.id}; RTC.incomingChat='${c.id}'; RTC.acceptCall();">📞 Join Call</span>` : '';
 
-                        // 1. Handle Incoming Ringing
                         if (hasCall && hasCall.status === 'ringing' && hasCall.caller_id !== State.u.userId) {
-                            
                             RTC.incomingIsVideo = isVid;
                             RTC.incomingCallId = hasCall.id;
                             RTC.incomingChat = c.id;
@@ -2270,7 +2386,6 @@
                             document.getElementById('call-bg').style.backgroundImage = `url(${av})`;
                             document.getElementById('inc-call-av').src = av;
                             document.getElementById('inc-call-name').innerText = n;
-                            // This will now successfully say "Video Call..."
                             document.getElementById('inc-call-type').innerText = isVid ? 'Incoming Video Call...' : 'Incoming Audio Call...';
                             
                             document.getElementById('call-view-active').style.display = 'none';
@@ -2285,7 +2400,6 @@
                                 RTC.ringtone.play().catch(e=>{ console.warn("Autoplay prevented ringtone"); });
                             }
                         }
-                        // 2. Handle Missed/Ended Calls (Ghost Call Cleanup)
                         else if (!hasCall && RTC.incomingChat === c.id) {
                             if(RTC.ringtone) { RTC.ringtone.pause(); RTC.ringtone.currentTime = 0; }
                             if(document.getElementById('call-view-incoming').style.display === 'flex') {
@@ -2293,6 +2407,7 @@
                             }
                             RTC.incomingCallId = null; RTC.incomingChat = null;
                         }
+                        // --- END ORIGINAL CALL LOGIC ---
 
                         const isOnline = isDM && c.dm_last_seen && (new Date() - new Date(c.dm_last_seen + (c.dm_last_seen.includes('Z')?'':'Z')) < 60000);
                         const onlineDot = isOnline ? `<div class="online-dot"></div>` : '';
@@ -2302,16 +2417,31 @@
                         const aiWrapClass = c.id === 'ai' ? ' ai-wrap' : '';
                     
                         const tickHtml = (isDM && c.dm_verified) || (!isDM && c.is_verified) || (c.id === 'ai') ? verifiedTick : '';
-                        html += `<div class="user-item${aiItemClass}" onclick="App.openChat('${c.id}')">
+                        
+                        // --- NEW: PIN AND SELECTION UI ---
+                        const pinHtml = c.is_pinned ? `<span style="font-size:12px; margin-right:4px;">📌</span>` : '';
+                        const isSelected = State.selectedChats && State.selectedChats.has(c.id);
+                        
+                        // Dynamic styling based on selected or pinned state
+                        const selectStyle = isSelected ? 'background: color-mix(in srgb, var(--primary) 15%, transparent);' : (c.is_pinned ? 'background: color-mix(in srgb, var(--bg-input) 40%, transparent);' : '');
+                        const selectCheck = isSelected ? `<div style="position:absolute; right:20px; top:50%; transform:translateY(-50%); width:24px; height:24px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; z-index:10;">✓</div>` : '';
+
+                        // Render Item (Long-press bound to oncontextmenu for selection mode)
+                        html += `<div class="user-item${aiItemClass}" style="${selectStyle}" 
+                                    onclick="${State.selectedChats && State.selectedChats.size > 0 ? `App.toggleSelect('${c.id}')` : `App.openChat('${c.id}')`}"
+                                    oncontextmenu="event.preventDefault(); App.toggleSelect('${c.id}')">
                                     <div class="avatar-wrap${aiWrapClass}" style="width:50px;height:50px;"><img src="${av}" class="avatar${aiAvClass}" style="width:100%;height:100%;">${onlineDot}</div>
-                                    <div class="user-info"><div class="user-name"><span>${n} ${tickHtml}</span> ${bage}</div><div class="user-last-msg">${prevH}</div></div>
-                                    ${callBtn}
+                                    <div class="user-info">
+                                        <div class="user-name"><span>${pinHtml}${n} ${tickHtml}</span> ${bage}</div>
+                                        <div class="user-last-msg">${prevH}</div>
+                                    </div>
+                                    ${selectCheck}
+                                    ${!isSelected ? callBtn : ''}
                                 </div>`;
 
-                        // Inside App.sync()
                         if(State.chat === c.id) {
                             this.updateChatStatusUI(c);
-                            this.loadMsgs(c.id); // Triggers the flawless background diffing every 15s!
+                            this.loadMsgs(c.id);
                         }
                     });
 
@@ -2507,31 +2637,75 @@
             prepMedia(e) {
                 const f = e.target.files[0]; if(!f) return;
                 e.target.value = ''; // Reset
-                const r = new FileReader();
-                r.onload = ev => {
-                    const finish = (data, type) => {
-                        State.capMedia = data; State.capType = type;
-                        document.getElementById('media-preview-img').src = type === 'photo' ? data : 'https://via.placeholder.com/150/333333/FFFFFF?text=File';
-                        document.getElementById('media-preview').style.display = 'flex';
-                        document.getElementById('msg-input').focus(); // Ready to type caption
-                    };
+                
+                // Store actual file for Gofile Upload Bridge
+                State.capFile = f;
+                
+                const type = f.type.startsWith('video/') ? 'video' : (f.type.startsWith('image/') ? 'photo' : 'file');
+                State.capType = type;
 
-                    if (f.type.startsWith('image/')) {
-                        const img = new Image();
-                        img.onload = () => {
-                            const canvas = document.createElement('canvas');
-                            const MAX = 1200; let w = img.width; let h = img.height;
-                            if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
-                            canvas.width = w; canvas.height = h;
-                            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                            finish(canvas.toDataURL('image/jpeg', 0.85), 'photo');
+                // Preview Generation
+                const url = URL.createObjectURL(f);
+                State.capMedia = url; // Only used for UI preview
+                
+                document.getElementById('media-preview-img').src = type === 'photo' ? url : (type === 'video' ? 'https://via.placeholder.com/150/000000/FFFFFF?text=Video' : 'https://via.placeholder.com/150/333333/FFFFFF?text=File');
+                document.getElementById('media-preview').style.display = 'flex';
+                document.getElementById('msg-input').focus();
+            },
+            
+            async sendMedia() {
+                const cap = document.getElementById('msg-input').value.trim();
+                const file = State.capFile;
+                const mediaType = State.capType;
+                
+                this.cancelMedia();
+                document.getElementById('msg-input').value = '';
+
+                const tempId = 'temp-' + Date.now();
+                const msgsCont = document.getElementById('msgs');
+                
+                msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}">
+                    <div class="msg-bubble" style="min-width: 150px;">
+                        <div style="font-weight:600; font-size:12px; margin-bottom:6px;">Uploading to Cloud...</div>
+                        <div style="width:100%; background:var(--bg-input); height:6px; border-radius:3px; overflow:hidden;">
+                            <div id="prog-${tempId}" style="width:0%; background:var(--primary); height:100%; border-radius:3px; transition:0.2s;"></div>
+                        </div>
+                    </div>
+                </div>`);
+                msgsCont.scrollTop = msgsCont.scrollHeight;
+            
+                try { 
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    const uploadUrl = await new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('POST', API + '/api/upload');
+                        xhr.setRequestHeader('Authorization', `Bearer ${State.t}`);
+                        xhr.upload.onprogress = e => {
+                            if (e.lengthComputable) {
+                                const percent = (e.loaded / e.total) * 100;
+                                const progBar = document.getElementById(`prog-${tempId}`);
+                                if (progBar) progBar.style.width = percent + '%';
+                            }
                         };
-                        img.src = ev.target.result;
-                    } else {
-                        finish(ev.target.result, 'file');
-                    }
-                };
-                r.readAsDataURL(f);
+                        xhr.onload = () => {
+                            if (xhr.status === 200) resolve(JSON.parse(xhr.responseText).url);
+                            else reject('Upload failed');
+                        };
+                        xhr.onerror = () => reject('Network error');
+                        xhr.send(formData);
+                    });
+
+                    // Database Insertion
+                    const res = await req(`/api/messages/${State.chat}`, 'POST', {content: uploadUrl, caption: cap, type: mediaType, reply_to_id: State.replyTo}); 
+                    this.cancelReply();
+                    document.getElementById(tempId)?.remove();
+                    this.loadMsgs(State.chat);
+                } catch(e) {
+                    UI.toast('Failed to upload media');
+                    document.getElementById(tempId)?.remove();
+                }
             },
             
             cancelMedia() {
@@ -2580,52 +2754,6 @@
                     const tempEl = document.getElementById(tempId);
                     if(tempEl) tempEl.style.opacity = '0.4';
                     UI.toast('Failed to send');
-                }
-            },
-
-            async sendMedia() {
-                const cap = document.getElementById('msg-input').value.trim();
-                const mediaData = State.capMedia;
-                const mediaType = State.capType;
-                
-                this.cancelMedia();
-                document.getElementById('msg-input').value = '';
-
-                if (State.chat === 'ai') return this.sendToAI(cap, mediaType, mediaData);
-                
-                const tempId = 'temp-' + Date.now();
-                const msgsCont = document.getElementById('msgs');
-                const mediaHtml = mediaType === 'photo' 
-                    ? `<div style="position:relative; display:inline-block;"><img src="${mediaData}" class="msg-media" style="opacity:0.8;"><div class="media-loading"><div class="media-loading-circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div></div></div>` 
-                    : `📁 File`;
-                    
-                msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
-                    <div class="msg-bubble">${mediaHtml}${cap ? `<div class="msg-caption">${cap.replace(/</g,'&lt;')}</div>` : ''}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Just now <span class="msg-tick" style="color:gray;">✓</span></div></div>
-                </div>`);
-                msgsCont.scrollTop = msgsCont.scrollHeight;
-            
-                try { 
-                    const res = await req(`/api/messages/${State.chat}`, 'POST', {content: mediaData, caption: cap, type: mediaType, reply_to_id: State.replyTo}); 
-                    this.cancelReply();
-                    const tempEl = document.getElementById(tempId);
-                    const existingEl = document.getElementById('msg-' + res.id);
-                    
-                    if (existingEl && tempEl) {
-                        tempEl.remove(); 
-                    } else if (tempEl) {
-                        tempEl.id = 'msg-' + res.id;
-                        tempEl.style.opacity = '1';
-                        const loadOverlay = tempEl.querySelector('.media-loading');
-                        if (loadOverlay) loadOverlay.remove();
-                        const mediaImg = tempEl.querySelector('.msg-media');
-                        if (mediaImg) mediaImg.style.opacity = '1';
-                        const tick = tempEl.querySelector('.msg-tick');
-                        if (tick) tick.style.color = 'var(--msg-sent-txt)';
-                    }
-                    this.loadMsgs(State.chat);
-                } catch(e) {
-                    UI.toast('Failed to send media');
-                    document.getElementById(tempId)?.remove();
                 }
             },
 
