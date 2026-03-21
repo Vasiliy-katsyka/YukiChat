@@ -2692,7 +2692,14 @@
                 } catch(e) { UI.toast('Error finding user'); }
             },
             // --- MESSAGING ACTIONS ---
-            initReply() { State.replyTo = State.targetId; document.getElementById('reply-preview').style.display='flex'; document.getElementById('reply-preview-text').textContent = App.targetTxt || 'Media'; document.getElementById('ctx-menu').style.transform='translateY(100%)'; document.getElementById('msg-input').focus(); },
+            initReply() { 
+                State.replyTo = State.targetId; 
+                document.getElementById('reply-preview').style.display = 'flex'; 
+                document.getElementById('reply-preview-text').textContent = App.targetTxt || 'Media'; 
+                
+                this.closeCtx(); // Uses the new floating menu closer
+                document.getElementById('msg-input').focus(); 
+            },
             cancelReply() { State.replyTo = null; document.getElementById('reply-preview').style.display='none'; },
             scrollToPin() { const c = document.getElementById('msgs'); if(c) c.scrollTop = 0; },
 
@@ -2822,12 +2829,19 @@
             },
 
             async msgAct(act, emoji=null) {
-                try { 
-                    await req(`/api/messages/${State.targetId}/action`, 'POST', {action:act, emoji}); 
-                    document.getElementById('ctx-menu').style.transform='translateY(100%)'; 
-                    this.loadMsgs(State.chat); // Instantly updates via Diffing (no flashing!)
-                } catch(e){}
-            },
+                    try { 
+                        // 1. Send action to backend
+                        await req(`/api/messages/${State.targetId}/action`, 'POST', {action:act, emoji}); 
+                        
+                        // 2. Smoothly close the new floating context menu
+                        this.closeCtx();
+                        
+                        // 3. Silently reload messages to reflect the delete/pin/reaction via DOM Diffing
+                        this.loadMsgs(State.chat); 
+                    } catch(e) {
+                        UI.toast('Action failed');
+                    }
+                },
 
             // --- PROFILE & SETTINGS ---
             viewProfile(chatId) {
