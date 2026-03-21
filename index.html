@@ -187,9 +187,19 @@
         .reply-block { background: rgba(0,0,0,0.05); padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; border-left: 3px solid var(--primary); opacity: 0.8; }
         [data-theme="dark"] .reply-block { background: rgba(255,255,255,0.1); }
 
-        /* Skeletons */
-        .skeleton { background: linear-gradient(90deg, var(--bg-input) 25%, var(--border) 50%, var(--bg-input) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 12px; }
-        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .skeleton {
+            background: linear-gradient(110deg, color-mix(in srgb, var(--bg-input) 60%, transparent) 8%, color-mix(in srgb, var(--border) 40%, transparent) 18%, color-mix(in srgb, var(--bg-input) 60%, transparent) 33%);
+            background-size: 200% 100%;
+            animation: cute-shimmer 1.8s infinite linear, cute-pulse 2s infinite ease-in-out;
+            border-radius: 16px; /* Cuter, rounder corners */
+        }
+        @keyframes cute-shimmer { to { background-position-x: -200%; } }
+        @keyframes cute-pulse { 0%, 100% { opacity: 0.8; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.98); } }
+        
+        /* Fix the skeleton shapes in your chat list */
+        .skel-av { border-radius: 50% !important; }
+        .skel-text { margin-bottom: 8px; border-radius: 12px; height: 14px; width: 80%; }
+        .skel-text.short { width: 50%; opacity: 0.7; }
 
         /* CALL UI OVERLAY */
         #panel-call { z-index: 9999; background: var(--bg-base); color: var(--text-main); }
@@ -587,6 +597,75 @@
             /* 8. Hide bottom nav and fix safe-area padding */
             .bottom-nav { display: none !important; }
             #panel-root .panel-body, #panel-settings .panel-body { padding-bottom: var(--safe-bottom) !important; }
+
+            /* Constrain message width and center the input bar */
+            .n-input-bar-reset {
+                display: flex;
+                justify-content: center;
+            }
+            .n-input-bar-reset > * {
+                max-width: 800px; /* Limits the width of the typing area */
+                margin: 0 auto;
+            }
+            .messages {
+                align-items: center; /* Centers the bubbles in the massive void */
+            }
+            .msg-row {
+                max-width: 1000px; /* Limits how far apart sent/received messages are */
+                width: 100%;
+            }
+            /* Transform secondary panels into floating modals on PC */
+            #panel-settings, #panel-profile, #panel-new, #panel-create-channel, #panel-sessions {
+                position: fixed !important;
+                top: 50% !important;
+                left: 50% !important;
+                width: 440px !important;
+                height: 85vh !important;
+                max-height: 800px;
+                transform: translate(-50%, -40%) scale(0.95) !important;
+                border-radius: 24px;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                border: 1px solid var(--border);
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+                z-index: 9000 !important;
+            }
+            
+            /* Active Modal State */
+            #panel-settings.active, #panel-profile.active, #panel-new.active, #panel-create-channel.active, #panel-sessions.active {
+                transform: translate(-50%, -50%) scale(1) !important;
+                opacity: 1;
+                visibility: visible !important;
+            }
+            
+            /* Add a dark blur backdrop behind modals */
+            body::after {
+                content: '';
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.4);
+                backdrop-filter: blur(4px);
+                z-index: 8999;
+                opacity: 0;
+                pointer-events: none;
+                transition: 0.3s;
+            }
+            body:has(#panel-settings.active, #panel-profile.active, #panel-new.active)::after {
+                opacity: 1;
+                pointer-events: auto;
+            }
+        }
+        @media (hover: hover) {
+            .icon-btn:hover { background: var(--bg-hover); transform: scale(1.05); }
+            .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+            .user-item:hover { background: var(--bg-hover); padding-left: 24px; /* subtle slide effect */ }
+            .bottom-nav .nav-item:hover { color: var(--text-main); transform: translateY(-2px); }
+        }
+        @keyframes bounce-spin {
+            0% { transform: scale(0.8) rotate(0deg); border-radius: 20px; }
+            50% { transform: scale(1.1) rotate(180deg); border-radius: 50%; }
+            100% { transform: scale(0.8) rotate(360deg); border-radius: 20px; }
         }
         
     </style>
@@ -603,6 +682,11 @@
     </svg>
     <div class="toast" id="toast">Message</div>
 
+    <div id="app-loader" style="position: fixed; inset: 0; z-index: 99999; background: var(--bg-base); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease;">
+        <div style="width: 60px; height: 60px; border-radius: 20px; background: var(--primary); animation: bounce-spin 1.5s infinite cubic-bezier(0.68, -0.55, 0.265, 1.55);"></div>
+        <div style="margin-top: 24px; font-weight: 700; color: var(--text-main); font-size: 18px; letter-spacing: 2px;">YUKICHAT</div>
+    </div>
+    
     <!-- AUTH PANEL -->
     <div id="panel-auth" class="panel active" style="justify-content: center; padding: 32px; overflow-y: auto; background: var(--bg-base);">
         <div class="liquid-glass n-liquid" style="max-width: 360px; width: 100%; margin: auto; text-align: center; padding: 40px 24px; border-radius: 24px; border: 1px solid var(--border);">
@@ -1923,7 +2007,49 @@
                 document.getElementById('set-av').src = State.u.avatar || getDefAv(State.u.username);
                 document.getElementById('nav-av').src = State.u.avatar || getDefAv(State.u.username);
                 Router.updateNav();
-
+                // Add Enter to Send, Shift+Enter for New Line
+                const msgInput = document.getElementById('msg-input');
+                if(msgInput) {
+                    msgInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey && window.innerWidth >= 768) {
+                            e.preventDefault(); // Prevents a new line
+                            App.sendText();
+                        }
+                    });
+                }
+                // 1. Global Search Shortcut (Ctrl+K)
+                document.addEventListener('keydown', (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                        e.preventDefault();
+                        const searchInput = document.querySelector('.search-bar input');
+                        if(searchInput) {
+                            searchInput.focus();
+                            // Automatically switch to chat tab if not there
+                            if(Router.stack[Router.stack.length-1] !== 'panel-root') App.switchTab('chats');
+                        }
+                    }
+                });
+                
+                // 2. Drag & Drop Media Upload
+                const chatArea = document.getElementById('panel-chat');
+                chatArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    chatArea.style.opacity = '0.7'; // Visual feedback
+                });
+                chatArea.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    chatArea.style.opacity = '1';
+                });
+                chatArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    chatArea.style.opacity = '1';
+                    
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        // Mock an event object to pass to your existing prepMedia function
+                        const mockEvent = { target: { files: [e.dataTransfer.files[0]], value: '' } };
+                        App.prepMedia(mockEvent);
+                    }
+                });
                 const nameEl = document.getElementById('set-name');
                 if(nameEl.tagName === 'INPUT') nameEl.value = State.u.username; else nameEl.textContent = State.u.username;
                 document.getElementById('set-bio').value = State.u.bio || '';
@@ -2604,7 +2730,20 @@
             }
         };
 
-        window.onload = () => { if(State.t) { document.getElementById('panel-auth').classList.remove('active'); App.start(); } };
+        window.onload = () => { 
+            if(State.t) { 
+                document.getElementById('panel-auth').classList.remove('active'); 
+                App.start(); 
+            }
+            // Fade out and remove the loader
+            setTimeout(() => {
+                const loader = document.getElementById('app-loader');
+                if(loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.remove(), 500);
+                }
+            }, 800);
+        };
     </script>
 </body>
-                    </html>
+</html>
