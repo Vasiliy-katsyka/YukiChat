@@ -1751,7 +1751,7 @@
                     const d = await req('/api/chats', 'POST', { type:'group', name, description:desc, is_private:isPriv, handle: isPriv?'':handle, avatar: State.tmpGroupAv });
                     Router.pop(); Router.pop(); this.openChat(d.chat_id);
                 } catch(e) { UI.toast('Handle taken or error'); }
-            }
+            },
             // --- NEW HELPERS ---
             buildMsgHTML(m, isMine, chatType) {
                 let inner = '';
