@@ -2851,7 +2851,6 @@
                         const tick = tempEl.querySelector('.msg-tick');
                         if(tick) tick.style.color = 'var(--msg-sent-txt)';
                     }
-                    this.loadMsgs(State.chat); // Quick UI update
                 } catch(e) {
                     const tempEl = document.getElementById(tempId);
                     if(tempEl) tempEl.style.opacity = '0.4';
@@ -2898,7 +2897,7 @@
                         const tick = tempEl.querySelector('.msg-tick');
                         if (tick) tick.style.color = 'var(--msg-sent-txt)';
                     }
-                    this.loadMsgs(State.chat);
+                    
                 } catch(e) {
                     UI.toast('Failed to send media');
                     document.getElementById(tempId)?.remove();
