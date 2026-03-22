@@ -1702,7 +1702,8 @@
                     if (!msgs || msgs.length === 0) return;
 
                     const cont = document.getElementById('msgs');
-                    const chatType = State.chats.get(State.chat)?.type;
+                    const chat = State.chats.get(State.chat) || State.chats.get(Number(State.chat));
+                    const chatType = chat?.type || 'dm';
                     let addedNew = false;
                     let forceScroll = false;
 
@@ -1771,8 +1772,9 @@
                     inner += `<div class="reply-block" onclick="document.getElementById('msg-${m.reply_to_id}')?.scrollIntoView({behavior:'smooth', block:'center'})">${repTxt.substring(0, 40)}</div>`;
                 }
         
-                let cleanTxt = m.content.replace(/</g,'&lt;');
-                const rawAttr = m.type === 'text' ? `data-raw="${m.content.replace(/"/g, '&quot;')}"` : '';
+                let safeContent = m.content || '';
+                let cleanTxt = safeContent.replace(/</g,'&lt;');
+                const rawAttr = m.type === 'text' ? `data-raw="${safeContent.replace(/"/g, '&quot;')}"` : '';
         
                 if (m.type === 'text') {
                     cleanTxt = cleanTxt.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;">$1</pre>');
@@ -2667,7 +2669,8 @@
                 State.isFetchingMsgs = true;
 
                 const cont = document.getElementById('msgs');
-                const chatType = State.chats.get(id)?.type;
+                const chat = State.chats.get(id) || State.chats.get(Number(id));
+                const chatType = chat?.type || 'dm';
                 const isFirstLoad = (State.lastMsgId === 0); 
 
                 // 1. Instant Cache Load (Zero Delay)
@@ -2845,12 +2848,13 @@
                     const existingEl = document.getElementById('msg-' + res.id);
                     
                     if (existingEl && tempEl) {
-                        tempEl.remove(); // The 15s sync loop beat us to it, safely remove the temp!
+                        tempEl.remove(); 
                     } else if (tempEl) {
                         tempEl.id = 'msg-' + res.id;
                         const tick = tempEl.querySelector('.msg-tick');
                         if(tick) tick.style.color = 'var(--msg-sent-txt)';
                     }
+                    if (res && res.id > State.lastMsgId) State.lastMsgId = res.id;
                 } catch(e) {
                     const tempEl = document.getElementById(tempId);
                     if(tempEl) tempEl.style.opacity = '0.4';
