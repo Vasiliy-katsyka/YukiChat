@@ -2563,10 +2563,9 @@
                                     <div class="user-info"><div class="user-name"><span>${n} ${tickHtml}</span> ${bage}</div><div class="user-last-msg">${pinIconHtml}${prevH}</div></div>
                                     ${callBtn}
                                 </div>`;
-        
+                                
                         if(State.chat === c.id) {
                             this.updateChatStatusUI(c);
-                            this.loadMsgs(c.id); 
                         }
                     });
         
@@ -2669,77 +2668,81 @@
 
                 const cont = document.getElementById('msgs');
                 const chatType = State.chats.get(id)?.type;
-                const isFirstLoad = (State.lastMsgId === 0); // Check if we just opened the chat
+                const isFirstLoad = (State.lastMsgId === 0); 
 
-                // Load skeletons or cache
+                // 1. Instant Cache Load (Zero Delay)
                 if (!cont.innerHTML.includes('msg-row')) {
                     const cachedHtml = localStorage.getItem(`y_cache_msgs_${id}`);
-                    if (cachedHtml) {
+                    if (cachedHtml && cachedHtml.includes('msg-row')) {
                         cont.innerHTML = cachedHtml;
                         cont.scrollTop = cont.scrollHeight;
+                        
+                        // Let fastPoll know the newest ID in cache so it can fetch instantly
+                        const rows = cont.querySelectorAll('.msg-row');
+                        if (rows.length > 0) {
+                            const lastRow = rows[rows.length - 1];
+                            State.lastMsgId = parseInt(lastRow.id.replace('msg-', '')) || 0;
+                        }
                     } else {
                         cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div></div>`;
                     }
                 }
 
                 try {
-                    // FIX 1: Add cache-buster (_t) to completely bypass Cloudflare's stale Edge Cache
+                    // 2. Fetch Latest Messages
                     const msgs = await req(`/api/messages/${id}?after=0&_t=${Date.now()}`);
                     if (State.chat !== id) return; 
 
                     let pinned = null;
-                    let addedNew = false;
                     let forceScroll = false;
-                    const fetchedIds = new Set(msgs.map(m => `msg-${m.id}`));
+                    const fetchedIds = new Set();
+                    let oldestFetchedId = msgs.length > 0 ? msgs[0].id : 0;
 
                     msgs.forEach(m => {
+                        fetchedIds.add(`msg-${m.id}`);
                         if (m.is_pinned) pinned = m.content;
                         if (m.id > State.lastMsgId) State.lastMsgId = m.id; 
                         
                         const isMine = m.sender_id === State.u.userId;
                         const elId = `msg-${m.id}`;
                         const existingEl = document.getElementById(elId);
-                        
                         const innerHTML = this.buildMsgHTML(m, isMine, chatType);
                         
                         if (existingEl) {
-                            // DOM DIFFING
-                            if (existingEl.innerHTML !== innerHTML) {
-                                existingEl.innerHTML = innerHTML;
-                            }
+                            if (existingEl.innerHTML !== innerHTML) existingEl.innerHTML = innerHTML;
                         } else {
                             const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="${elId}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
-                            
-                            // FIX 2: Ensure scrolling works on first open OR if already near the bottom
-                            if (isFirstLoad || (cont.scrollHeight - cont.scrollTop - cont.clientHeight < 250)) {
-                                forceScroll = true;
-                            }
-                            
+                            if (isFirstLoad || (cont.scrollHeight - cont.scrollTop - cont.clientHeight < 250)) forceScroll = true;
                             cont.insertAdjacentHTML('beforeend', rowHtml);
-                            addedNew = true;
                         }
                     });
 
-                    // Clean up deleted messages
-                    Array.from(cont.children).forEach(child => {
-                        if (child.id && child.id.startsWith('msg-') && !fetchedIds.has(child.id)) {
-                            child.remove();
-                        }
-                    });
+                    // 3. SMART CLEANUP: Only delete messages that were actually deleted on the server, 
+                    // without wiping out your older cached history!
+                    if (msgs.length > 0) {
+                        Array.from(cont.children).forEach(child => {
+                            if (child.id && child.id.startsWith('msg-')) {
+                                const msgId = parseInt(child.id.replace('msg-', ''));
+                                if (msgId >= oldestFetchedId && !fetchedIds.has(child.id)) {
+                                    child.remove();
+                                }
+                            }
+                        });
+                    }
 
                     document.querySelectorAll('.skeleton').forEach(el => el.remove());
 
-                    // Execute forced scroll safely
-                    if (forceScroll) {
+                    // 4. Force Scroll & Save Cache
+                    if (forceScroll || isFirstLoad) {
                         cont.scrollTop = cont.scrollHeight;
-                        // Backup timeout to scroll again after images/animations settle
                         setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 50);
                     }
 
-                    if (addedNew || msgs.length > 0) {
+                    if (msgs.length > 0) {
                         localStorage.setItem(`y_cache_msgs_${id}`, cont.innerHTML);
                     }
 
+                    // 5. Update Pinned Message UI
                     const pinEl = document.getElementById('pinned-msg');
                     if (pinEl) {
                         if (pinned) { pinEl.style.display='flex'; document.getElementById('pinned-text').textContent = pinned; }
