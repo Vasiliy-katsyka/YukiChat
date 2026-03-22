@@ -1693,8 +1693,7 @@
             },
             // --- LIGHTNING FAST ACTIVE CHAT POLL ---
             async fastPoll() {
-                if (!State.chat || State.chat === 'ai' || document.visibilityState !== 'visible') return;
-                if (State.lastMsgId === 0) return; 
+                if (!State.chat || State.chat === 'ai' || document.visibilityState !== 'visible' || State.isFetchingMsgs) return;
 
                 try {
                     // FIX 1: Added cache-buster (_t) to bypass Cloudflare edge cache!
@@ -2050,9 +2049,10 @@
                         const tick = tempEl.querySelector('.msg-tick');
                         if (tick) tick.style.color = 'var(--text-muted)';
                     }
-                    State.lastMsgId = 0; 
-                    this.sync();
-                } catch(e) { 
+                    if (res && res.id > State.lastMsgId) State.lastMsgId = res.id;
+                    const msgsCont = document.getElementById('msgs');
+                    if (msgsCont) localStorage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
+                } catch(e) {
                     UI.toast('Failed to send sticker'); 
                     document.getElementById(tempId)?.remove();
                 }
@@ -2855,6 +2855,9 @@
                         if(tick) tick.style.color = 'var(--msg-sent-txt)';
                     }
                     if (res && res.id > State.lastMsgId) State.lastMsgId = res.id;
+                    
+                    const msgsCont = document.getElementById('msgs');
+                    if (msgsCont) localStorage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
                 } catch(e) {
                     const tempEl = document.getElementById(tempId);
                     if(tempEl) tempEl.style.opacity = '0.4';
@@ -2901,7 +2904,10 @@
                         const tick = tempEl.querySelector('.msg-tick');
                         if (tick) tick.style.color = 'var(--msg-sent-txt)';
                     }
+                    if (res && res.id > State.lastMsgId) State.lastMsgId = res.id;
                     
+                    const msgsCont = document.getElementById('msgs');
+                    if (msgsCont) localStorage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
                 } catch(e) {
                     UI.toast('Failed to send media');
                     document.getElementById(tempId)?.remove();
