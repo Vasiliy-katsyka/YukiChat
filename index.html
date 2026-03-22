@@ -1693,38 +1693,42 @@
             },
             // --- LIGHTNING FAST ACTIVE CHAT POLL ---
             async fastPoll() {
-                // Only poll if the user is actively looking at a chat right now
                 if (!State.chat || State.chat === 'ai' || document.visibilityState !== 'visible') return;
-                if (State.lastMsgId === 0) return; // Wait for initial loadMsgs to finish
+                if (State.lastMsgId === 0) return; 
 
                 try {
-                    // Ask backend ONLY for messages newer than our lastMsgId
-                    const msgs = await req(`/api/messages/${State.chat}?after=${State.lastMsgId}`);
+                    // FIX 1: Added cache-buster (_t) to bypass Cloudflare edge cache!
+                    const msgs = await req(`/api/messages/${State.chat}?after=${State.lastMsgId}&_t=${Date.now()}`);
                     if (!msgs || msgs.length === 0) return;
 
                     const cont = document.getElementById('msgs');
                     const chatType = State.chats.get(State.chat)?.type;
                     let addedNew = false;
+                    let forceScroll = false;
 
                     msgs.forEach(m => {
                         if (m.id > State.lastMsgId) State.lastMsgId = m.id;
-                        
-                        // If it's already on screen (Optimistic UI), skip it
                         if (document.getElementById(`msg-${m.id}`)) return;
 
                         const isMine = m.sender_id === State.u.userId;
                         const innerHTML = this.buildMsgHTML(m, isMine, chatType);
                         const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
                         
-                        // Smart scroll: Only force scroll down if user isn't scrolling up reading old history
-                        const isNearBottom = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 150;
-                        cont.insertAdjacentHTML('beforeend', rowHtml);
-                        if (isNearBottom) cont.scrollTop = cont.scrollHeight;
+                        // FIX 2: Smarter scroll detection
+                        if (cont.scrollHeight - cont.scrollTop - cont.clientHeight < 250) {
+                            forceScroll = true;
+                        }
                         
+                        cont.insertAdjacentHTML('beforeend', rowHtml);
                         addedNew = true;
                     });
 
-                    // Update local cache quietly
+                    // Execute forced scroll safely after DOM updates
+                    if (forceScroll) {
+                        cont.scrollTop = cont.scrollHeight;
+                        setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 50);
+                    }
+
                     if (addedNew) {
                         localStorage.setItem(`y_cache_msgs_${State.chat}`, cont.innerHTML);
                     }
@@ -2665,8 +2669,9 @@
 
                 const cont = document.getElementById('msgs');
                 const chatType = State.chats.get(id)?.type;
+                const isFirstLoad = (State.lastMsgId === 0); // Check if we just opened the chat
 
-                // Only show skeletons if the container is totally empty
+                // Load skeletons or cache
                 if (!cont.innerHTML.includes('msg-row')) {
                     const cachedHtml = localStorage.getItem(`y_cache_msgs_${id}`);
                     if (cachedHtml) {
@@ -2678,16 +2683,18 @@
                 }
 
                 try {
-                    const msgs = await req(`/api/messages/${id}?after=0`);
+                    // FIX 1: Add cache-buster (_t) to completely bypass Cloudflare's stale Edge Cache
+                    const msgs = await req(`/api/messages/${id}?after=0&_t=${Date.now()}`);
                     if (State.chat !== id) return; 
 
                     let pinned = null;
                     let addedNew = false;
+                    let forceScroll = false;
                     const fetchedIds = new Set(msgs.map(m => `msg-${m.id}`));
 
                     msgs.forEach(m => {
                         if (m.is_pinned) pinned = m.content;
-                        if (m.id > State.lastMsgId) State.lastMsgId = m.id; // FIX: Activates hyper-fast polling!
+                        if (m.id > State.lastMsgId) State.lastMsgId = m.id; 
                         
                         const isMine = m.sender_id === State.u.userId;
                         const elId = `msg-${m.id}`;
@@ -2696,26 +2703,24 @@
                         const innerHTML = this.buildMsgHTML(m, isMine, chatType);
                         
                         if (existingEl) {
-                            // DOM DIFFING: Only updates the UI if the message actually changed (like a read tick)
+                            // DOM DIFFING
                             if (existingEl.innerHTML !== innerHTML) {
                                 existingEl.innerHTML = innerHTML;
                             }
-                            // FIX: Guarantee chronological order so cached optimistic messages don't bury newer ones
-                            if (cont.lastElementChild !== existingEl) {
-                                cont.appendChild(existingEl);
-                            }
                         } else {
-                            // Safely append new messages
                             const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="${elId}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
-                            const isNearBottom = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 150;
+                            
+                            // FIX 2: Ensure scrolling works on first open OR if already near the bottom
+                            if (isFirstLoad || (cont.scrollHeight - cont.scrollTop - cont.clientHeight < 250)) {
+                                forceScroll = true;
+                            }
                             
                             cont.insertAdjacentHTML('beforeend', rowHtml);
-                            if (isNearBottom) cont.scrollTop = cont.scrollHeight;
                             addedNew = true;
                         }
                     });
 
-                    // Remove messages that were deleted in the database
+                    // Clean up deleted messages
                     Array.from(cont.children).forEach(child => {
                         if (child.id && child.id.startsWith('msg-') && !fetchedIds.has(child.id)) {
                             child.remove();
@@ -2723,6 +2728,13 @@
                     });
 
                     document.querySelectorAll('.skeleton').forEach(el => el.remove());
+
+                    // Execute forced scroll safely
+                    if (forceScroll) {
+                        cont.scrollTop = cont.scrollHeight;
+                        // Backup timeout to scroll again after images/animations settle
+                        setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 50);
+                    }
 
                     if (addedNew || msgs.length > 0) {
                         localStorage.setItem(`y_cache_msgs_${id}`, cont.innerHTML);
