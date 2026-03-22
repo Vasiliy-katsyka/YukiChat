@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1097,6 +1096,11 @@
             <div id="prof-handle" style="color:var(--text-muted); font-size:15px; margin-bottom:16px;"></div>
             <p id="prof-bio" style="font-size:15px; background:var(--bg-input); padding:16px; border-radius:16px; margin-bottom:24px; line-height:1.5;"></p>
             <div id="prof-actions" style="display:flex; flex-direction:column; gap:12px;"></div>
+            <div id="prof-media-gallery" style="display:none; margin-top: 24px;">
+            <div style="text-align:left; font-size:14px; font-weight:600; margin-bottom: 12px;">Shared Media</div>
+            <div id="prof-media-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                <!-- Photos populate here -->
+            </div>
         </div>
     </div>
 
@@ -1110,6 +1114,34 @@
         <div class="panel-body" id="sessions-list" style="padding: 20px;"></div>
     </div>
 
+    <div id="panel-create-group" class="panel">
+        <div class="panel-header">
+            <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+            <div class="panel-title">New Group</div>
+            <div style="width:40px"></div>
+        </div>
+        <div class="panel-body" style="padding: 20px;">
+            <label class="profile-av-wrap" style="display:block; cursor:pointer;">
+                <img src="" id="new-group-av" class="avatar" style="background:var(--bg-input);">
+                <div class="profile-av-edit">Upload</div>
+                <input type="file" hidden accept="image/*" onchange="App.prepGroupAv(event)">
+            </label>
+            <input type="text" id="new-group-name" class="settings-input" placeholder="Group Name">
+            <textarea id="new-group-desc" class="settings-input" placeholder="What is this group about? (Optional)" rows="2"></textarea>
+            
+            <div class="settings-row" style="background:transparent; padding:16px 0;">
+                <span>Private Group</span>
+                <input type="checkbox" id="new-group-private" style="width:20px;height:20px;" onchange="document.getElementById('new-group-handle-box').style.display = this.checked ? 'none' : 'block'">
+            </div>
+            
+            <div id="new-group-handle-box">
+                <input type="text" id="new-group-handle" class="settings-input" placeholder="Public @handle (e.g. gaming_squad)">
+            </div>
+            
+            <button class="btn" style="margin-top: 24px;" onclick="App.submitGroup()">Create Group</button>
+        </div>
+    </div>
+    
     <div id="panel-create-channel" class="panel">
         <div class="panel-header">
             <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
@@ -1150,7 +1182,7 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 <input type="text" placeholder="Search global users..." oninput="App.searchGlobal(this.value)">
             </div>
-            <button class="settings-row" style="width:100%; justify-content:flex-start; gap:16px; margin-bottom:12px; border:none;" onclick="App.createChat('group')">
+            <button class="settings-row" style="width:100%; justify-content:flex-start; gap:16px; margin-bottom:12px; border:none;" onclick="App.createGroupUI()">
                 <div class="icon-btn" style="background:var(--primary); color:var(--bg-base); width:36px; height:36px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
                 New Group
             </button>
@@ -1696,6 +1728,30 @@
                     }
                 } catch(e) {}
             },
+            createGroupUI() {
+                document.getElementById('new-group-name').value = '';
+                document.getElementById('new-group-desc').value = '';
+                document.getElementById('new-group-handle').value = '';
+                document.getElementById('new-group-private').checked = false;
+                document.getElementById('new-group-handle-box').style.display = 'block';
+                State.tmpGroupAv = null; document.getElementById('new-group-av').src = defAv;
+                Router.push('panel-create-group');
+            },
+            prepGroupAv(e) {
+                const f = e.target.files[0]; if(!f) return; const r = new FileReader();
+                r.onload = ev => { State.tmpGroupAv = ev.target.result; document.getElementById('new-group-av').src = State.tmpGroupAv; }; r.readAsDataURL(f);
+            },
+            async submitGroup() {
+                const name = document.getElementById('new-group-name').value.trim();
+                const desc = document.getElementById('new-group-desc').value.trim();
+                const isPriv = document.getElementById('new-group-private').checked;
+                const handle = document.getElementById('new-group-handle').value.trim();
+                if(!name) return UI.toast('Name required');
+                try {
+                    const d = await req('/api/chats', 'POST', { type:'group', name, description:desc, is_private:isPriv, handle: isPriv?'':handle, avatar: State.tmpGroupAv });
+                    Router.pop(); Router.pop(); this.openChat(d.chat_id);
+                } catch(e) { UI.toast('Handle taken or error'); }
+            }
             // --- NEW HELPERS ---
             buildMsgHTML(m, isMine, chatType) {
                 let inner = '';
@@ -2858,7 +2914,7 @@
                 
                 let acts = '';
                 
-                if (c.type === 'channel') {
+                if (c.type === 'channel' || c.type === 'group') {
                     const link = c.is_private ? `${window.location.origin}${window.location.pathname}?channel=${c.invite_hash}` : `${window.location.origin}${window.location.pathname}?channel=${c.username}`;
                     acts += `<button class="btn btn-outline" onclick="navigator.clipboard.writeText('${link}'); UI.toast('Link Copied!')">🔗 Copy Link</button>`;
                     
@@ -2880,13 +2936,38 @@
                         <div style="text-align:left; font-size:14px; font-weight:600; margin:16px 0 8px;">Subscribers</div>
                         <div id="prof-subs-list" style="text-align:left; max-height:200px; overflow-y:auto;">Loading...</div>`;
                         this.loadChatMembers(chatId);
+                    } 
+                    if (c.type === 'group' && (c.my_role === 'admin' || c.my_role === 'owner')) {
+                        acts += `<button class="btn" style="margin-top: 12px;" onclick="App.addMember(${chatId})">➕ Add Member</button>`;
                     }
                 } else if(c.type === 'group') {
                     acts += `<button class="btn" onclick="App.addMember(${chatId})">➕ Add Member</button>`;
                 }
+                if (c.type !== 'dm') {
+                    document.getElementById('prof-media-gallery').style.display = 'block';
+                    this.loadGroupMedia(chatId);
+                } else {
+                    document.getElementById('prof-media-gallery').style.display = 'none';
+                }
                 
                 document.getElementById('prof-actions').innerHTML = acts;
                 Router.push('panel-profile');
+            },
+            async loadGroupMedia(chatId) {
+                const grid = document.getElementById('prof-media-grid');
+                grid.innerHTML = '<span style="font-size:12px; color:var(--text-muted)">Loading...</span>';
+                try {
+                    const media = await req(`/api/chats/${chatId}/media`);
+                    if (media.length === 0) {
+                        grid.innerHTML = '<span style="font-size:12px; color:var(--text-muted)">No media shared yet</span>';
+                        return;
+                    }
+                    let html = '';
+                    media.forEach(m => {
+                        html += `<img src="${m.content}" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; cursor:pointer;" onclick="App.openMedia('${m.content}')">`;
+                    });
+                    grid.innerHTML = html;
+                } catch(e) { grid.innerHTML = ''; }
             },
             async updateChanProfile(id) {
                 const name = document.getElementById('edit-chan-name').value;
@@ -2896,15 +2977,24 @@
                 if (State.tmpEditChanAv) payload.avatar = State.tmpEditChanAv; // Include new photo
                 try { await req(`/api/chats/${id}`, 'PUT', payload); UI.toast('Updated'); State.tmpEditChanAv = null; this.sync(); Router.pop(); } catch(e){}
             },
+            // Add new JS function:
+            async kickMem(chatId, targetId) {
+                if(!confirm('Kick this user?')) return;
+                try { await req(`/api/chats/${chatId}/members/${targetId}`, 'DELETE'); this.loadChatMembers(chatId); UI.toast('User kicked'); } catch(e){}
+            },
             async loadChatMembers(id) {
                 try {
                     const mems = await req(`/api/chats/${id}/members`);
                     let h = '';
                     mems.forEach(m => {
+                        // Inside App.loadChatMembers
                         h += `<div class="user-item" style="padding:8px 0;">
                             <img src="${m.avatar||defAv}" class="avatar" style="width:36px;height:36px;">
                             <div class="user-info" style="font-size:14px;"><b>${m.username}</b> <span style="font-size:11px; color:var(--text-muted)">${m.role}</span></div>
-                            ${m.role !== 'admin' ? `<button class="icon-btn" style="width:auto; font-size:12px; color:var(--primary)" onclick="App.promoteMem(${id}, ${m.id})">Promote</button>` : ''}
+                            <div style="display:flex; gap:8px;">
+                                ${m.role === 'member' ? `<button class="icon-btn" style="width:auto; font-size:12px; color:var(--primary)" onclick="App.promoteMem(${id}, ${m.id})">Promote</button>` : ''}
+                                ${m.role !== 'owner' ? `<button class="icon-btn" style="width:auto; font-size:12px; color:var(--danger)" onclick="App.kickMem(${id}, ${m.id})">Kick</button>` : ''}
+                            </div>
                         </div>`;
                     });
                     document.getElementById('prof-subs-list').innerHTML = h;
