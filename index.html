@@ -1306,6 +1306,19 @@
         </div>
     </div>
     <script>
+        // --- YUKICHAT MEET SSO BRIDGE ---
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('sso') === 'meet') {
+            const token = localStorage.getItem('y_t');
+            if (token) {
+                window.location.href = `https://meet.yukichat.lol/?sso_token=${token}`;
+            } else {
+                UI.toast("Please log in first to use Meet.");
+                // Clean URL so they can log in normally
+                window.history.replaceState({}, document.title, "/"); 
+            }
+        }
+        
         /* SETUP & PWA Injection */
         const defAv = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzMzNDE1NSI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==";
         const getDefAv = (name) => {
