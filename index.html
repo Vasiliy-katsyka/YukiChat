@@ -2700,6 +2700,10 @@
                             if (existingEl.innerHTML !== innerHTML) {
                                 existingEl.innerHTML = innerHTML;
                             }
+                            // FIX: Guarantee chronological order so cached optimistic messages don't bury newer ones
+                            if (cont.lastElementChild !== existingEl) {
+                                cont.appendChild(existingEl);
+                            }
                         } else {
                             // Safely append new messages
                             const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="${elId}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
