@@ -2459,12 +2459,19 @@
                 
                 this.sync(); 
                 
-                // Replace the setIntervals in App.start() with this:
                 this.connectWS();
-
                 this.requestNotifyPerms();
 
-                this.requestNotifyPerms();
+                // FIX: Start the background polling loop for Real-Time functionality
+                // This checks the blazing-fast Cloudflare edge cache for new messages 
+                // every 2.5 seconds, guaranteeing the opponent sees it instantly.
+                if (State.syncLoop) clearInterval(State.syncLoop);
+                State.syncLoop = setInterval(() => {
+                    if (document.visibilityState === 'visible') {
+                        if (State.chat && State.chat !== 'ai') App.fastPoll();
+                        App.sync(); // Updates chat list, typing indicators, and read receipts
+                    }
+                }, 2500);
             },
 
             showCtx(e, id, isMine, isMedia = false, mediaUrl = '') {
@@ -2844,10 +2851,12 @@
                     // 3. SMART CLEANUP: Only delete messages that were actually deleted on the server, 
                     // without wiping out your older cached history!
                     if (msgs.length > 0) {
+                        const newestFetchedId = msgs[msgs.length - 1].id;
                         Array.from(cont.children).forEach(child => {
                             if (child.id && child.id.startsWith('msg-')) {
                                 const msgId = parseInt(child.id.replace('msg-', ''));
-                                if (msgId >= oldestFetchedId && !fetchedIds.has(child.id)) {
+                                // Only delete if it falls strictly WITHIN the bounds of what the server returned
+                                if (msgId >= oldestFetchedId && msgId <= newestFetchedId && !fetchedIds.has(child.id)) {
                                     child.remove();
                                 }
                             }
