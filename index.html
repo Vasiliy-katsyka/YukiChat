@@ -72,7 +72,57 @@
         .btn { padding: 14px 24px; border-radius: 20px; background: var(--primary); color: var(--bg-base); font-weight: 600; font-size: 15px; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; width: 100%; }
         .btn:active { transform: scale(0.97); opacity: 0.9; }
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        /* Force Install Overlay */
+        /* PWA Promo Overlay */
+        #pwa-promo-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100000;
+            background: var(--bg-base);
+            display: none; /* Controlled by JS */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            text-align: center;
+        }
         
+        .promo-card {
+            max-width: 400px;
+            width: 100%;
+            padding: 32px 24px;
+            border-radius: 28px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+        
+        .promo-icon {
+            width: 80px; 
+            height: 80px; 
+            background: var(--primary); 
+            color: var(--bg-base); 
+            border-radius: 22px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 40px; 
+            font-weight: 800; 
+            margin: 0 auto 24px;
+        }
+        
+        .promo-step {
+            background: var(--bg-input);
+            padding: 14px 18px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+            text-align: left;
+            font-size: 14px;
+            border: 1px solid var(--border);
+        }
         /* 1. Make avatars transparent natively */
         .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: transparent !important; flex-shrink: 0; }
         
@@ -761,7 +811,37 @@
         <div style="width: 60px; height: 60px; border-radius: 20px; background: var(--primary); animation: bounce-spin 1.5s infinite cubic-bezier(0.68, -0.55, 0.265, 1.55);"></div>
         <div style="margin-top: 24px; font-weight: 700; color: var(--text-main); font-size: 18px; letter-spacing: 2px;">YUKICHAT</div>
     </div>
+    <div id="pwa-promo-overlay">
+        <div class="promo-card n-liquid">
+            <div class="promo-icon">Y</div>
+            <h2 style="margin-bottom: 12px;">Get the App</h2>
+            <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 15px; line-height: 1.4;">
+                Install YukiChat to your home screen for instant notifications and a full-screen experience.
+            </p>
     
+            <!-- Android Section -->
+            <button id="android-pwa-btn" class="btn n-glass-border" style="display:none; margin-bottom: 12px;" onclick="App.installPWA()">
+                Install Now
+            </button>
+    
+            <!-- iOS Section -->
+            <div id="ios-pwa-instructions" style="display:none; margin-bottom: 20px;">
+                <div class="promo-step">
+                    <span style="font-size: 20px;">1️⃣</span>
+                    <span>Tap the <b>Share</b> button in Safari.</span>
+                </div>
+                <div class="promo-step">
+                    <span style="font-size: 20px;">2️⃣</span>
+                    <span>Select <b>Add to Home Screen</b>.</span>
+                </div>
+            </div>
+    
+            <!-- SKIP BUTTON -->
+            <button class="btn btn-outline" style="border: none; color: var(--text-muted); font-weight: 500;" onclick="PWA_Promo.skip()">
+                Skip for now
+            </button>
+        </div>
+    </div>
     <!-- AUTH PANEL -->
     <div id="panel-auth" class="panel active" style="justify-content: center; padding: 32px; overflow-y: auto; background: var(--bg-base);">
         <div class="liquid-glass n-liquid" style="max-width: 360px; width: 100%; margin: auto; text-align: center; padding: 40px 24px; border-radius: 24px; border: 1px solid var(--border);">
@@ -3237,6 +3317,38 @@
                 try { await req('/api/sessions/revoke', 'POST', {tokenToRevoke: t}); this.loadSessions(); UI.toast('Revoked'); } catch(e){} 
             }
         };
+        const PWA_Promo = {
+            init() {
+                const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+                const hasSkipped = sessionStorage.getItem('y_pwa_skipped');
+        
+                // Only show to mobile users who haven't installed it and haven't skipped this session
+                if (isMobile && !isStandalone && !hasSkipped) {
+                    const overlay = document.getElementById('pwa-promo-overlay');
+                    overlay.style.display = 'flex';
+        
+                    const isiOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+                    if (isiOS) {
+                        document.getElementById('ios-pwa-instructions').style.display = 'block';
+                    } else {
+                        document.getElementById('android-pwa-btn').style.display = 'flex';
+                    }
+                }
+            },
+            skip() {
+                // Hide the overlay
+                document.getElementById('pwa-promo-overlay').style.display = 'none';
+                // Remember they skipped for this session
+                sessionStorage.setItem('y_pwa_skipped', 'true');
+            }
+        };
+        
+        // Add this to your existing window.onload function:
+        window.addEventListener('load', () => {
+            // ... your existing code ...
+            PWA_Promo.init();
+        });
         setTimeout(() => {
             document.querySelectorAll('.link-preview:not(.loaded)').forEach(async el => {
                 el.classList.add('loaded');
