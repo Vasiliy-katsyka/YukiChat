@@ -1870,6 +1870,28 @@
                 }
                 this.closeCtx();
             },
+            // Add this function to the App object:
+            connectWS() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                State.ws = new WebSocket(`${protocol}//${window.location.host}/api/ws?token=${State.t}`);
+                
+                State.ws.onopen = () => {
+                    console.log("WebSocket connected");
+                    // Keep connection alive
+                    State.wsPing = setInterval(() => State.ws.send(JSON.stringify({type: 'ping'})), 20000);
+                };
+                
+                State.ws.onmessage = (e) => {
+                    const data = JSON.parse(e.data);
+                    if (data.type === 'new_msg') this.fastPoll(); 
+                    if (data.type === 'sync') this.sync();
+                };
+                
+                State.ws.onclose = () => {
+                    clearInterval(State.wsPing);
+                    setTimeout(() => this.connectWS(), 3000); // Auto-reconnect
+                };
+            },
             updateChatStatusUI(c) {
                 const statusEl = document.getElementById('chat-status');
                 if (!statusEl) return;
@@ -2421,29 +2443,6 @@
                 
                 // Replace the setIntervals in App.start() with this:
                 this.connectWS();
-                
-                // Add this function to the App object:
-                connectWS() {
-                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                    State.ws = new WebSocket(`${protocol}//${window.location.host}/api/ws?token=${State.t}`);
-                    
-                    State.ws.onopen = () => {
-                        console.log("WebSocket connected");
-                        // Keep connection alive
-                        State.wsPing = setInterval(() => State.ws.send(JSON.stringify({type: 'ping'})), 20000);
-                    };
-                    
-                    State.ws.onmessage = (e) => {
-                        const data = JSON.parse(e.data);
-                        if (data.type === 'new_msg') this.fastPoll(); 
-                        if (data.type === 'sync') this.sync();
-                    };
-                    
-                    State.ws.onclose = () => {
-                        clearInterval(State.wsPing);
-                        setTimeout(() => this.connectWS(), 3000); // Auto-reconnect
-                    };
-                }
 
                 this.requestNotifyPerms();
 
