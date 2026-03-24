@@ -2465,13 +2465,17 @@
                 // FIX: Start the background polling loop for Real-Time functionality
                 // This checks the blazing-fast Cloudflare edge cache for new messages 
                 // every 2.5 seconds, guaranteeing the opponent sees it instantly.
+                // FIX: Unstoppable Real-Time Loop
                 if (State.syncLoop) clearInterval(State.syncLoop);
                 State.syncLoop = setInterval(() => {
-                    if (document.visibilityState === 'visible') {
-                        if (State.chat && State.chat !== 'ai') App.fastPoll();
-                        App.sync(); // Updates chat list, typing indicators, and read receipts
+                    // We run sync() EVEN IF the tab is hidden so notifications are instant!
+                    App.sync(); 
+                    
+                    // We only poll the active chat window if we are actively looking at it
+                    if (document.visibilityState === 'visible' && State.chat && State.chat !== 'ai') {
+                        App.fastPoll();
                     }
-                }, 2500);
+                }, 2000); // 2-second hyper-poll
             },
 
             showCtx(e, id, isMine, isMedia = false, mediaUrl = '') {
@@ -2612,6 +2616,23 @@
         
                         const bage = c.unread > 0 ? `<span class="badge">${c.unread}</span>` : '';
                         totalUnread += c.unread || 0; 
+
+                        // --- NEW: INSTANT LIVE CHAT & NOTIFICATIONS ---
+                        if (c.last_msg_id) {
+                            // 1. If we are in this chat, and there's a new message, fetch it NOW bypassing delays
+                            if (State.chat === c.id && c.last_msg_id > State.lastMsgId) {
+                                App.fastPoll();
+                            }
+                            
+                            // 2. Instant Browser Notifications for new messages
+                            if (c.unread > 0 && !State.notifiedMsgs.has(c.last_msg_id)) {
+                                State.notifiedMsgs.add(c.last_msg_id);
+                                if (State.chat !== c.id || document.visibilityState !== 'visible') {
+                                    App.showPush(n, prevH.replace(/<[^>]*>?/gm, ''), av);
+                                }
+                            }
+                        }
+                        // ----------------------------------------------
                         
                         const hasCall = d.calls.find(x => x.chat_id === c.id && (x.status === 'ringing' || x.status === 'connected'));
                         const isVid = (hasCall && hasCall.init_data) ? JSON.parse(hasCall.init_data).video : false;
