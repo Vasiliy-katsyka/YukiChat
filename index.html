@@ -3334,7 +3334,7 @@
                 const hasSkipped = sessionStorage.getItem('y_pwa_skipped');
         
                 // Only show to mobile users who haven't installed it and haven't skipped
-                if (isMobile && !isStandalone && !hasSkipped) {
+                if (isMobile && !isStandalone) {
                     const isiOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
                     
                     // For iOS, show immediately (iOS doesn't use beforeinstallprompt)
