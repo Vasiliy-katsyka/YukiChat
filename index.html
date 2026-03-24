@@ -3324,7 +3324,7 @@
                 const hasSkipped = sessionStorage.getItem('y_pwa_skipped');
         
                 // Only show to mobile users who haven't installed it and haven't skipped this session
-                if (isMobile && !isStandalone && !hasSkipped) {
+                if (isMobile && !isStandalone) {
                     const overlay = document.getElementById('pwa-promo-overlay');
                     overlay.style.display = 'flex';
         
