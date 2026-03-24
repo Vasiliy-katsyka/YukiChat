@@ -16,11 +16,19 @@ self.addEventListener('fetch', event => {
 
 // WAKES UP THE PHONE WHEN APP IS CLOSED
 self.addEventListener('push', function(event) {
-    let data = { title: "New Message", body: "You received a message.", url: "/" };
+    // Default fallback data
+    let data = { 
+        title: "YukiChat", 
+        body: "You have a new message!", 
+        url: "/",
+        icon: "/icon-192.png" 
+    };
     
+    // If backend sent an encrypted payload with real text, parse it
     if (event.data) {
         try {
-            data = event.data.json();
+            const parsed = event.data.json();
+            data = { ...data, ...parsed }; // Merge the real message data
         } catch(e) {
             data.body = event.data.text();
         }
@@ -28,10 +36,10 @@ self.addEventListener('push', function(event) {
 
     const options = {
         body: data.body,
-        icon: data.icon || '/icon-192.png',
+        icon: data.icon,
         badge: '/icon-192.png',
         tag: data.tag || 'chat-message',
-        data: { url: data.url || '/' },
+        data: { url: data.url },
         vibrate: [200, 100, 200]
     };
 
