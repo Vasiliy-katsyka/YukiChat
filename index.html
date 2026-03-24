@@ -588,7 +588,8 @@
                 visibility: visible !important;
                 pointer-events: auto !important;
             }
-            
+            .link-preview { margin-top:8px; border-left:3px solid var(--primary); padding:8px; background:var(--bg-input); border-radius:8px; font-size:12px; display:none; } 
+            .link-preview img { width:100%; border-radius:4px; margin-bottom:4px; } 
             /* Hide the back button in the desktop chat header */
             #panel-chat .panel-header .icon-btn[onclick="Router.pop()"] { 
                 display: none; 
@@ -1796,7 +1797,7 @@
                     cleanTxt = cleanTxt.replace(/\*(.*?)\*/g, '<em>$1</em>');
                     cleanTxt = cleanTxt.replace(/^### (.*$)/gim, '<h3 style="margin:16px 0 8px;font-size:16px;">$1</h3>');
                     cleanTxt = cleanTxt.replace(/^## (.*$)/gim, '<h2 style="margin:18px 0 8px;font-size:18px;">$1</h2>');
-                    cleanTxt = cleanTxt.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">$1</a>');
+                    cleanTxt = cleanTxt.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">$1</a><div class="link-preview" data-url="$1"></div>');
                     cleanTxt = cleanTxt.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
                 }
         
@@ -1839,30 +1840,13 @@
             openMedia(url) {
                 State.targetMedia = url;
                 const img = document.getElementById('media-viewer-img');
+                const viewer = document.getElementById('media-viewer');
                 img.src = url;
-                document.getElementById('media-viewer').style.display = 'flex';
+                viewer.style.display = 'flex';
                 
-                // Reset Zoom
-                img.style.transform = 'scale(1)';
-                State.mediaScale = 1;
-                
-                // Attach Pinch-to-Zoom
-                const container = document.getElementById('media-zoom-container');
-                if(!container.dataset.zoomInit) {
-                    let initialDist = 0;
-                    container.addEventListener('touchstart', (e) => {
-                        if(e.touches.length === 2) initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-                    });
-                    container.addEventListener('touchmove', (e) => {
-                        if(e.touches.length === 2) {
-                            e.preventDefault();
-                            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-                            State.mediaScale = Math.max(1, Math.min(dist / initialDist, 4)); // Max 4x zoom
-                            img.style.transform = `scale(${State.mediaScale})`;
-                        }
-                    });
-                    container.dataset.zoomInit = "true";
-                }
+                // Reset zoom states
+                State.mScale = 1;
+                img.style.transform = `scale(1) translate(0px, 0px)`;
             },
             closeMedia() {
                 document.getElementById('media-viewer').style.display = 'none';
@@ -2314,7 +2298,72 @@
                         }
                     }
                 });
+
+                const msgsCont = document.getElementById('msgs');
+                let touchStartX = 0;
+                let swipeTarget = null;
                 
+                msgsCont.addEventListener('touchstart', e => {
+                    const bubble = e.target.closest('.msg-bubble');
+                    if (!bubble) return;
+                    touchStartX = e.touches[0].clientX;
+                    swipeTarget = bubble;
+                    swipeTarget.style.transition = 'none';
+                }, {passive: true});
+                
+                msgsCont.addEventListener('touchmove', e => {
+                    if (!swipeTarget) return;
+                    const diff = e.touches[0].clientX - touchStartX;
+                    if (diff < -10) { // Swipe left
+                        swipeTarget.style.transform = `translateX(${Math.max(diff, -60)}px)`;
+                    }
+                }, {passive: true});
+                
+                msgsCont.addEventListener('touchend', e => {
+                    if (!swipeTarget) return;
+                    const diff = e.changedTouches[0].clientX - touchStartX;
+                    swipeTarget.style.transition = 'transform 0.2s';
+                    swipeTarget.style.transform = 'translateX(0)';
+                    
+                    if (diff < -50) {
+                        // Trigger reply
+                        const row = swipeTarget.closest('.msg-row');
+                        State.targetId = row.id.replace('msg-', '');
+                        State.targetTxt = swipeTarget.getAttribute('data-raw') || 'Media';
+                        App.initReply();
+                    }
+                    swipeTarget = null;
+                });
+                const mCont = document.getElementById('media-zoom-container');
+                const mImg = document.getElementById('media-viewer-img');
+                let mStartDist = 0, mStartX = 0, mStartY = 0, mPanX = 0, mPanY = 0;
+                
+                mCont.addEventListener('touchstart', e => {
+                    if(e.touches.length === 2) {
+                        mStartDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                    } else if (e.touches.length === 1 && State.mScale > 1) {
+                        mStartX = e.touches[0].pageX - mPanX;
+                        mStartY = e.touches[0].pageY - mPanY;
+                    }
+                });
+                
+                mCont.addEventListener('touchmove', e => {
+                    if(e.touches.length === 2) {
+                        e.preventDefault();
+                        const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                        State.mScale = Math.min(Math.max(1, State.mScale * (dist / mStartDist)), 4);
+                        mStartDist = dist;
+                    } else if (e.touches.length === 1 && State.mScale > 1) {
+                        e.preventDefault();
+                        mPanX = e.touches[0].pageX - mStartX;
+                        mPanY = e.touches[0].pageY - mStartY;
+                    }
+                    mImg.style.transform = `scale(${State.mScale}) translate(${mPanX/State.mScale}px, ${mPanY/State.mScale}px)`;
+                });
+                
+                mCont.addEventListener('touchend', () => {
+                    if(State.mScale <= 1) { mPanX = 0; mPanY = 0; mImg.style.transform = `scale(1) translate(0px, 0px)`; }
+                });
                 // 2. Drag & Drop Media Upload
                 const chatArea = document.getElementById('panel-chat');
                 chatArea.addEventListener('dragover', (e) => {
@@ -2370,25 +2419,31 @@
                 
                 this.sync(); 
                 
-                // Lightning fast sync loop for sidebar, read receipts, and online status
-                State.syncLoop = setInterval(async () => {
-                    if (document.visibilityState === 'visible') {
-                        if (State.isSyncing) return;
-                        State.isSyncing = true;
-                        await this.sync().catch(e=>{});
-                        State.isSyncing = false;
-                    }
-                }, 3000);
+                // Replace the setIntervals in App.start() with this:
+                this.connectWS();
                 
-                // Hyper fast active chat polling for instant messaging
-                State.fastPollLoop = setInterval(async () => {
-                    if (document.visibilityState === 'visible') {
-                        if (State.isPolling) return;
-                        State.isPolling = true;
-                        await this.fastPoll().catch(e=>{});
-                        State.isPolling = false;
-                    }
-                }, 1000);
+                // Add this function to the App object:
+                connectWS() {
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    State.ws = new WebSocket(`${protocol}//${window.location.host}/api/ws?token=${State.t}`);
+                    
+                    State.ws.onopen = () => {
+                        console.log("WebSocket connected");
+                        // Keep connection alive
+                        State.wsPing = setInterval(() => State.ws.send(JSON.stringify({type: 'ping'})), 20000);
+                    };
+                    
+                    State.ws.onmessage = (e) => {
+                        const data = JSON.parse(e.data);
+                        if (data.type === 'new_msg') this.fastPoll(); 
+                        if (data.type === 'sync') this.sync();
+                    };
+                    
+                    State.ws.onclose = () => {
+                        clearInterval(State.wsPing);
+                        setTimeout(() => this.connectWS(), 3000); // Auto-reconnect
+                    };
+                }
 
                 this.requestNotifyPerms();
 
@@ -2675,6 +2730,33 @@
                 
                 this.updateChatStatusUI(c); // Fixes endless connecting instantly!
                 this.loadMsgs(id);
+                // Add inside App.openChat(id) right after this.loadMsgs(id);
+                const msgsCont = document.getElementById('msgs');
+                msgsCont.addEventListener('scroll', async () => {
+                    if (msgsCont.scrollTop === 0 && !State.isFetchingOlder) {
+                        State.isFetchingOlder = true;
+                        const oldestMsg = msgsCont.querySelector('.msg-row');
+                        if (!oldestMsg) return;
+                        const oldestId = oldestMsg.id.replace('msg-', '');
+                        
+                        // Fetch older messages
+                        try {
+                            const olderMsgs = await req(`/api/messages/${State.chat}?before=${oldestId}`);
+                            const oldHeight = msgsCont.scrollHeight;
+                            
+                            olderMsgs.reverse().forEach(m => {
+                                const isMine = m.sender_id === State.u.userId;
+                                const innerHTML = this.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
+                                const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}">${innerHTML}</div>`;
+                                msgsCont.insertAdjacentHTML('afterbegin', rowHtml);
+                            });
+                            
+                            // Maintain scroll position after prepending DOM nodes
+                            msgsCont.scrollTop = msgsCont.scrollHeight - oldHeight;
+                        } catch(e) {}
+                        State.isFetchingOlder = false;
+                    }
+                });
             },
 
             async loadMsgs(id) {
@@ -3108,7 +3190,16 @@
                 try { await req('/api/sessions/revoke', 'POST', {tokenToRevoke: t}); this.loadSessions(); UI.toast('Revoked'); } catch(e){} 
             }
         };
-
+        setTimeout(() => {
+            document.querySelectorAll('.link-preview:not(.loaded)').forEach(async el => {
+                el.classList.add('loaded');
+                const preview = await req(`/api/preview?url=${encodeURIComponent(el.dataset.url)}`);
+                if(preview.title) {
+                    el.style.display = 'block';
+                    el.innerHTML = `${preview.img ? `<img src="${preview.img}">` : ''}<strong>${preview.title}</strong><br><span style="opacity:0.8">${preview.desc.substring(0,60)}...</span>`;
+                }
+            });
+        }, 100);
         window.onload = () => { 
             if(State.t) { 
                 document.getElementById('panel-auth').classList.remove('active'); 
