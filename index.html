@@ -1872,24 +1872,31 @@
             },
             // Add this function to the App object:
             connectWS() {
+                if (!State.t) return; // Prevent connecting if logged out
+                
                 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
                 State.ws = new WebSocket(`${protocol}//${window.location.host}/api/ws?token=${State.t}`);
                 
                 State.ws.onopen = () => {
-                    console.log("WebSocket connected");
-                    // Keep connection alive
-                    State.wsPing = setInterval(() => State.ws.send(JSON.stringify({type: 'ping'})), 20000);
+                    console.log("WebSocket Connected!");
+                    // Ping server every 20s to keep Cloudflare connection alive
+                    State.wsPing = setInterval(() => {
+                        if (State.ws.readyState === WebSocket.OPEN) {
+                            State.ws.send(JSON.stringify({type: 'ping'}));
+                        }
+                    }, 20000);
                 };
                 
                 State.ws.onmessage = (e) => {
                     const data = JSON.parse(e.data);
-                    if (data.type === 'new_msg') this.fastPoll(); 
-                    if (data.type === 'sync') this.sync();
+                    if (data.type === 'new_msg') App.fastPoll(); 
+                    if (data.type === 'sync') App.sync();
                 };
                 
                 State.ws.onclose = () => {
+                    console.log("WebSocket Disconnected. Reconnecting...");
                     clearInterval(State.wsPing);
-                    setTimeout(() => this.connectWS(), 3000); // Auto-reconnect
+                    setTimeout(() => { if (State.t) App.connectWS() }, 3000);
                 };
             },
             updateChatStatusUI(c) {
