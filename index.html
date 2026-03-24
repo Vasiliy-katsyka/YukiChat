@@ -1453,14 +1453,16 @@
         }
         
         // PWA Install Prompt Handlers
+        // PWA Install Prompt Handlers
         let deferredPrompt;
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
         
         window.addEventListener('beforeinstallprompt', (e) => { 
             e.preventDefault(); 
-            deferredPrompt = e; 
+            deferredPrompt = e; // Browser is now READY to install
             
             if (!isStandalone) {
+                // Show the tiny header/settings buttons
                 const hBtn = document.getElementById('header-install-btn');
                 if(hBtn) hBtn.style.display='flex'; 
                 
@@ -1468,6 +1470,13 @@
                 const sHeader = document.getElementById('settings-install-header');
                 if(sCard) sCard.style.display='block';
                 if(sHeader) sHeader.style.display='block';
+        
+                // NEW: Show the Android Promo Overlay ONLY when it is officially ready
+                const hasSkipped = sessionStorage.getItem('y_pwa_skipped');
+                if (!hasSkipped && /Android/i.test(navigator.userAgent)) {
+                    document.getElementById('pwa-promo-overlay').style.display = 'flex';
+                    document.getElementById('android-pwa-btn').style.display = 'flex';
+                }
             }
         });
         
@@ -2270,20 +2279,21 @@
 
             logout() { localStorage.clear(); location.reload(); },
             installPWA() { 
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then((choiceResult) => {
-                        if (choiceResult.outcome === 'accepted') {
-                            document.getElementById('header-install-btn').style.display = 'none';
-                            document.getElementById('settings-install-card').style.display = 'none';
-                            document.getElementById('settings-install-header').style.display = 'none';
-                        }
-                        deferredPrompt = null;
-                    });
-                } else {
-                    UI.toast("App is already installed or browser blocked it.");
-                }
-            },
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        deferredPrompt.userChoice.then((choiceResult) => {
+                            if (choiceResult.outcome === 'accepted') {
+                                document.getElementById('header-install-btn').style.display = 'none';
+                                document.getElementById('settings-install-card').style.display = 'none';
+                                document.getElementById('settings-install-header').style.display = 'none';
+                                document.getElementById('pwa-promo-overlay').style.display = 'none'; // Hide overlay!
+                            }
+                            deferredPrompt = null;
+                        });
+                    } else {
+                        UI.toast("App is already installed or browser blocked it.");
+                    }
+                },
             async sendToAI(text, type, mediaData) {
                 const msgsCont = document.getElementById('msgs');
                 const displayTxt = type === 'text' ? text.replace(/</g,'&lt;') : '🖼️ Photo Sent';
@@ -3323,17 +3333,16 @@
                 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
                 const hasSkipped = sessionStorage.getItem('y_pwa_skipped');
         
-                // Only show to mobile users who haven't installed it and haven't skipped this session
-                if (isMobile && !isStandalone) {
-                    const overlay = document.getElementById('pwa-promo-overlay');
-                    overlay.style.display = 'flex';
-        
+                // Only show to mobile users who haven't installed it and haven't skipped
+                if (isMobile && !isStandalone && !hasSkipped) {
                     const isiOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+                    
+                    // For iOS, show immediately (iOS doesn't use beforeinstallprompt)
                     if (isiOS) {
+                        document.getElementById('pwa-promo-overlay').style.display = 'flex';
                         document.getElementById('ios-pwa-instructions').style.display = 'block';
-                    } else {
-                        document.getElementById('android-pwa-btn').style.display = 'flex';
                     }
+                    // For Android, we do NOTHING here. It waits for the 'beforeinstallprompt' event to fire instead!
                 }
             },
             skip() {
@@ -3344,9 +3353,7 @@
             }
         };
         
-        // Add this to your existing window.onload function:
         window.addEventListener('load', () => {
-            // ... your existing code ...
             PWA_Promo.init();
         });
         setTimeout(() => {
