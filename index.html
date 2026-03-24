@@ -1874,8 +1874,11 @@
             connectWS() {
                 if (!State.t) return; // Prevent connecting if logged out
                 
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                State.ws = new WebSocket(`${protocol}//${window.location.host}/api/ws?token=${State.t}`);
+                // FIX: Map WS URL to your exact API domain instead of window.location.host
+                const wsBase = API.startsWith('http') ? API.replace(/^http/, 'ws') : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
+                const wsUrl = `${wsBase}/api/ws?token=${State.t}`;
+                
+                State.ws = new WebSocket(wsUrl);
                 
                 State.ws.onopen = () => {
                     console.log("WebSocket Connected!");
@@ -1893,9 +1896,17 @@
                     if (data.type === 'sync') App.sync();
                 };
                 
-                State.ws.onclose = () => {
-                    console.log("WebSocket Disconnected. Reconnecting...");
+                State.ws.onclose = (e) => {
+                    console.log("WebSocket Disconnected. Reconnecting...", e.reason);
                     clearInterval(State.wsPing);
+                    
+                    // FIX: Stop the infinite retry loop if the server rejected the token
+                    if (e.code === 1008) {
+                        console.error("WebSocket Auth Failed. Logging out.");
+                        App.logout();
+                        return;
+                    }
+                    
                     setTimeout(() => { if (State.t) App.connectWS() }, 3000);
                 };
             },
