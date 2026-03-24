@@ -2618,6 +2618,17 @@
             
             // --- NOTIFICATIONS ---
             // Replace the old requestNotifyPerms inside const App = { ... }
+            // 1. Helper to convert the key format
+            urlB64ToUint8(b64Url) {
+                const pad = '='.repeat((4 - b64Url.length % 4) % 4);
+                const b64 = (b64Url + pad).replace(/\-/g, '+').replace(/_/g, '/');
+                const raw = window.atob(b64);
+                const out = new Uint8Array(raw.length);
+                for (let i = 0; i < raw.length; ++i) out[i] = raw.charCodeAt(i);
+                return out;
+            },
+        
+            // 2. The updated permission request
             async requestNotifyPerms() {
                 if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
                 
@@ -2628,30 +2639,20 @@
                         let sub = await sw.pushManager.getSubscription();
                         
                         if (!sub) {
-                            // NOTE: Generate your VAPID keys (e.g., using `npx web-push generate-vapid-keys`)
-                            const pubKey = "BAobaMhZ2hNmrvQdKZNKsCqqbmEFUVvULZLNqW-pryZ5XFSDJzZIsRD7GAwrFz-8FCyg1YC05QXP-JVRh7vymAM"; 
+                            // 🔴 PASTE YOUR FRONTEND PUBLIC KEY HERE
+                            const pubKey = "BOTccn_QPkMB4R5RrywpR_Tn6Hz_HlteitHyuOu4ltj3SGMFgRHdlYUTcxkPs7IOWnv6HGCBPDZtsKrU1jOCaQk"; 
+                            
                             sub = await sw.pushManager.subscribe({
                                 userVisibleOnly: true,
                                 applicationServerKey: this.urlB64ToUint8(pubKey)
                             });
                         }
-                        
-                        // Saves endpoint, p256dh, and auth to your existing database table
+                        // Save subscription to database
                         await req('/api/subscribe', 'POST', sub.toJSON());
                     } catch (e) { 
                         console.error('Push Sub Error:', e); 
                     }
                 }
-            },
-            
-            // Add this helper function right below requestNotifyPerms
-            urlB64ToUint8(b64Url) {
-                const pad = '='.repeat((4 - b64Url.length % 4) % 4);
-                const b64 = (b64Url + pad).replace(/\-/g, '+').replace(/_/g, '/');
-                const raw = window.atob(b64);
-                const out = new Uint8Array(raw.length);
-                for (let i = 0; i < raw.length; ++i) out[i] = raw.charCodeAt(i);
-                return out;
             },
 
             // Add this inside the const App = { ... } object
