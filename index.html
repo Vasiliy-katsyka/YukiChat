@@ -3360,7 +3360,79 @@
                 sessionStorage.setItem('y_pwa_skipped', 'true');
             }
         };
-        
+        // --- iOS-STYLE EDGE SWIPE TO GO BACK ---
+        let edgeSwipeStartX = 0;
+        let edgeSwipeStartY = 0;
+        let edgeSwiping = false;
+        let edgeSwipeEl = null;
+        let edgeSwipeTime = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            // Only active on mobile, and only if there's a panel to pop
+            if (window.innerWidth >= 768 || Router.stack.length <= 1) return;
+            
+            const touch = e.touches[0];
+            // iOS style: swipe must start within the left 30px edge of the screen
+            if (touch.clientX > 30) return;
+            
+            edgeSwipeStartX = touch.clientX;
+            edgeSwipeStartY = touch.clientY;
+            edgeSwiping = true;
+            edgeSwipeTime = Date.now();
+            
+            // Target the topmost active panel
+            const currentId = Router.stack[Router.stack.length - 1];
+            edgeSwipeEl = document.getElementById(currentId);
+            
+            if (edgeSwipeEl) {
+                // Disable CSS transition so it tracks the finger instantly
+                edgeSwipeEl.style.transition = 'none'; 
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!edgeSwiping || !edgeSwipeEl) return;
+            
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - edgeSwipeStartX;
+            const deltaY = Math.abs(touch.clientY - edgeSwipeStartY);
+            
+            // Cancel swipe if the user starts scrolling vertically
+            if (deltaY > 40 && deltaX < 40) {
+                edgeSwiping = false;
+                edgeSwipeEl.style.transition = '';
+                edgeSwipeEl.style.transform = '';
+                edgeSwipeEl = null;
+                return;
+            }
+            
+            // Drag the panel to the right
+            if (deltaX > 0) {
+                edgeSwipeEl.style.transform = `translateX(${deltaX}px)`;
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            if (!edgeSwiping || !edgeSwipeEl) return;
+            
+            const touch = e.changedTouches[0];
+            const deltaX = touch.clientX - edgeSwipeStartX;
+            const velocity = deltaX / (Date.now() - edgeSwipeTime);
+            const threshold = window.innerWidth * 0.35; // 35% of the screen
+            
+            // Restore normal CSS transitions to let the stylesheet take over
+            edgeSwipeEl.style.transition = '';
+            edgeSwipeEl.style.transform = ''; 
+            
+            // If dragged past threshold or flicked fast, go back
+            if (deltaX > threshold || velocity > 0.6) {
+                Router.pop(); 
+            }
+            
+            // Reset state
+            edgeSwiping = false;
+            edgeSwipeEl = null;
+        });
         window.addEventListener('load', () => {
             PWA_Promo.init();
         });
