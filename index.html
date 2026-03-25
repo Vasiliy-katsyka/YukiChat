@@ -1571,7 +1571,8 @@
                 if(id==='panel-chat') { 
                     State.chat=null; 
                     State.lastMsgId=0; 
-                    document.getElementById('msgs').innerHTML = ''; // Prevent ghosting flashes
+                    // Wait for the slide transition to finish before clearing, preventing visual glitch
+                    setTimeout(() => { if (!State.chat) document.getElementById('msgs').innerHTML = ''; }, 350); 
                 }
                 this.updateNav();
             }
@@ -2841,8 +2842,9 @@
                 this.updateChatStatusUI(c); // Fixes endless connecting instantly!
                 this.loadMsgs(id);
                 // Add inside App.openChat(id) right after this.loadMsgs(id);
+                // Inside openChat(id), replace the scroll listener with this:
                 const msgsCont = document.getElementById('msgs');
-                msgsCont.addEventListener('scroll', async () => {
+                msgsCont.onscroll = async () => {
                     if (msgsCont.scrollTop === 0 && !State.isFetchingOlder) {
                         State.isFetchingOlder = true;
                         const oldestMsg = msgsCont.querySelector('.msg-row');
@@ -2866,7 +2868,7 @@
                         } catch(e) {}
                         State.isFetchingOlder = false;
                     }
-                });
+                };
             },
 
             async loadMsgs(id) {
@@ -2885,6 +2887,8 @@
                     if (cachedHtml && cachedHtml.includes('msg-row')) {
                         cont.innerHTML = cachedHtml;
                         cont.scrollTop = cont.scrollHeight;
+                        setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 100);
+                        setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 400);
                         
                         // Let fastPoll know the newest ID in cache so it can fetch instantly
                         const rows = cont.querySelectorAll('.msg-row');
@@ -2954,7 +2958,8 @@
                     // 4. Force Scroll & Save Cache
                     if (forceScroll || isFirstLoad) {
                         cont.scrollTop = cont.scrollHeight;
-                        setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 50);
+                        setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 100);
+                        setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 400);
                     }
 
                     if (msgs.length > 0) {
@@ -3094,20 +3099,35 @@
                 </div>`);
                 msgsCont.scrollTop = msgsCont.scrollHeight;
 
+                const targetChat = State.chat; // Save this in case user closes chat before it finishes
                 try { 
                     // 2. Send to server
-                    await req(`/api/messages/${State.chat}`, 'POST', {
+                    const res = await req(`/api/messages/${targetChat}`, 'POST', {
                         content: txt, 
                         type: 'text', 
                         reply_to_id: State.replyTo
                     }); 
                     
                     this.cancelReply();
-                    document.getElementById(tempId)?.remove(); // Remove temp immediately
                     
-                    // 3. Instantly fetch the real message back (ensures DB consistency)
-                    App.fastPoll();
-                    
+                    // If user is STILL in the same chat, update the temp bubble to a real one instantly
+                    if (State.chat === targetChat) {
+                        const tempEl = document.getElementById(tempId);
+                        if (tempEl && res && res.id) {
+                            tempEl.id = `msg-${res.id}`;
+                            tempEl.style.opacity = '1';
+                            
+                            // Update the "Sending..." text to time and checkmark
+                            const loadingTxt = tempEl.querySelector('div[style*="Sending..."]');
+                            if (loadingTxt) loadingTxt.innerHTML = `${UI.formatTime(res.created_at)} <span class="msg-tick">✓</span>`;
+                            
+                            if (res.id > State.lastMsgId) State.lastMsgId = res.id;
+                            localStorage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
+                        } else {
+                            document.getElementById(tempId)?.remove();
+                            App.fastPoll();
+                        }
+                    }
                 } catch(e) {
                     const tempEl = document.getElementById(tempId);
                     if(tempEl) tempEl.innerHTML = '<div class="msg-bubble" style="background:var(--danger)">❌ Failed</div>';
