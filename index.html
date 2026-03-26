@@ -17,6 +17,9 @@
     <link rel="icon" type="image/png" href="https://yukichat.lol/icon-192.png">
     <link rel="canonical" href="https://yukichat.lol/">
     <link rel="apple-touch-icon" href="/icon-192.png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
@@ -1038,7 +1041,15 @@
             <button class="btn" id="btn-install-sp" onclick="App.installStickerPack()">Add Stickers</button>
         </div>
     </div>
-    
+    <div id="panel-crop" class="panel" style="z-index: 10005; background: #000; flex-direction: column;">
+        <div style="flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center;">
+            <img id="crop-target" style="max-width: 100%; max-height: 100%;">
+        </div>
+        <div style="padding: 20px; display: flex; gap: 12px; background: #111;">
+            <button class="btn btn-outline" onclick="App.cancelCrop()" style="color: #fff; border-color: #333;">Cancel</button>
+            <button class="btn" onclick="App.confirmCrop()">Crop & Attach</button>
+        </div>
+    </div>
     <!-- SETTINGS PANEL -->
     <div id="panel-settings" class="panel">
         <div class="panel-header">
@@ -2112,7 +2123,7 @@
                     }
                     if (res && res.id > State.lastMsgId) State.lastMsgId = res.id;
                     const msgsCont = document.getElementById('msgs');
-                    if (msgsCont) localStorage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
+                    if (msgsCont) localforage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
                 } catch(e) {
                     UI.toast('Failed to send sticker'); 
                     document.getElementById(tempId)?.remove();
@@ -2156,14 +2167,10 @@
 
             clearCache() {
                 // Keep authentication tokens and theme settings, delete cached messages and chats
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key.startsWith('y_cache_')) {
-                        localStorage.removeItem(key);
-                    }
-                }
-                document.getElementById('cache-size').innerText = '0.0 KB';
-                UI.toast('Cache Cleared');
+                localforage.clear().then(() => {
+                    document.getElementById('cache-size').innerText = '0.0 KB';
+                    UI.toast('Cache Cleared');
+                });
             },
             async submitAuth() {
                 const u = document.getElementById('auth-u').value.trim();
@@ -2881,7 +2888,7 @@
 
                 // 1. Instant Cache Load (Zero Delay)
                 if (!cont.innerHTML.includes('msg-row')) {
-                    const cachedHtml = localStorage.getItem(`y_cache_msgs_${id}`);
+                    const cachedHtml = await localforage.getItem(`y_cache_msgs_${id}`);
                     if (cachedHtml && cachedHtml.includes('msg-row')) {
                         cont.innerHTML = cachedHtml;
                         cont.scrollTop = cont.scrollHeight;
@@ -3016,25 +3023,39 @@
                     };
 
                     if (f.type.startsWith('image/')) {
-                        const img = new Image();
-                        img.onload = () => {
-                            const canvas = document.createElement('canvas');
-                            const MAX = 1200; let w = img.width; let h = img.height;
-                            if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
-                            canvas.width = w; canvas.height = h;
-                            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                            // Converts to Base64
-                            finish(canvas.toDataURL('image/jpeg', 0.85), 'photo');
-                        };
-                        img.src = ev.target.result;
+                        document.getElementById('panel-crop').classList.add('active');
+                        const imgTarget = document.getElementById('crop-target');
+                        imgTarget.src = ev.target.result;
+                        
+                        if (State.cropper) State.cropper.destroy();
+                        setTimeout(() => {
+                            State.cropper = new Cropper(imgTarget, { viewMode: 1, background: false });
+                        }, 100);
                     } else {
-                        // Converts file to Base64
                         finish(ev.target.result, 'file');
                     }
                 };
                 r.readAsDataURL(f);
             },
-
+            cancelCrop() {
+                document.getElementById('panel-crop').classList.remove('active');
+                if (State.cropper) State.cropper.destroy();
+            },
+            confirmCrop() {
+                if (!State.cropper) return;
+                // Get cropped canvas, scale down if massive, and convert to base64
+                const canvas = State.cropper.getCroppedCanvas({ maxWidth: 1200, maxHeight: 1200 });
+                const b64 = canvas.toDataURL('image/jpeg', 0.85);
+                
+                this.cancelCrop();
+                
+                // Pass to existing media preview logic
+                State.capMedia = b64; 
+                State.capType = 'photo';
+                document.getElementById('media-preview-img').src = b64;
+                document.getElementById('media-preview').style.display = 'flex';
+                document.getElementById('msg-input').focus();
+            },
             async sendMedia() {
                 const cap = document.getElementById('msg-input').value.trim();
                 const mediaData = State.capMedia;
@@ -3120,7 +3141,7 @@
                             if (loadingTxt) loadingTxt.innerHTML = `${UI.formatTime(res.created_at)} <span class="msg-tick">✓</span>`;
                             
                             if (res.id > State.lastMsgId) State.lastMsgId = res.id;
-                            localStorage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
+                            localforage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
                         } else {
                             document.getElementById(tempId)?.remove();
                             App.fastPoll();
