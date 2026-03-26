@@ -3015,7 +3015,7 @@
                 const r = new FileReader();
                 r.onload = ev => {
                     const finish = (data, type) => {
-                        State.capMedia = data; 
+                        State.capMedia = data; // Ensure this is capMedia
                         State.capType = type;
                         document.getElementById('media-preview-img').src = type === 'photo' ? data : 'https://via.placeholder.com/150/333333/FFFFFF?text=File';
                         document.getElementById('media-preview').style.display = 'flex';
@@ -3100,7 +3100,8 @@
             },
 
             async sendText() {
-                if (State.capFile) return this.sendMedia();
+                // Check for capMedia (which is what confirmCrop sets)
+                if (State.capMedia) return this.sendMedia();
                 
                 const inp = document.getElementById('msg-input'); 
                 const txt = inp.value.trim();
