@@ -2758,7 +2758,16 @@
                     }
         
                 } catch(e){
-                    console.error("Sync Error: ", e); 
+                    // Ignore the error if it's just a temporary network drop
+                    if (e.name === 'TypeError' && e.message.includes('Failed to fetch')) {
+                        console.warn("Network offline or TLS handshake failed. Retrying in 5s...");
+                        const statusEl = document.getElementById('chat-status');
+                        if (statusEl && State.chat) {
+                            statusEl.innerHTML = '<span style="color:var(--danger)">Waiting for network...</span>';
+                        }
+                    } else {
+                        console.error("Sync Error: ", e); 
+                    }
                 }
             },
 
