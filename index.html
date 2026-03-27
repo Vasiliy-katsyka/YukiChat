@@ -2378,21 +2378,31 @@
 
             logout() { localStorage.clear(); location.reload(); },
             installPWA() { 
-                    if (deferredPrompt) {
-                        deferredPrompt.prompt();
-                        deferredPrompt.userChoice.then((choiceResult) => {
-                            if (choiceResult.outcome === 'accepted') {
-                                document.getElementById('header-install-btn').style.display = 'none';
-                                document.getElementById('settings-install-card').style.display = 'none';
-                                document.getElementById('settings-install-header').style.display = 'none';
-                                document.getElementById('pwa-promo-overlay').style.display = 'none'; // Hide overlay!
-                            }
-                            deferredPrompt = null;
-                        });
+                if (deferredPrompt) {
+                    // Android / Chrome desktop logic
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            document.getElementById('header-install-btn').style.display = 'none';
+                            document.getElementById('settings-install-card').style.display = 'none';
+                            document.getElementById('settings-install-header').style.display = 'none';
+                            document.getElementById('pwa-promo-overlay').style.display = 'none';
+                        }
+                        deferredPrompt = null;
+                    });
+                } else {
+                    // iOS Safari logic fallback
+                    const isiOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+                    if (isiOS) {
+                        // Show the manual instructions overlay for iOS
+                        document.getElementById('pwa-promo-overlay').style.display = 'flex';
+                        document.getElementById('ios-pwa-instructions').style.display = 'block';
+                        document.getElementById('android-pwa-btn').style.display = 'none';
                     } else {
                         UI.toast("App is already installed or browser blocked it.");
                     }
-                },
+                }
+            },
             async sendToAI(text, type, mediaData) {
                 const msgsCont = document.getElementById('msgs');
                 const displayTxt = type === 'text' ? text.replace(/</g,'&lt;') : '🖼️ Photo Sent';
@@ -3558,25 +3568,33 @@
         const PWA_Promo = {
             init() {
                 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                // iOS uses navigator.standalone, Android uses matchMedia
                 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
                 const hasSkipped = sessionStorage.getItem('y_pwa_skipped');
+                const isiOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
         
-                // Only show to mobile users who haven't installed it and haven't skipped
-                if (isMobile && !isStandalone) {
-                    const isiOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
-                    
-                    // For iOS, show immediately (iOS doesn't use beforeinstallprompt)
+                if (!isStandalone) {
+                    // 1. Force-show the install buttons in the UI for iOS (since beforeinstallprompt won't fire)
                     if (isiOS) {
+                        const hBtn = document.getElementById('header-install-btn');
+                        if(hBtn) hBtn.style.display='flex'; 
+                        
+                        const sCard = document.getElementById('settings-install-card');
+                        const sHeader = document.getElementById('settings-install-header');
+                        if(sCard) sCard.style.display='block';
+                        if(sHeader) sHeader.style.display='block';
+                    }
+        
+                    // 2. Automatically show the instruction overlay if they haven't skipped it
+                    if (isMobile && !hasSkipped && isiOS) {
                         document.getElementById('pwa-promo-overlay').style.display = 'flex';
                         document.getElementById('ios-pwa-instructions').style.display = 'block';
+                        document.getElementById('android-pwa-btn').style.display = 'none';
                     }
-                    // For Android, we do NOTHING here. It waits for the 'beforeinstallprompt' event to fire instead!
                 }
             },
             skip() {
-                // Hide the overlay
                 document.getElementById('pwa-promo-overlay').style.display = 'none';
-                // Remember they skipped for this session
                 sessionStorage.setItem('y_pwa_skipped', 'true');
             }
         };
