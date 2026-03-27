@@ -1650,6 +1650,7 @@
                 if(effectName === 'heavyRain') { this.activeBgLogic = (c,w,h) => { c.strokeStyle='rgba(255,255,255,0.4)'; c.lineWidth=2; c.beginPath(); for(let i=0; i<20; i++) { let x=rand(0,w), y=rand(0,h); c.moveTo(x,y); c.lineTo(x-5, y+30); } c.stroke(); }; setTimeout(()=>this.activeBgLogic=null, 4000); }
                 if(effectName === 'glitch') { wrap.classList.add('fx-glitch'); setTimeout(()=>wrap.classList.remove('fx-glitch'), 1000); }
         
+                this.fxEndTime = Date.now() + 8000; 
                 if(!this.isRunning) this.loop();
             },
             loop() {
@@ -1664,7 +1665,7 @@
                     if (p.life <= 0 || p.y > this.cvs.height + 100) this.particles.splice(i, 1);
                 }
         
-                if(this.particles.length > 0 || this.activeBgLogic) requestAnimationFrame(() => this.loop());
+                if(this.particles.length > 0 || this.activeBgLogic || Date.now() < this.fxEndTime) requestAnimationFrame(() => this.loop());
                 else { this.isRunning = false; ctx.clearRect(0,0, this.cvs.width, this.cvs.height); }
             }
         };
@@ -3304,7 +3305,7 @@
                             tempEl.style.opacity = '1';
                             
                             // Update the "Sending..." text to time and checkmark
-                            const loadingTxt = tempEl.querySelector('div[style*="Sending..."]');
+                            const loadingTxt = tempEl.querySelector('.msg-bubble > div:last-child');
                             if (loadingTxt) loadingTxt.innerHTML = `${UI.formatTime(res.created_at)} <span class="msg-tick">✓</span>`;
                             
                             if (res.id > State.lastMsgId) State.lastMsgId = res.id;
