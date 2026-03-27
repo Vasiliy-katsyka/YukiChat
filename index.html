@@ -1115,7 +1115,20 @@
                 <div style="font-size:13px; color:var(--text-muted); margin-bottom:6px; font-weight:500;">Bio</div>
                 <textarea id="set-bio" class="settings-input" rows="2" style="resize:none;" onblur="App.updateProfile(null, 'bio')"></textarea>
             </div>
-            
+            <div class="settings-header">Language / Язык</div>
+            <div class="settings-card">
+                <div class="settings-row" style="margin:0; background:transparent;">
+                    <span>Choose Language</span>
+                    <select onchange="I18N.setLang(this.value)" class="settings-input" style="width:auto; margin:0; padding:6px 12px;">
+                        <option value="en" id="lang-en">English</option>
+                        <option value="ru" id="lang-ru">Русский</option>
+                    </select>
+                </div>
+            </div>
+            <script>
+                // Auto-select current language in dropdown
+                if(localStorage.getItem('y_lang') === 'ru') document.getElementById('lang-ru').selected = true;
+            </script>
             <div class="settings-header">Appearance</div>
             <div class="settings-card">
                 <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
@@ -1454,7 +1467,73 @@
                 window.history.replaceState({}, document.title, "/"); 
             }
         }
+        const I18N = {
+            lang: localStorage.getItem('y_lang') || 'en',
+            dict: {
+                'ru': {
+                    // UI
+                    'Messages': 'Сообщения', 'Search': 'Поиск', 'Settings': 'Настройки', 'Profile': 'Профиль', 'Chats': 'Чаты',
+                    'Get the App': 'Приложение', 'Install Now': 'Установить', 'Skip for now': 'Пропустить',
+                    'Create Account': 'Создать аккаунт', 'Log In': 'Войти', 'Username': 'Имя пользователя', 'Password': 'Пароль',
+                    'Already have an account?': 'Уже есть аккаунт?', "Don't have an account?": 'Нет аккаунта?', 'Sign Up': 'Регистрация',
+                    'Upload Photo': 'Загрузить фото', 'Chat': 'Чат', 'Connecting...': 'Подключение...', 'Ringing...': 'Звонок...',
+                    'Connected': 'Соединено', '📌 Pinned': '📌 Закреп', 'Replying...': 'Ответ...', 'Attached Media': 'Файл',
+                    'Ready to send': 'Готово', 'Stickers': 'Стикеры', 'Message...': 'Сообщение...', 'Sticker Pack': 'Стикерпак',
+                    'Add Stickers': 'Добавить', 'Cancel': 'Отмена', 'Crop & Attach': 'Прикрепить', 'App': 'Приложение',
+                    'Install App (PWA)': 'Установить на телефон', 'Edit': 'Изм.', 'Bio': 'О себе', 'Appearance': 'Внешний вид',
+                    'Wallpaper': 'Обои', 'Upload': 'Загрузить', 'Color Theme': 'Тема', 'Notifications': 'Уведомления',
+                    'Enable Telegram Notifications': 'Уведомления в Telegram', 'Enable Push Notifications': 'Включить Push',
+                    'Privacy': 'Конфиденциальность', 'Who can call me': 'Кто может звонить', 'Who can view my profile': 'Кто видит профиль',
+                    'Everyone': 'Все', 'No One': 'Никто', 'Storage & Data': 'Данные', 'Clear Local Cache': 'Очистить кэш',
+                    'Administrator Tools': 'Админ-панель', 'Grant Verification Tick': 'Выдать галочку', 'Verify': 'Выдать',
+                    'Active Sessions': 'Активные сеансы', 'Log Out': 'Выйти', 'Contact Info': 'Информация', 'Name': 'Имя',
+                    'Shared Media': 'Медиа', 'New Group': 'Новая группа', 'Group Name': 'Имя группы', 'Private Group': 'Частная группа',
+                    'Create Group': 'Создать', 'New Channel': 'Новый канал', 'Channel Name': 'Имя канала', 'Private Channel': 'Частный канал',
+                    'Create Channel': 'Создать', 'New Message': 'Новое сообщение', 'Search global users...': 'Искать...',
+                    'Incoming Video Call...': 'Входящий видеовызов...', 'Incoming Audio Call...': 'Входящий аудиовызов...',
+                    'User Name': 'Пользователь', '↩️ Reply': '↩️ Ответить', '📌 Pin / Unpin': '📌 Закрепить / Открепить',
+                    '📋 Copy Text': '📋 Копировать', '📥 Save to Gallery': '📥 Сохранить', '🗑️ Delete Message': '🗑️ Удалить',
+                    
+                    // Dynamic JS Statuses / Toasts
+                    'Logging in...': 'Вход...', 'Registering...': 'Регистрация...', 'Please fill in all fields': 'Заполните все поля',
+                    'App successfully installed!': 'Установлено!', 'Copied': 'Скопировано', 'Updated': 'Обновлено', 'Added!': 'Добавлено!',
+                    'Revoked': 'Отозвано', 'Failed to send': 'Ошибка отправки', 'No chats found': 'Нет чатов', 'No results found.': 'Не найдено.',
+                    'typing...': 'печатает...', 'Online': 'В сети', 'Group': 'Группа', 'Start chatting...': 'Начните общение...',
+                    '🖼️ Photo': '🖼️ Фото', '📁 File': '📁 Файл', 'Sending...': 'Отправка...', 'No messages yet': 'Нет сообщений',
+                    'Send a message or a sticker to start chatting.': 'Отправьте сообщение, чтобы начать.', 'No bio': 'Нет описания',
+                    'No description': 'Нет описания', '🔗 Copy Link': '🔗 Копировать ссылку', '➕ Add Member': '➕ Добавить',
+                    'Change Photo': 'Сменить фото', 'Save Changes': 'Сохранить', 'Subscribers': 'Подписчики', 'Loading...': 'Загрузка...',
+                    'Promote': 'Сделать админом', 'Kick': 'Удалить', 'Current': 'Текущий', 'No sessions': 'Нет сеансов',
+                    'Clear AI chat history?': 'Очистить историю ИИ?', 'Kick this user?': 'Удалить пользователя?', 'Make admin?': 'Дать права админа?',
+                    'Enter username to add:': 'Введите имя пользователя:', 'Enter name:': 'Введите имя:', 'Call Back': 'Перезвонить',
+                    'Video Call': 'Видеозвонок', 'Canceled Call': 'Отмененный вызов', 'Missed Call': 'Пропущенный вызов', 'Ended Call': 'Завершенный вызов'
+                }
+            },
+            t(key) {
+                if (this.lang === 'en') return key;
+                return this.dict[this.lang]?.[key] || key;
+            },
+            scan(root = document.body) {
+                if (this.lang === 'en') return;
+                const walk = (node) => {
+                    if (node.nodeType === 3) { // Text node
+                        let text = node.nodeValue.trim();
+                        if (text && this.dict[this.lang][text]) node.nodeValue = node.nodeValue.replace(text, this.dict[this.lang][text]);
+                    } else if (node.nodeType === 1 && !['SCRIPT','STYLE'].includes(node.tagName)) {
+                        if (node.placeholder && this.dict[this.lang][node.placeholder]) node.placeholder = this.dict[this.lang][node.placeholder];
+                        if (node.tagName === 'INPUT' && node.value && this.dict[this.lang][node.value]) node.value = this.dict[this.lang][node.value];
+                        node.childNodes.forEach(walk);
+                    }
+                };
+                walk(root);
+            },
+            setLang(l) { localStorage.setItem('y_lang', l); location.reload(); }
+        };
         
+        // Shorthand and native popup overrides (Auto-Translates Alerts/Prompts)
+        const t = (k) => I18N.t(k);
+        const origConfirm = window.confirm; window.confirm = (m) => origConfirm(I18N.t(m));
+        const origPrompt = window.prompt; window.prompt = (m, def) => origPrompt(I18N.t(m), def);
         /* SETUP & PWA Injection */
         const defAv = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzMzNDE1NSI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==";
         const getDefAv = (name) => {
@@ -1747,7 +1826,12 @@
         window.addEventListener('popstate', () => { if(Router.stack.length>1) Router.pop(); else Router.updateNav(); });
 
         const UI = {
-            toast(m) { const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3000); },
+            toast(m) { 
+                const t = document.getElementById('toast'); 
+                t.textContent = I18N.t(m); // Auto translates the message!
+                t.classList.add('show'); 
+                setTimeout(()=>t.classList.remove('show'), 3000); 
+            },
             
             // Corrected syntax here
             formatTime(dStr) {
@@ -2922,7 +3006,8 @@
                     }
                     
                     if (!isSearching) {
-                        document.getElementById('chat-list').innerHTML = html || '<div style="padding:40px;text-align:center;color:var(--text-muted)">No chats found</div>';
+                        document.getElementById('chat-list').innerHTML = html || `<div style="padding:40px;text-align:center;color:var(--text-muted)">${I18N.t('No chats found')}</div>`;
+                        I18N.scan(document.getElementById('chat-list'));
                     }
         
                 } catch(e){
@@ -3147,6 +3232,9 @@
                     if (msgs.length > 0) {
                         localStorage.setItem(`y_cache_msgs_${id}`, cont.innerHTML);
                     }
+            
+                    // Add this line to translate all messages instantly
+                    I18N.scan(cont); 
 
                     // 5. Update Pinned Message UI
                     const pinEl = document.getElementById('pinned-msg');
@@ -3685,6 +3773,7 @@
             });
         }, 100);
         window.onload = () => { 
+            I18N.scan();
             if(State.t) { 
                 document.getElementById('panel-auth').classList.remove('active'); 
                 App.start(); 
