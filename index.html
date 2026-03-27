@@ -803,10 +803,39 @@
             50% { transform: scale(1.1) rotate(180deg); border-radius: 50%; }
             100% { transform: scale(0.8) rotate(360deg); border-radius: 20px; }
         }
+        /* --- YUKICHAT FX CSS --- */
+        .fx-dom-el { position: absolute; pointer-events: none; will-change: transform, opacity; z-index: 100; }
+        @keyframes float-up { to { transform: translateY(-120vh) rotate(15deg); } }
+        @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-15px) rotate(-2deg);} 75%{transform:translateX(15px) rotate(2deg);} }
+        @keyframes sonar { to { width: 1000px; height: 1000px; opacity: 0; border-width: 20px; } }
+        @keyframes ufo-abduct { 0% { top: -100px; } 20% { top: 20%; } 80% { top: 20%; } 100% { top: -200px; } }
+        @keyframes bat-flight { 0% { transform: translate(0,0) scale(0.5); } 50% { transform: translate(-200px, -400px) scale(1.5); } 100% { transform: translate(300px, -100vh) scale(0.8); } }
+        @keyframes emp-flash { 0% { filter: invert(1) brightness(3); } 100% { filter: invert(0) brightness(1); } }
+        @keyframes glitch-anim { 0% { transform: translate(0); text-shadow: none; clip-path: inset(0 0 0 0); } 20% { transform: translate(-4px, 2px); text-shadow: 2px 0 red, -2px 0 cyan; clip-path: inset(20% 0 80% 0); } 40% { transform: translate(4px, -2px); text-shadow: -2px 0 red, 2px 0 cyan; clip-path: inset(80% 0 10% 0); } 60% { transform: translate(0, 0); } }
         
+        .fx-frost { box-shadow: inset 0 0 200px rgba(255,255,255,0.6); backdrop-filter: blur(10px) brightness(1.3); transition: 1s; }
+        .fx-heat .msg-bubble { filter: url(#heat-filter); }
+        .fx-water .msg-bubble { filter: url(#water-filter); }
+        .fx-glitch { animation: glitch-anim 0.3s cubic-bezier(.25,.46,.45,.94) both infinite; }
+        .fx-emp { animation: emp-flash 0.8s ease-out forwards; }
+        .bubble-neon { box-shadow: 0 0 15px #f0f, inset 0 0 15px #0ff !important; border: 1px solid #fff !important; }
+        .bubble-frozen { background: rgba(255,255,255,0.5) !important; color: #000 !important; border: 2px solid #a5f3fc !important; box-shadow: 0 0 20px #a5f3fc !important; }
     </style>
 </head>
 <body>
+    <!-- 1. PASTE RIGHT AFTER <body> -->
+    <svg style="display: none;">
+        <defs>
+            <filter id="heat-filter">
+                <feTurbulence type="fractalNoise" baseFrequency="0.01 0.08" numOctaves="2" result="noise"><animate attributeName="baseFrequency" values="0.01 0.08; 0.01 0.15; 0.01 0.08" dur="2s" repeatCount="indefinite" /></feTurbulence>
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+            <filter id="water-filter">
+                <feTurbulence type="fractalNoise" baseFrequency="0.03 0.03" numOctaves="2" result="noise"><animate attributeName="baseFrequency" values="0.03 0.03; 0.05 0.05; 0.03 0.03" dur="4s" repeatCount="indefinite" /></feTurbulence>
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="B" />
+            </filter>
+        </defs>
+    </svg>
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
       <defs>
         <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%">
@@ -969,7 +998,9 @@
         
         <!-- Added n-chat-area-relative -->
         <div class="chat-area n-chat-area-relative" id="chat-area-bg">
-            
+            <canvas id="bg-canvas" style="position:absolute; inset:0; z-index:1; pointer-events:none; width:100%; height:100%;"></canvas>
+            <div id="dom-fx-layer" style="position:absolute; inset:0; z-index:40; pointer-events:none; overflow:hidden;"></div>
+            <canvas id="fx-canvas" style="position:absolute; inset:0; z-index:100; pointer-events:none; width:100%; height:100%;"></canvas>
             <!-- Added absolute positioning to pinned messages so it sits under the header -->
             <div id="pinned-msg" class="pinned-bar n-liquid" style="display:none; position:absolute; top:calc(60px + var(--safe-top)); left:0; right:0; z-index:45; margin:0; border-radius:0; border-bottom:1px solid var(--border);" onclick="App.scrollToPin()">
                 <div style="font-weight:600; font-size:12px; color:var(--primary)">📌 Pinned</div>
@@ -1510,7 +1541,133 @@
             deferredPrompt = null;
             UI.toast("App successfully installed!");
         });
-
+        // --- YUKICHAT FX ENGINE ---
+        const rand = (min, max) => Math.random() * (max - min) + min;
+        const randColor = (arr) => arr[Math.floor(Math.random() * arr.length)];
+        
+        class MetallicStreamer {
+            constructor(x, y, colorArr) {
+                this.x=x; this.y=y; this.vx=rand(-3,3); this.vy=rand(2,6); this.w=rand(4,8); this.l=rand(20,50);
+                this.colors=colorArr; this.rotZ=rand(0,Math.PI*2); this.rotZSpeed=rand(-0.1,0.1);
+                this.flipY=rand(0,Math.PI*2); this.flipSpeed=rand(0.05,0.2); this.life=1; this.bounces=0;
+            }
+            update(h) {
+                this.x+=this.vx; this.y+=this.vy; this.vy+=0.15; this.rotZ+=this.rotZSpeed; this.flipY+=this.flipSpeed;
+                const floor = h - 60;
+                if(this.y > floor && this.vy > 0) {
+                    this.y = floor; this.vy*=-0.4; this.vx*=0.6; this.flipSpeed*=0.5; this.rotZSpeed*=0.5; this.bounces++;
+                    if(this.bounces > 3) this.life = 0;
+                }
+            }
+            draw(ctx) {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotZ);
+                let scaleY = Math.cos(this.flipY); ctx.scale(1, scaleY);
+                let grad = ctx.createLinearGradient(0, -this.l/2, 0, this.l/2);
+                let lightPos = (Math.sin(this.flipY) + 1) / 2;
+                grad.addColorStop(0, this.colors[0]); grad.addColorStop(Math.abs(lightPos), this.colors[2]); grad.addColorStop(1, this.colors[1]);
+                ctx.fillStyle = grad; ctx.fillRect(-this.w/2, -this.l/2, this.w, this.l); ctx.restore();
+            }
+        }
+        class Spark {
+            constructor(x,y,c,sM=1,d=2,g=0.1) { this.x=x; this.y=y; let a=rand(0,Math.PI*2), s=rand(2,10)*sM; this.vx=Math.cos(a)*s; this.vy=Math.sin(a)*s; this.c=c; this.l=100; this.d=d; this.g=g; this.sz=rand(1,4); }
+            update() { this.x+=this.vx; this.y+=this.vy; this.vy+=this.g; this.vx*=0.96; this.vy*=0.96; this.l-=this.d; }
+            draw(ctx) { ctx.globalAlpha=Math.max(0,this.l/100); ctx.fillStyle=this.c; ctx.beginPath(); ctx.arc(this.x,this.y,this.sz,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; }
+        }
+        class EmojiDrop {
+            constructor(e,x,y) { this.e=e; this.x=x; this.y=y; this.vx=rand(-2,2); this.vy=rand(2,8); this.rot=rand(0,360); this.life=1; this.s=rand(20,40); }
+            update() { this.x+=this.vx; this.y+=this.vy; this.vy+=0.2; this.rot+=2; }
+            draw(ctx) { ctx.save(); ctx.translate(this.x,this.y); ctx.rotate(this.rot*Math.PI/180); ctx.font=`${this.s}px Arial`; ctx.textAlign='center'; ctx.fillText(this.e,0,0); ctx.restore(); }
+        }
+        
+        const FX = {
+            particles: [], bgParticles: [], activeBgLogic: null, engineTime: 0, isRunning: false, cvs: null, bgCvs: null, domLayer: null, targetId: null,
+            
+            // Keyword Trigger Map
+            triggers: {
+                'congratulations': 'goldenRain', 'congrats': 'goldenRain', '🏆': 'goldenRain',
+                'happy new year': 'fireworks', '🎆': 'fireworks', '🎇': 'fireworks',
+                'happy birthday': 'balloons', '🎈': 'balloons', '🎂': 'balloons',
+                'cold': 'frost', 'winter': 'frost', '❄️': 'frost',
+                'i love you': 'heartPop', '❤️': 'heartPop', 'love': 'heartPop',
+                'angry': 'heatwave', 'mad': 'heatwave', '🔥': 'heatwave',
+                'matrix': 'matrix', 'hacker': 'matrix', '👨‍💻': 'matrix',
+                'glitch': 'glitch', '⚠️': 'glitch',
+                'pizza': 'pizza', '🍕': 'pizza',
+                'money': 'money', 'rich': 'money', '💸': 'money', '💰': 'money',
+                'halloween': 'bats', 'scary': 'bats', '🦇': 'bats',
+                'ghost': 'ghost', 'spooky': 'ghost', '👻': 'ghost',
+                'space': 'warp', 'zoom': 'warp', '🚀': 'warp',
+                'ping': 'sonar', 'locate': 'sonar', '📡': 'sonar',
+                'rain': 'heavyRain', 'sad': 'heavyRain', '😢': 'heavyRain',
+                'cat': 'catPaw', 'meow': 'catPaw', '🐱': 'catPaw'
+            },
+        
+            init() {
+                this.cvs = document.getElementById('fx-canvas'); this.bgCvs = document.getElementById('bg-canvas'); this.domLayer = document.getElementById('dom-fx-layer');
+                window.addEventListener('resize', () => this.resize()); this.resize();
+            },
+            resize() {
+                if(!this.cvs) return;
+                const w = document.getElementById('chat-area-bg').clientWidth; const h = document.getElementById('chat-area-bg').clientHeight;
+                this.cvs.width = this.bgCvs.width = w; this.cvs.height = this.bgCvs.height = h;
+            },
+            getRect() {
+                const el = document.getElementById(this.targetId); if(!el) return {cx: this.cvs.width/2, cy: this.cvs.height/2, y: this.cvs.height/2};
+                const r = el.getBoundingClientRect(); const c = this.cvs.getBoundingClientRect();
+                return { cx: (r.left-c.left) + r.width/2, cy: (r.top-c.top) + r.height/2, y: r.top-c.top };
+            },
+            spawnDom(html, css, style, time=3000) {
+                const el = document.createElement('div'); el.className = `fx-dom-el ${css}`; el.innerHTML = html; el.style.cssText = style;
+                this.domLayer.appendChild(el); setTimeout(() => el.remove(), time); return el;
+            },
+            check(text, msgId) {
+                const lower = text.toLowerCase();
+                for (let key in this.triggers) {
+                    if (lower.includes(key)) { this.play(this.triggers[key], msgId); break; }
+                }
+            },
+            play(effectName, msgId) {
+                if(!this.cvs) this.init();
+                this.targetId = msgId; this.particles = []; this.domLayer.innerHTML = ''; 
+                const w = this.cvs.width; const h = this.cvs.height; const r = this.getRect();
+                const wrap = document.getElementById('chat-area-bg');
+        
+                // Apply specific effect
+                if(effectName === 'goldenRain') { const c=[['#b48324','#fce881','#fff'],['#999','#ddd','#fff']]; for(let i=0; i<100; i++) setTimeout(()=>this.particles.push(new MetallicStreamer(rand(0,w),-20,randColor(c))), i*15); }
+                if(effectName === 'fireworks') { for(let i=0; i<5; i++) setTimeout(()=>{ let cx=rand(50,w-50), cy=rand(50,h/2), col=randColor(['#ff0040','#00ff40','#0040ff','#ffff00']); for(let j=0; j<80; j++) this.particles.push(new Spark(cx,cy,col,1.5,1.5,0.05)); }, i*600); }
+                if(effectName === 'balloons') { for(let i=0; i<8; i++) setTimeout(()=> { let b = this.spawnDom(randColor(['🎈','🎈','🎈','🎉']), '', `left:${rand(10,90)}%; bottom:-100px; font-size:60px; animation: float-up ${rand(4,6)}s linear forwards; cursor:pointer; pointer-events:auto;`, 6000); b.onclick=()=>{ b.remove(); for(let j=0;j<20;j++)this.particles.push(new Spark(parseInt(b.style.left)/100*w, h/2, 'red')); } }, i*200); }
+                if(effectName === 'frost') { wrap.classList.add('fx-frost'); setTimeout(()=>wrap.classList.remove('fx-frost'), 5000); }
+                if(effectName === 'heatwave') { wrap.classList.add('fx-heat'); setTimeout(()=>wrap.classList.remove('fx-heat'), 4000); }
+                if(effectName === 'heartPop') { this.spawnDom('❤️','',`left:${r.cx}px; top:${r.cy}px; font-size:150px; transform:translate(-50%,-50%); animation:shake 0.5s forwards;`, 500); setTimeout(()=>{ for(let i=0;i<30;i++){ let p=new EmojiDrop('❤️',r.cx,r.cy); p.vy=rand(-15,0); this.particles.push(p); } }, 450); }
+                if(effectName === 'pizza') { for(let i=0; i<30; i++) setTimeout(()=>this.particles.push(new EmojiDrop(randColor(['🍕','🍅','🧀']), rand(0,w), -20)), i*50); }
+                if(effectName === 'money') { for(let i=0; i<40; i++) setTimeout(()=>this.particles.push(new EmojiDrop(randColor(['💸','💰','💵']), rand(0,w), -20)), i*50); }
+                if(effectName === 'sonar') { this.spawnDom('','', `left:${r.cx}px; top:${r.cy}px; width:0; height:0; border:4px solid var(--primary); border-radius:50%; transform:translate(-50%,-50%); animation: sonar 2s forwards;`, 2000); }
+                if(effectName === 'warp') { this.activeBgLogic = (c,w,h) => { c.strokeStyle='#fff'; c.beginPath(); for(let i=0; i<20; i++){ c.moveTo(w/2, h/2); c.lineTo(rand(0,w),rand(0,h)); } c.stroke(); }; setTimeout(()=>this.activeBgLogic=null, 2000); }
+                if(effectName === 'bats') { for(let i=0; i<12; i++) setTimeout(()=>this.spawnDom('🦇','',`left:50%; top:80%; font-size:${rand(20,50)}px; animation:bat-flight 2s forwards;`, 2000), i*100); }
+                if(effectName === 'catPaw') { this.spawnDom('🐾','',`right:-50px; top:30%; font-size:150px; transform:rotate(-45deg); transition:0.3s;`, 2000); setTimeout(()=>document.querySelector('.fx-dom-el').style.right='100px', 50); }
+                if(effectName === 'ghost') { this.spawnDom('👻','',`left:10%; bottom:10%; font-size:100px; animation:float-up 6s ease-in-out forwards; opacity:0.6;`, 6000); }
+                if(effectName === 'matrix') { let cols = Array(Math.floor(w/20)).fill(0); this.activeBgLogic = (c,w,h) => { c.fillStyle='rgba(15,23,42,0.2)'; c.fillRect(0,0,w,h); c.fillStyle='#0f0'; c.font='15px monospace'; cols.forEach((y,i) => { c.fillText(String.fromCharCode(rand(33,126)), i*20, y); cols[i] = y>h+rand(0,1000) ? 0 : y+20; }); }; setTimeout(()=>this.activeBgLogic=null, 5000); }
+                if(effectName === 'heavyRain') { this.activeBgLogic = (c,w,h) => { c.strokeStyle='rgba(255,255,255,0.4)'; c.lineWidth=2; c.beginPath(); for(let i=0; i<20; i++) { let x=rand(0,w), y=rand(0,h); c.moveTo(x,y); c.lineTo(x-5, y+30); } c.stroke(); }; setTimeout(()=>this.activeBgLogic=null, 4000); }
+                if(effectName === 'glitch') { wrap.classList.add('fx-glitch'); setTimeout(()=>wrap.classList.remove('fx-glitch'), 1000); }
+        
+                if(!this.isRunning) this.loop();
+            },
+            loop() {
+                if(!this.cvs) return; this.isRunning = true;
+                const ctx = this.cvs.getContext('2d'); const bgCtx = this.bgCvs.getContext('2d');
+                ctx.clearRect(0,0, this.cvs.width, this.cvs.height); bgCtx.clearRect(0,0, this.cvs.width, this.cvs.height);
+                
+                if (this.activeBgLogic) this.activeBgLogic(bgCtx, this.cvs.width, this.cvs.height);
+        
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    let p = this.particles[i]; p.update(this.cvs.height); p.draw(ctx);
+                    if (p.life <= 0 || p.y > this.cvs.height + 100) this.particles.splice(i, 1);
+                }
+        
+                if(this.particles.length > 0 || this.activeBgLogic) requestAnimationFrame(() => this.loop());
+                else { this.isRunning = false; ctx.clearRect(0,0, this.cvs.width, this.cvs.height); }
+            }
+        };
         const State = { 
             t: localStorage.getItem('y_t'), u: JSON.parse(localStorage.getItem('y_u')||'{}'), 
             chats: new Map(), chat: null, syncLoop: null, lastMsgId: 0,
@@ -3127,7 +3284,7 @@
                     <div class="msg-bubble">${safeTxt}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Sending...</div></div>
                 </div>`);
                 msgsCont.scrollTop = msgsCont.scrollHeight;
-
+                FX.check(txt, tempId);
                 const targetChat = State.chat; // Save this in case user closes chat before it finishes
                 try { 
                     // 2. Send to server
@@ -3205,6 +3362,9 @@
                         const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
                         
                         cont.insertAdjacentHTML('beforeend', rowHtml);
+                        if (!isMine) {
+                            FX.check(m.content, `msg-${m.id}`);
+                        }
                         addedNew = true;
                     });
 
