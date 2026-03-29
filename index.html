@@ -2179,8 +2179,18 @@
                     }
                     
                     const url = await catRes.text();
+                    
+                    // --- NEW: SAFETY CHECK FOR FLAKY NETWORKS ---
+                    // If the router/network intercepts the request and returns "Offline Mode" 
+                    // or an HTML error page, this stops it from saving garbage to the DB.
+                    if (!url.startsWith('http')) {
+                        console.error(`[Catbox] API returned an invalid URL/Response: ${url}`);
+                        throw new Error(`Catbox API Error: ${url.substring(0, 50)}`);
+                    }
+                    
                     console.log(`[Catbox] SUCCESS! File is now public at: ${url}`);
                     return url;
+                    
                 } catch (err) {
                     console.error("[Catbox] FATAL ERROR during upload:", err);
                     throw err;
