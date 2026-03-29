@@ -2152,34 +2152,37 @@
                 return `<div class="msg-bubble" style="${bubbleStyle}" ${rawAttr}>${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tickHtml}${viewsH}</div></div>`;
             },
             // --- NEW: CATBOX UPLOADER HELPER ---
-            async uploadToWorker(base64Str) {
-                console.log("[Worker Upload] Sending file to your backend proxy...");
+            async uploadToCatbox(base64Str) {
+                console.log("[Catbox] Starting upload... Converting base64 to Blob format.");
                 try {
-                    // Convert base64 to a real File object
                     const res = await fetch(base64Str);
                     const blob = await res.blob();
-                    const file = new File([blob], "upload.png", { type: blob.type });
-        
-                    const fd = new FormData();
-                    fd.append('file', file);
-        
-                    // This calls YOUR Cloudflare Worker /api/upload endpoint
-                    const response = await fetch('/api/upload', {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${State.t}` },
-                        body: fd
-                    });
-        
-                    const data = await response.json();
                     
-                    if (data.success) {
-                        console.log("[Worker Upload] SUCCESS! URL:", data.url);
-                        return data.url;
-                    } else {
-                        throw new Error(data.error || "Upload failed");
+                    const fd = new FormData();
+                    fd.append('reqtype', 'fileupload');
+                    
+                    // Catbox requires a filename with an extension to process it correctly
+                    const ext = blob.type.split('/')[1] || 'png';
+                    const filename = 'yuki_' + Date.now() + '.' + ext;
+                    fd.append('fileToUpload', blob, filename);
+                    
+                    console.log(`[Catbox] Blob created (${blob.size} bytes). Uploading ${filename} to catbox.moe...`);
+                    
+                    const catRes = await fetch('https://catbox.moe/user/api.php', { 
+                        method: 'POST', 
+                        body: fd 
+                    });
+                    
+                    if (!catRes.ok) {
+                        console.error(`[Catbox] Server rejected upload. Status: ${catRes.status}`);
+                        throw new Error("Catbox returned HTTP " + catRes.status);
                     }
+                    
+                    const url = await catRes.text();
+                    console.log(`[Catbox] SUCCESS! File is now public at: ${url}`);
+                    return url;
                 } catch (err) {
-                    console.error("[Worker Upload] FATAL ERROR:", err);
+                    console.error("[Catbox] FATAL ERROR during upload:", err);
                     throw err;
                 }
             },
@@ -3520,7 +3523,7 @@
                     console.log(`[Catbox] Intercepted sendMedia request! Media string length: ${mediaData.length}`);
                     
                     // Upload to Catbox and replace the local base64 string with the public URL
-                    mediaData = await this.uploadToWorker(mediaData);
+                    mediaData = await this.uploadToCatbox(mediaData);
                     
                     console.log("[Catbox] Saving Catbox URL to database...");
                     // Send to database
@@ -3791,7 +3794,7 @@
                     r.onload = async ev => { 
                         try {
                             console.log("[Catbox] Intercepted Profile Avatar upload!");
-                            body.avatar = await this.uploadToWorker(ev.target.result); 
+                            body.avatar = await this.uploadToCatbox(ev.target.result); 
                             
                             console.log("[Catbox] Saving new Avatar URL to database...");
                             await req('/api/user/profile','PUT',body); 
