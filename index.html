@@ -2151,6 +2151,41 @@
                 // Modified wrapper to include `data-raw`
                 return `<div class="msg-bubble" style="${bubbleStyle}" ${rawAttr}>${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tickHtml}${viewsH}</div></div>`;
             },
+            // --- NEW: CATBOX UPLOADER HELPER ---
+            async uploadToCatbox(base64Str) {
+                console.log("[Catbox] Starting upload... Converting base64 to Blob format.");
+                try {
+                    const res = await fetch(base64Str);
+                    const blob = await res.blob();
+                    
+                    const fd = new FormData();
+                    fd.append('reqtype', 'fileupload');
+                    
+                    // Catbox requires a filename with an extension to process it correctly
+                    const ext = blob.type.split('/')[1] || 'png';
+                    const filename = 'yuki_' + Date.now() + '.' + ext;
+                    fd.append('fileToUpload', blob, filename);
+                    
+                    console.log(`[Catbox] Blob created (${blob.size} bytes). Uploading ${filename} to catbox.moe...`);
+                    
+                    const catRes = await fetch('https://catbox.moe/user/api.php', { 
+                        method: 'POST', 
+                        body: fd 
+                    });
+                    
+                    if (!catRes.ok) {
+                        console.error(`[Catbox] Server rejected upload. Status: ${catRes.status}`);
+                        throw new Error("Catbox returned HTTP " + catRes.status);
+                    }
+                    
+                    const url = await catRes.text();
+                    console.log(`[Catbox] SUCCESS! File is now public at: ${url}`);
+                    return url;
+                } catch (err) {
+                    console.error("[Catbox] FATAL ERROR during upload:", err);
+                    throw err;
+                }
+            },
             openMedia(url) {
                 State.targetMedia = url;
                 const img = document.getElementById('media-viewer-img');
@@ -3485,6 +3520,12 @@
                 msgsCont.scrollTop = msgsCont.scrollHeight;
             
                 try { 
+                    console.log(`[Catbox] Intercepted sendMedia request! Media string length: ${mediaData.length}`);
+                    
+                    // Upload to Catbox and replace the local base64 string with the public URL
+                    mediaData = await this.uploadToCatbox(mediaData);
+                    
+                    console.log("[Catbox] Saving Catbox URL to database...");
                     // Send to database
                     await req(`/api/messages/${State.chat}`, 'POST', {content: mediaData, caption: cap, type: mediaType, reply_to_id: State.replyTo}); 
                     this.cancelReply();
@@ -3751,11 +3792,20 @@
                     const f = e.target.files[0]; if(!f) return;
                     const r = new FileReader(); 
                     r.onload = async ev => { 
-                        body.avatar = ev.target.result; 
-                        await req('/api/user/profile','PUT',body); 
-                        document.getElementById('set-av').src = body.avatar; 
-                        document.getElementById('nav-av').src = body.avatar; // Updates the bottom nav live!
-                        UI.toast('Updated'); 
+                        try {
+                            console.log("[Catbox] Intercepted Profile Avatar upload!");
+                            body.avatar = await this.uploadToCatbox(ev.target.result); 
+                            
+                            console.log("[Catbox] Saving new Avatar URL to database...");
+                            await req('/api/user/profile','PUT',body); 
+                            
+                            document.getElementById('set-av').src = body.avatar; 
+                            document.getElementById('nav-av').src = body.avatar; // Updates the bottom nav live!
+                            UI.toast('Updated'); 
+                        } catch (err) {
+                            console.error("[Catbox] Avatar upload failed:", err);
+                            UI.toast('Catbox Upload Failed');
+                        }
                     };
                     r.readAsDataURL(f); 
                     return;
