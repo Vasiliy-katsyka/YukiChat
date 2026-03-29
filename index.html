@@ -3027,8 +3027,10 @@
             },
 
             // --- SEARCH & CHAT CREATION ---
+            // --- SEARCH & CHAT CREATION ---
             searchTimer: null,
             searchQuery: '',
+            cachedChatList: null, // NEW: Caches your chat list for 0ms restores!
 
             async searchGlobal(q) {
                 const isNewPanel = Router.stack.includes('panel-new');
@@ -3041,22 +3043,39 @@
 
                 this.searchQuery = q.trim();
                 
-                // 1. If input is empty, instantly restore normal view
+                // 1. INSTANT CLEAR (0ms Delay)
                 if (!this.searchQuery) {
-                    resEl.innerHTML = '';
-                    if (!isNewPanel) this.sync(); 
+                    if (!isNewPanel) {
+                        // Restore instantly from cache
+                        if (this.cachedChatList) {
+                            resEl.innerHTML = this.cachedChatList;
+                            this.cachedChatList = null; // Reset cache
+                        } else {
+                            resEl.innerHTML = ''; 
+                        }
+                        this.sync(); // Quietly refresh online statuses in the background
+                    } else {
+                        resEl.innerHTML = '';
+                    }
                     return;
+                }
+
+                // Cache the normal chat list BEFORE overwriting it with search results
+                if (!isNewPanel && !this.cachedChatList) {
+                    this.cachedChatList = resEl.innerHTML;
                 }
 
                 // Security & Highlighting Helpers
                 const escapeHTML = (str) => (str || '').replace(/[&<>'"]/g, tag => ({
                     '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
                 }[tag]));
+                
                 const highlight = (text, query) => {
                     if (!text || !query) return escapeHTML(text);
                     const safeText = escapeHTML(text);
                     const safeQuery = escapeHTML(query);
                     const regex = new RegExp(`(${safeQuery.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+                    // FIX: We just return the bold tag here, we wrap it in <span> later in the HTML!
                     return safeText.replace(regex, '<b style="color:var(--primary)">$1</b>');
                 };
 
@@ -3071,10 +3090,12 @@
                         if (name && name.toLowerCase().includes(lowerQ) && c.id !== 'ai') {
                             localCount++;
                             const av = c.type === 'dm' ? (c.dm_avatar || defAv) : (c.avatar || defAv);
+                            
+                            // FIX: Notice the <span> wrapping the highlight function below!
                             localHtml += `<div class="user-item" onclick="App.openChat('${c.id}')">
                                 <div class="avatar-wrap" style="width:50px;height:50px;"><img src="${av}" class="avatar" style="width:100%;height:100%;"></div>
                                 <div class="user-info">
-                                    <div class="user-name">${highlight(name, this.searchQuery)}</div>
+                                    <div class="user-name"><span>${highlight(name, this.searchQuery)}</span></div>
                                     <div class="user-last-msg" style="color:var(--success); font-weight:500;">Your Chat</div>
                                 </div>
                             </div>`;
@@ -3109,10 +3130,12 @@
                             globalHtml += '<div class="settings-header" style="margin: 10px 20px;">Global Users</div>';
                             users.forEach(x => { 
                                 const av = UI.checkPriv(x.pfp_privacy, State.u.username) ? (x.avatar||defAv) : defAv;
+                                
+                                // FIX: Wrapped in <span>
                                 globalHtml += `<div class="user-item" onclick="App.startDM(${x.id})">
                                     <div class="avatar-wrap" style="width:50px;height:50px;"><img src="${av}" class="avatar" style="width:100%;height:100%;"></div>
                                     <div class="user-info">
-                                        <div class="user-name">${highlight(x.username, currentQ)} ${x.is_verified ? verifiedTick : ''}</div>
+                                        <div class="user-name"><span>${highlight(x.username, currentQ)} ${x.is_verified ? verifiedTick : ''}</span></div>
                                     </div>
                                 </div>`; 
                             });
@@ -3122,10 +3145,11 @@
                         if (chats.length > 0) {
                             globalHtml += '<div class="settings-header" style="margin: 10px 20px;">Public Channels & Groups</div>';
                             chats.forEach(x => { 
+                                // FIX: Wrapped in <span>
                                 globalHtml += `<div class="user-item" onclick="App.joinChat('${escapeHTML(x.username)}')">
                                     <div class="avatar-wrap" style="width:50px;height:50px;"><img src="${x.avatar||defAv}" class="avatar" style="width:100%;height:100%;"></div>
                                     <div class="user-info">
-                                        <div class="user-name">${highlight(x.name, currentQ)} ${x.is_verified ? verifiedTick : ''}</div>
+                                        <div class="user-name"><span>${highlight(x.name, currentQ)} ${x.is_verified ? verifiedTick : ''}</span></div>
                                         <div class="user-last-msg" style="color:var(--primary)">@${highlight(x.username, currentQ)}</div>
                                     </div>
                                 </div>`; 
@@ -3136,7 +3160,6 @@
                             globalHtml = '<div style="padding:20px; text-align:center; color:var(--text-muted)">No global results found.</div>';
                         }
 
-                        // Combine everything
                         resEl.innerHTML = localHtml + globalHtml;
 
                     } catch(e) {
