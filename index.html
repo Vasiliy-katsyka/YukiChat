@@ -3313,113 +3313,116 @@
             },
 
             async loadMsgs(id) {
-                if (State.chat !== id) return; // Prevent race conditions
+                if (State.chat !== id) return; 
                 if (State.isFetchingMsgs) return;
                 State.isFetchingMsgs = true;
 
                 const cont = document.getElementById('msgs');
-                const chat = State.chats.get(id) || State.chats.get(Number(id));
-                const chatType = chat?.type || 'dm';
-                const isFirstLoad = (State.lastMsgId === 0); 
-
-                // 1. Instant Cache Load (Zero Delay)
-                if (!cont.innerHTML.includes('msg-row')) {
-                    const cachedHtml = await localforage.getItem(`y_cache_msgs_${id}`);
-                    if (cachedHtml && cachedHtml.includes('msg-row')) {
-                        cont.innerHTML = cachedHtml;
-                        cont.scrollTop = cont.scrollHeight;
-                        setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 100);
-                        setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 400);
-                        
-                        // Let fastPoll know the newest ID in cache so it can fetch instantly
-                        const rows = cont.querySelectorAll('.msg-row');
-                        if (rows.length > 0) {
-                            const lastRow = rows[rows.length - 1];
-                            State.lastMsgId = parseInt(lastRow.id.replace('msg-', '')) || 0;
-                        }
-                    } else {
-                        cont.innerHTML = `<div style="padding:20px"><div class="skeleton skel-text" style="height:50px; border-radius:18px; width:70%;"></div></div>`;
+                
+                // 1. INSTANT CACHE LOAD (Zero UI Delay, No Flickering!)
+                const cachedHtml = await localforage.getItem(`y_cache_msgs_${id}`);
+                let hasCache = false;
+                
+                if (cachedHtml && cachedHtml.includes('msg-row')) {
+                    cont.innerHTML = cachedHtml;
+                    hasCache = true;
+                    
+                    // Recover the last message ID from our cache to resume seamlessly
+                    const rows = cont.querySelectorAll('.msg-row');
+                    if (rows.length > 0) {
+                        const lastRow = rows[rows.length - 1];
+                        State.lastMsgId = parseInt(lastRow.id.replace('msg-', '')) || 0;
                     }
+                    
+                    // Snap scroll to bottom instantly
+                    cont.scrollTop = cont.scrollHeight;
+                    setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 50);
+                    I18N.scan(cont);
+                } else {
+                    State.lastMsgId = 0;
+                    cont.innerHTML = `<div style="padding:20px; display:flex; justify-content:center;"><div class="loader" style="border-top-color:var(--primary);"></div></div>`;
                 }
 
+                State.isFetchingMsgs = false;
+
+                // 2. Fetch missing/new messages seamlessly in the background!
+                App.fastPoll(!hasCache); 
+            },
+
+            async fastPoll(forceFull = false) {
+                if (!State.chat || State.chat === 'ai' || document.visibilityState !== 'visible') return;
+                
+                if (State.isPolling) {
+                    if (Date.now() - (State.lastPollStart || 0) > 5000) State.isPolling = false; // Unstick lock
+                    else return;
+                }
+                
+                State.isPolling = true;
+                State.lastPollStart = Date.now();
+
                 try {
-                    // 2. Fetch Latest Messages
-                    const msgs = await req(`/api/messages/${id}?after=0&_t=${Date.now()}`);
-                    if (State.chat !== id) return; 
-                    if (msgs.length === 0 && isFirstLoad) {
-                        cont.innerHTML = `
-                            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; opacity:0.7; pointer-events:none;">
-                                <div style="font-size:48px; margin-bottom:16px;">👋</div>
-                                <div style="font-size:16px; font-weight:600;">No messages yet</div>
-                                <div style="font-size:13px; color:var(--text-muted); margin-top:8px;">Send a message or a sticker to start chatting.</div>
-                            </div>
-                        `;
+                    const fetchAfter = forceFull ? 0 : State.lastMsgId;
+                    const msgs = await req(`/api/messages/${State.chat}?after=${fetchAfter}&_t=${Date.now()}`);
+                    
+                    if (!msgs || msgs.length === 0) {
+                        if (forceFull) {
+                            document.getElementById('msgs').innerHTML = `
+                                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; opacity:0.7; pointer-events:none;">
+                                    <div style="font-size:48px; margin-bottom:16px;">👋</div>
+                                    <div style="font-size:16px; font-weight:600;">No messages yet</div>
+                                    <div style="font-size:13px; color:var(--text-muted); margin-top:8px;">Send a message or a sticker to start chatting.</div>
+                                </div>`;
+                        }
+                        State.isPolling = false;
+                        return;
                     }
+
+                    const cont = document.getElementById('msgs');
+                    const chat = State.chats.get(State.chat) || State.chats.get(Number(State.chat));
+                    let addedNew = false;
                     let pinned = null;
-                    let forceScroll = false;
-                    const fetchedIds = new Set();
-                    let oldestFetchedId = msgs.length > 0 ? msgs[0].id : 0;
+                    
+                    if (forceFull) cont.innerHTML = ''; // Clear loaders if doing a fresh load
+                    
+                    const isAtBottom = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 150;
 
                     msgs.forEach(m => {
-                        fetchedIds.add(`msg-${m.id}`);
                         if (m.is_pinned) pinned = m.content;
-                        if (m.id > State.lastMsgId) State.lastMsgId = m.id; 
+                        if (m.id > State.lastMsgId) State.lastMsgId = m.id;
                         
+                        // SKIP if we already have it (Fixes duplication bugs)
+                        if (document.getElementById(`msg-${m.id}`)) return;
+
                         const isMine = m.sender_id === State.u.userId;
-                        const elId = `msg-${m.id}`;
-                        const existingEl = document.getElementById(elId);
-                        const innerHTML = this.buildMsgHTML(m, isMine, chatType);
+                        const innerHTML = this.buildMsgHTML(m, isMine, chat?.type);
+                        const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
                         
-                        if (existingEl) {
-                            if (existingEl.innerHTML !== innerHTML) existingEl.innerHTML = innerHTML;
-                        } else {
-                            const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="${elId}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
-                            if (isFirstLoad || (cont.scrollHeight - cont.scrollTop - cont.clientHeight < 250)) forceScroll = true;
-                            cont.insertAdjacentHTML('beforeend', rowHtml);
-                        }
+                        cont.insertAdjacentHTML('beforeend', rowHtml);
+                        if (!isMine) FX.check(m.content, `msg-${m.id}`);
+                        addedNew = true;
                     });
 
-                    // 3. SMART CLEANUP: Only delete messages that were actually deleted on the server, 
-                    // without wiping out your older cached history!
-                    if (msgs.length > 0) {
-                        const newestFetchedId = msgs[msgs.length - 1].id;
-                        Array.from(cont.children).forEach(child => {
-                            if (child.id && child.id.startsWith('msg-')) {
-                                const msgId = parseInt(child.id.replace('msg-', ''));
-                                // Only delete if it falls strictly WITHIN the bounds of what the server returned
-                                if (msgId >= oldestFetchedId && msgId <= newestFetchedId && !fetchedIds.has(child.id)) {
-                                    child.remove();
-                                }
-                            }
-                        });
+                    // Update UI if we appended new nodes
+                    if (addedNew || forceFull) {
+                        I18N.scan(cont);
+                        localforage.setItem(`y_cache_msgs_${State.chat}`, cont.innerHTML);
+                        if (isAtBottom || forceFull) {
+                            cont.scrollTop = cont.scrollHeight;
+                            setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 100);
+                        }
                     }
 
-                    document.querySelectorAll('.skeleton').forEach(el => el.remove());
-
-                    // 4. Force Scroll & Save Cache
-                    if (forceScroll || isFirstLoad) {
-                        cont.scrollTop = cont.scrollHeight;
-                        setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 100);
-                        setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 400);
-                    }
-
-                    if (msgs.length > 0) {
-                        localStorage.setItem(`y_cache_msgs_${id}`, cont.innerHTML);
-                    }
-            
-                    // Add this line to translate all messages instantly
-                    I18N.scan(cont); 
-
-                    // 5. Update Pinned Message UI
+                    // Update Pinned Message UI
                     const pinEl = document.getElementById('pinned-msg');
                     if (pinEl) {
                         if (pinned) { pinEl.style.display='flex'; document.getElementById('pinned-text').textContent = pinned; }
                         else pinEl.style.display='none';
                     }
-                } catch (e) {
-                    console.error("loadMsgs error", e);
+
+                } catch(e) {
+                    // Ignore transient network drops gracefully
                 } finally {
-                    State.isFetchingMsgs = false;
+                    State.isPolling = false;
                 }
             },
             async handleMention(username) {
@@ -3520,18 +3523,28 @@
                 msgsCont.scrollTop = msgsCont.scrollHeight;
             
                 try { 
-                    console.log(`[Catbox] Intercepted sendMedia request! Media string length: ${mediaData.length}`);
-                    
-                    // Upload to Catbox and replace the local base64 string with the public URL
                     mediaData = await this.uploadToCatbox(mediaData);
-                    
-                    console.log("[Catbox] Saving Catbox URL to database...");
-                    // Send to database
-                    await req(`/api/messages/${State.chat}`, 'POST', {content: mediaData, caption: cap, type: mediaType, reply_to_id: State.replyTo}); 
+                    const res = await req(`/api/messages/${State.chat}`, 'POST', {content: mediaData, caption: cap, type: mediaType, reply_to_id: State.replyTo}); 
                     this.cancelReply();
                     
-                    // Remove fake loading message and instantly fetch real message
-                    document.getElementById(tempId)?.remove();
+                    const tempEl = document.getElementById(tempId);
+                    const alreadyAddedByPoll = document.getElementById(`msg-${res.id}`); // Race condition fix
+                    
+                    if (alreadyAddedByPoll) {
+                        tempEl?.remove();
+                    } else if (tempEl && res && res.id) {
+                        tempEl.id = `msg-${res.id}`;
+                        tempEl.style.opacity = '1';
+                        const loadingTxt = tempEl.querySelector('.msg-bubble > div:last-child');
+                        if (loadingTxt) loadingTxt.innerHTML = `${UI.formatTime(res.created_at)} <span class="msg-tick">✓</span>`;
+                        
+                        const loader = tempEl.querySelector('.media-loading');
+                        if (loader) loader.remove();
+                        const img = tempEl.querySelector('img.msg-media');
+                        if (img) img.style.opacity = '1';
+                    }
+
+                    if (res.id > State.lastMsgId) State.lastMsgId = res.id;
                     App.fastPoll(); 
                 } catch(e) {
                     UI.toast('Failed to send media');
@@ -3545,7 +3558,6 @@
             },
 
             async sendText() {
-                // Check for capMedia (which is what confirmCrop sets)
                 if (State.capMedia) return this.sendMedia();
                 
                 const inp = document.getElementById('msg-input'); 
@@ -3554,7 +3566,6 @@
                 inp.value = '';
                 inp.style.height = '44px';
 
-                // 1. Create Temp Message
                 const tempId = 'temp-' + Date.now();
                 const msgsCont = document.getElementById('msgs');
                 const safeTxt = txt.replace(/</g,'&lt;'); 
@@ -3564,9 +3575,8 @@
                 </div>`);
                 msgsCont.scrollTop = msgsCont.scrollHeight;
                 FX.check(txt, tempId);
-                const targetChat = State.chat; // Save this in case user closes chat before it finishes
+                const targetChat = State.chat; 
                 try { 
-                    // 2. Send to server
                     const res = await req(`/api/messages/${targetChat}`, 'POST', {
                         content: txt, 
                         type: 'text', 
@@ -3575,23 +3585,21 @@
                     
                     this.cancelReply();
                     
-                    // If user is STILL in the same chat, update the temp bubble to a real one instantly
                     if (State.chat === targetChat) {
                         const tempEl = document.getElementById(tempId);
-                        if (tempEl && res && res.id) {
+                        const alreadyAddedByPoll = document.getElementById(`msg-${res.id}`); // Race condition fix
+                        
+                        if (alreadyAddedByPoll) {
+                            tempEl?.remove(); // Delete duplicate local copy
+                        } else if (tempEl && res && res.id) {
                             tempEl.id = `msg-${res.id}`;
                             tempEl.style.opacity = '1';
-                            
-                            // Update the "Sending..." text to time and checkmark
                             const loadingTxt = tempEl.querySelector('.msg-bubble > div:last-child');
                             if (loadingTxt) loadingTxt.innerHTML = `${UI.formatTime(res.created_at)} <span class="msg-tick">✓</span>`;
-                            
-                            if (res.id > State.lastMsgId) State.lastMsgId = res.id;
-                            localforage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
-                        } else {
-                            document.getElementById(tempId)?.remove();
-                            App.fastPoll();
                         }
+                        
+                        if (res.id > State.lastMsgId) State.lastMsgId = res.id;
+                        localforage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
                     }
                 } catch(e) {
                     const tempEl = document.getElementById(tempId);
