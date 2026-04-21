@@ -3352,17 +3352,22 @@
             async fastPoll(forceFull = false) {
                 if (!State.chat || State.chat === 'ai' || document.visibilityState !== 'visible') return;
                 
-                if (State.isPolling) {
-                    if (Date.now() - (State.lastPollStart || 0) > 5000) State.isPolling = false; // Unstick lock
-                    else return;
-                }
+                // If we are already loading something, don't start a second request
+                if (State.isPolling) return;
                 
                 State.isPolling = true;
-                State.lastPollStart = Date.now();
+                
+                // Add a small timeout so if the network is laggy, it doesn't pile up requests
+                const timeout = setTimeout(() => { State.isPolling = false; }, 10000); 
 
                 try {
                     const fetchAfter = forceFull ? 0 : State.lastMsgId;
-                    const msgs = await req(`/api/messages/${State.chat}?after=${fetchAfter}&_t=${Date.now()}`);
+                    // Use a shorter timeout for the fetch itself
+                    const controller = new AbortController();
+                    const id = setTimeout(() => controller.abort(), 5000);
+
+                    const msgs = await req(`/api/messages/${State.chat}?after=${fetchAfter}&_t=${Date.now()}`, 'GET', null, { signal: controller.signal });
+                    clearTimeout(id);
                     
                     if (!msgs || msgs.length === 0) {
                         if (forceFull) {
