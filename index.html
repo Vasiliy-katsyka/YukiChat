@@ -1025,10 +1025,14 @@
                 <div id="media-preview" class="reply-bar-active liquid-glass" style="display:none; margin: 0 20px 10px; border: 1px solid var(--border); padding: 8px 12px; align-items: flex-start;">
                     <img id="media-preview-img" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: var(--bg-input); margin-right: 12px;">
                     <div style="flex:1; display:flex; flex-direction:column; justify-content:center; height: 48px;">
-                        <div style="font-size:13px; font-weight:600; color:var(--text-main);">Attached Media</div>
+                        <div id="media-preview-title" style="font-size:13px; font-weight:600; color:var(--text-main);">Attached Media</div>
                         <div style="font-size:12px; color:var(--text-muted);">Ready to send</div>
                     </div>
-                    <button class="icon-btn" style="width:24px;height:24px; color:var(--text-main)" onclick="App.cancelMedia()">✕</button>
+                    <!-- New Crop Button -->
+                    <button id="media-crop-btn" class="icon-btn" style="width:32px;height:32px; margin-right:8px; color:var(--primary); background:var(--bg-hover);" onclick="App.openCrop()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"></path><path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"></path></svg>
+                    </button>
+                    <button class="icon-btn" style="width:32px;height:32px; color:var(--text-main)" onclick="App.cancelMedia()">✕</button>
                 </div>
                 
                 <div class="input-bar n-input-bar-reset" id="input-bar">
@@ -1049,7 +1053,7 @@
                         <button class="icon-btn" onclick="document.getElementById('file-upload').click()" style="position: absolute; right: 4px; width: 32px; height: 32px; color:var(--text-main);">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
                         </button>
-                        <input type="file" id="file-upload" hidden onchange="App.prepMedia(event)">
+                        <input type="file" id="file-upload" hidden multiple accept="image/*,video/*" onchange="App.prepMedia(event)">
                     </div>
                     
                     <button class="send-btn liquid-glass n-glass-border" onclick="App.sendText()" style="width: 44px; height: 44px; flex-shrink: 0; color: var(--text-main);">
@@ -3509,32 +3513,47 @@
             scrollToPin() { const c = document.getElementById('msgs'); if(c) c.scrollTop = 0; },
 
             prepMedia(e) {
-                const f = e.target.files[0]; if(!f) return;
+                const files = Array.from(e.target.files);
+                if (files.length === 0) return;
                 e.target.value = ''; // Reset input
-                const r = new FileReader();
-                r.onload = ev => {
-                    const finish = (data, type) => {
-                        State.capMedia = data; // Ensure this is capMedia
-                        State.capType = type;
-                        document.getElementById('media-preview-img').src = type === 'photo' ? data : 'https://via.placeholder.com/150/333333/FFFFFF?text=File';
-                        document.getElementById('media-preview').style.display = 'flex';
-                        document.getElementById('msg-input').focus(); // Ready to type caption
-                    };
-
-                    if (f.type.startsWith('image/')) {
-                        document.getElementById('panel-crop').classList.add('active');
-                        const imgTarget = document.getElementById('crop-target');
-                        imgTarget.src = ev.target.result;
+                
+                State.capMediaQueue =[];
+                let loadedCount = 0;
+                
+                // Read multiple files safely
+                files.forEach(f => {
+                    const r = new FileReader();
+                    r.onload = ev => {
+                        const type = f.type.startsWith('image/') ? 'photo' : 'file';
+                        State.capMediaQueue.push({ data: ev.target.result, type: type });
+                        loadedCount++;
                         
-                        if (State.cropper) State.cropper.destroy();
-                        setTimeout(() => {
-                            State.cropper = new Cropper(imgTarget, { viewMode: 1, background: false });
-                        }, 100);
-                    } else {
-                        finish(ev.target.result, 'file');
-                    }
-                };
-                r.readAsDataURL(f);
+                        if (loadedCount === files.length) {
+                            // Update the Preview Panel
+                            document.getElementById('media-preview-img').src = State.capMediaQueue[0].type === 'photo' ? State.capMediaQueue[0].data : 'https://via.placeholder.com/150/333333/FFFFFF?text=File';
+                            document.getElementById('media-preview-title').innerText = files.length > 1 ? `${files.length} Files Attached` : 'Attached Media';
+                            
+                            // Only allow cropping if exactly ONE image is selected
+                            const showCrop = (files.length === 1 && State.capMediaQueue[0].type === 'photo');
+                            document.getElementById('media-crop-btn').style.display = showCrop ? 'flex' : 'none';
+                            
+                            document.getElementById('media-preview').style.display = 'flex';
+                            document.getElementById('msg-input').focus();
+                        }
+                    };
+                    r.readAsDataURL(f);
+                });
+            },
+            openCrop() {
+                if (!State.capMediaQueue || State.capMediaQueue.length !== 1) return;
+                document.getElementById('panel-crop').classList.add('active');
+                const imgTarget = document.getElementById('crop-target');
+                imgTarget.src = State.capMediaQueue[0].data;
+                
+                if (State.cropper) State.cropper.destroy();
+                setTimeout(() => {
+                    State.cropper = new Cropper(imgTarget, { viewMode: 1, background: false });
+                }, 100);
             },
             cancelCrop() {
                 document.getElementById('panel-crop').classList.remove('active');
@@ -3542,80 +3561,82 @@
             },
             confirmCrop() {
                 if (!State.cropper) return;
-                // Get cropped canvas, scale down if massive, and convert to base64
                 const canvas = State.cropper.getCroppedCanvas({ maxWidth: 1200, maxHeight: 1200 });
                 const b64 = canvas.toDataURL('image/jpeg', 0.85);
                 
                 this.cancelCrop();
                 
-                // Pass to existing media preview logic
-                State.capMedia = b64; 
-                State.capType = 'photo';
+                State.capMediaQueue[0].data = b64; 
                 document.getElementById('media-preview-img').src = b64;
-                document.getElementById('media-preview').style.display = 'flex';
                 document.getElementById('msg-input').focus();
+            },
+            cancelMedia() {
+                State.capMediaQueue =[];
+                document.getElementById('media-preview').style.display = 'none';
             },
             async sendMedia() {
                 const cap = document.getElementById('msg-input').value.trim();
-                const mediaData = State.capMedia;
-                const mediaType = State.capType;
-                
-                if (!mediaData) return;
+                const queue = State.capMediaQueue ||[];
+                if (queue.length === 0) return;
                 
                 this.cancelMedia();
                 document.getElementById('msg-input').value = '';
                 document.getElementById('msg-input').style.height = '44px';
-                if (State.chat === 'ai') return this.sendToAI(cap, mediaType, mediaData);
                 
-                // Show temporary loading bubble
-                const tempId = 'temp-' + Date.now();
                 const msgsCont = document.getElementById('msgs');
-                const mediaHtml = mediaType === 'photo' 
-                    ? `<div style="position:relative; display:inline-block;"><img src="${mediaData}" class="msg-media" style="opacity:0.6;"><div class="media-loading"><div class="media-loading-circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div></div></div>` 
-                    : `📁 File`;
+                
+                // Process the queue sequentially so images arrive in order!
+                for (let i = 0; i < queue.length; i++) {
+                    const mediaData = queue[i].data;
+                    const mediaType = queue[i].type;
+                    const currentCap = (i === 0) ? cap : ''; // Only apply caption to the FIRST image
                     
-                msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}" style="opacity: 0.8;">
-                    <div class="msg-bubble">${mediaHtml}${cap ? `<div class="msg-caption">${cap.replace(/</g,'&lt;')}</div>` : ''}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Sending...</div></div>
-                </div>`);
-                msgsCont.scrollTop = msgsCont.scrollHeight;
-            
-                try { 
-                    mediaData = await this.uploadToCatbox(mediaData);
-                    const res = await req(`/api/messages/${State.chat}`, 'POST', {content: mediaData, caption: cap, type: mediaType, reply_to_id: State.replyTo}); 
-                    this.cancelReply();
-                    
-                    const tempEl = document.getElementById(tempId);
-                    const alreadyAddedByPoll = document.getElementById(`msg-${res.id}`); // Race condition fix
-                    
-                    if (alreadyAddedByPoll) {
-                        tempEl?.remove();
-                    } else if (tempEl && res && res.id) {
-                        tempEl.id = `msg-${res.id}`;
-                        tempEl.style.opacity = '1';
-                        const loadingTxt = tempEl.querySelector('.msg-bubble > div:last-child');
-                        if (loadingTxt) loadingTxt.innerHTML = `${UI.formatTime(res.created_at)} <span class="msg-tick">✓</span>`;
-                        
-                        const loader = tempEl.querySelector('.media-loading');
-                        if (loader) loader.remove();
-                        const img = tempEl.querySelector('img.msg-media');
-                        if (img) img.style.opacity = '1';
+                    if (State.chat === 'ai') {
+                        await this.sendToAI(currentCap, mediaType, mediaData);
+                        continue; // Skip the rest of the loop for AI
                     }
-
-                    if (res.id > State.lastMsgId) State.lastMsgId = res.id;
-                    App.fastPoll(); 
-                } catch(e) {
-                    UI.toast('Failed to send media');
-                    document.getElementById(tempId)?.remove();
+                    
+                    const tempId = 'temp-' + Date.now() + '-' + i;
+                    const mediaHtml = mediaType === 'photo' 
+                        ? `<div style="position:relative; display:inline-block;"><img src="${mediaData}" class="msg-media" style="opacity:0.6;"><div class="media-loading"><div class="media-loading-circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div></div></div>` 
+                        : `📁 File`;
+                        
+                    msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}" style="opacity: 0.8;">
+                        <div class="msg-bubble">${mediaHtml}${currentCap ? `<div class="msg-caption">${currentCap.replace(/</g,'&lt;')}</div>` : ''}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Sending...</div></div>
+                    </div>`);
+                    msgsCont.scrollTop = msgsCont.scrollHeight;
+                
+                    try { 
+                        // Base64 directly to database
+                        const res = await req(`/api/messages/${State.chat}`, 'POST', {content: mediaData, caption: currentCap, type: mediaType, reply_to_id: (i === 0 ? State.replyTo : null)}); 
+                        
+                        const tempEl = document.getElementById(tempId);
+                        const alreadyAdded = document.getElementById(`msg-${res.id}`);
+                        
+                        if (alreadyAdded) {
+                            tempEl?.remove();
+                        } else if (tempEl && res && res.id) {
+                            tempEl.id = `msg-${res.id}`;
+                            tempEl.style.opacity = '1';
+                            const loadingTxt = tempEl.querySelector('.msg-bubble > div:last-child');
+                            if (loadingTxt) loadingTxt.innerHTML = `${UI.formatTime(res.created_at)} <span class="msg-tick">✓</span>`;
+                            
+                            const loader = tempEl.querySelector('.media-loading');
+                            if (loader) loader.remove();
+                            const img = tempEl.querySelector('img.msg-media');
+                            if (img) img.style.opacity = '1';
+                        }
+                    } catch(e) {
+                        document.getElementById(tempId)?.remove();
+                        UI.toast('Failed to send a file');
+                    }
                 }
-            },
-            
-            cancelMedia() {
-                State.capMedia = null; State.capType = null;
-                document.getElementById('media-preview').style.display = 'none';
+                this.cancelReply();
             },
 
             async sendText() {
-                if (State.capMedia) return this.sendMedia();
+                // Modified check to use the new array queue
+                if (State.capMediaQueue && State.capMediaQueue.length > 0) return this.sendMedia();
                 
                 const inp = document.getElementById('msg-input'); 
                 const txt = inp.value.trim();
@@ -3803,18 +3824,14 @@
                     const r = new FileReader(); 
                     r.onload = async ev => { 
                         try {
-                            console.log("[Catbox] Intercepted Profile Avatar upload!");
-                            body.avatar = await this.uploadToCatbox(ev.target.result); 
-                            
-                            console.log("[Catbox] Saving new Avatar URL to database...");
+                            body.avatar = ev.target.result; 
                             await req('/api/user/profile','PUT',body); 
                             
                             document.getElementById('set-av').src = body.avatar; 
-                            document.getElementById('nav-av').src = body.avatar; // Updates the bottom nav live!
+                            document.getElementById('nav-av').src = body.avatar; 
                             UI.toast('Updated'); 
                         } catch (err) {
-                            console.error("[Catbox] Avatar upload failed:", err);
-                            UI.toast('Catbox Upload Failed');
+                            UI.toast('Avatar Upload Failed');
                         }
                     };
                     r.readAsDataURL(f); 
