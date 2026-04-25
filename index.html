@@ -320,8 +320,8 @@
             inset: 0;
             z-index: -2;
             border-radius: inherit;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(var(--glass-blur, 4px));
+            -webkit-backdrop-filter: blur(var(--glass-blur, 4px));
             filter: url(#glass-distortion);
             -webkit-filter: url(#glass-distortion);
             pointer-events: none;
@@ -456,9 +456,8 @@
             inset: 0;
             z-index: -2;
             border-radius: inherit;
-            backdrop-filter: blur(4px); /* Tiny blur helps smooth the distortion */
-            -webkit-backdrop-filter: blur(4px);
-            /* THE MAGIC DISTORTION */
+            backdrop-filter: blur(var(--glass-blur, 4px));
+            -webkit-backdrop-filter: blur(var(--glass-blur, 4px));
             filter: url(#glass-distortion);
             -webkit-filter: url(#glass-distortion);
             pointer-events: none;
@@ -925,7 +924,7 @@
         <!-- WRAPPED IN CLEAR LIQUID GLASS -->
         <div class="liquid-glass n-glass-header" style="position: absolute; width: 100%; top: 0; z-index: 50;">
             <div class="root-header" style="background: transparent;">
-                <h1>Messages</h1>
+                <h1 id="main-title" style="transition: color 0.3s, font-size 0.3s;">Messages</h1>
                 <div style="display:flex; gap: 8px; align-items: center;">
                     <!-- NEW Install Button (Hidden by default) -->
                     <button class="icon-btn" id="header-install-btn" style="display:none;" onclick="App.installPWA()">
@@ -1165,6 +1164,13 @@
                         <div class="theme-preview" data-theme-val="deep-purple" onclick="App.setTheme('deep-purple')"><div class="theme-preview-inner" style="background:#1e1b4b;"><div class="mini-bubble right" style="background:#c7d2fe"></div><div class="mini-bubble left" style="background:#3730a3"></div></div><span class="theme-label">Indigo</span></div>
                         <div class="theme-preview" data-theme-val="crimson-dark" onclick="App.setTheme('crimson-dark')"><div class="theme-preview-inner" style="background:#450a0a;"><div class="mini-bubble right" style="background:#fecaca"></div><div class="mini-bubble left" style="background:#991b1b"></div></div><span class="theme-label">Wine</span></div>
                     </div>
+                </div>
+                <div class="settings-row" style="margin:16px 0 0 0; background:transparent; flex-direction:column; align-items:flex-start; gap:16px; border-top:1px solid var(--border); padding-top:16px; border-radius:0;">
+                    <div style="display:flex; justify-content:space-between; width:100%;">
+                        <span style="font-weight: 600;">Glass Blur Intensity</span>
+                        <span id="blur-val-disp" style="color:var(--text-muted);font-size:14px;font-weight:bold;">4px</span>
+                    </div>
+                    <input type="range" id="set-blur" min="0" max="25" value="4" style="width:100%; cursor:pointer;" oninput="App.setBlur(this.value)">
                 </div>
             </div>
             <div class="settings-header">Notifications</div>
@@ -2080,6 +2086,25 @@
                 const f = e.target.files[0]; if(!f) return; const r = new FileReader();
                 r.onload = ev => { State.tmpGroupAv = ev.target.result; document.getElementById('new-group-av').src = State.tmpGroupAv; }; r.readAsDataURL(f);
             },
+            setBlur(val) {
+                document.documentElement.style.setProperty('--glass-blur', `${val}px`);
+                document.getElementById('blur-val-disp').innerText = `${val}px`;
+                localStorage.setItem('y_glass_blur', val);
+            },
+            
+            setMainTitle(txt) {
+                const el = document.getElementById('main-title');
+                if (el && el.innerText !== txt) {
+                    el.innerText = txt;
+                    if (txt === 'Messages') {
+                        el.style.color = 'var(--text-main)';
+                        el.style.fontSize = '28px';
+                    } else {
+                        el.style.color = 'var(--primary)'; // Make status stand out
+                        el.style.fontSize = '18px'; // Slightly smaller for status (like Telegram)
+                    }
+                }
+            },
             async submitGroup() {
                 const name = document.getElementById('new-group-name').value.trim();
                 const desc = document.getElementById('new-group-desc').value.trim();
@@ -2228,10 +2253,17 @@
             // Add this function to the App object:
             connectWS() {
                 if (State.ws && State.ws.readyState === WebSocket.OPEN) return;
+                
+                App.setMainTitle('Connecting...');
                 const wsUrl = API.replace(/^http/, 'ws') + `/api/ws?token=${State.t}`;
                 State.ws = new WebSocket(wsUrl);
                 
-                // FIX 1: Send a Ping every 25 seconds to keep the Cloudflare Worker alive forever!
+                State.ws.onopen = () => {
+                    App.setMainTitle('Updating...');
+                    App.sync(); // Force a sync when connected to get caught up
+                };
+                
+                // Send a Ping every 25 seconds to keep the Cloudflare Worker alive forever!
                 State.wsPing = setInterval(() => {
                     if (State.ws.readyState === WebSocket.OPEN) {
                         State.ws.send(JSON.stringify({ type: 'ping' }));
@@ -2241,7 +2273,6 @@
                 State.ws.onmessage = (e) => {
                     const data = JSON.parse(e.data);
                     
-                    // 1. If it's a new message
                     if (data.type === 'new_message') {
                         const m = data.message;
                         if (State.chat == m.chat_id) {
@@ -2257,14 +2288,12 @@
                             State.lastMsgId = m.id;
                             localforage.setItem(`y_cache_msgs_${State.chat}`, cont.innerHTML);
                             
-                            // Tell server we read it
                             req(`/api/messages/${m.id}/action`, 'POST', {action: 'read'});
                         } else {
                             App.sync();
                         }
                     }
                     
-                    // FIX 2: Turn checkmarks blue and double instantly
                     if (data.type === 'read_update' && State.chat == data.chat_id) {
                         document.querySelectorAll('.msg-tick').forEach(tick => {
                             tick.classList.add('read');
@@ -2272,14 +2301,14 @@
                         });
                     }
 
-                    // FIX 3: Instantly show Reactions, Deletions, and Edits
                     if (data.type === 'message_action' && State.chat == data.chat_id) {
-                        App.fastPoll(); // Instantly grab the updated reaction/deleted state!
+                        App.fastPoll(); 
                     }
                 };
 
                 State.ws.onclose = () => {
-                    clearInterval(State.wsPing); // Clean up interval
+                    App.setMainTitle('Waiting for network...');
+                    clearInterval(State.wsPing); 
                     setTimeout(() => App.connectWS(), 3000);
                 };
             },
@@ -2433,9 +2462,10 @@
             
             async sendSticker(url) {
                 this.toggleStickers();
-                if(!State.chat) return;
+                const targetChat = State.chat; // Fix: Lock the active chat
+                if(!targetChat) return;
             
-                // 1. Immediate Optimistic UI (No Background Bubble)
+                // 1. Immediate Optimistic UI
                 const tempId = 'temp-' + Date.now();
                 const msgsCont = document.getElementById('msgs');
                 
@@ -2452,20 +2482,25 @@
             
                 // 2. Send to backend
                 try {
-                    const res = await req(`/api/messages/${State.chat}`, 'POST', { content: url, type: 'sticker' });
-                    const tempEl = document.getElementById(tempId);
-                    if (tempEl) {
-                        tempEl.id = 'msg-' + res.id;
-                        tempEl.style.opacity = '1';
-                        const tick = tempEl.querySelector('.msg-tick');
-                        if (tick) tick.style.color = 'var(--text-muted)';
+                    const res = await req(`/api/messages/${targetChat}`, 'POST', { content: url, type: 'sticker' });
+                    
+                    // Fix: Check if we are still in the original chat before updating UI
+                    if (State.chat === targetChat) {
+                        const tempEl = document.getElementById(tempId);
+                        if (tempEl) {
+                            tempEl.id = 'msg-' + res.id;
+                            tempEl.style.opacity = '1';
+                            const tick = tempEl.querySelector('.msg-tick');
+                            if (tick) tick.style.color = 'var(--text-muted)';
+                        }
+                        if (res && res.id > State.lastMsgId) State.lastMsgId = res.id;
+                        if (msgsCont) localforage.setItem(`y_cache_msgs_${targetChat}`, msgsCont.innerHTML);
                     }
-                    if (res && res.id > State.lastMsgId) State.lastMsgId = res.id;
-                    const msgsCont = document.getElementById('msgs');
-                    if (msgsCont) localforage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
                 } catch(e) {
-                    UI.toast('Failed to send sticker'); 
-                    document.getElementById(tempId)?.remove();
+                    if (State.chat === targetChat) {
+                        UI.toast('Failed to send sticker'); 
+                        document.getElementById(tempId)?.remove();
+                    }
                 }
             },
             
@@ -2850,6 +2885,14 @@
                 const t = localStorage.getItem('y_theme') || 'dark'; this.setTheme(t);
                 const w = localStorage.getItem('y_wall') || ''; this.setWallpaper(w);
 
+                // Initialize Blur state
+                const blur = localStorage.getItem('y_glass_blur') || '4';
+                document.documentElement.style.setProperty('--glass-blur', `${blur}px`);
+                const blurSlider = document.getElementById('set-blur');
+                if (blurSlider) blurSlider.value = blur;
+                const blurDisp = document.getElementById('blur-val-disp');
+                if (blurDisp) blurDisp.innerText = `${blur}px`;
+                
                 let skels=''; for(let i=0;i<6;i++) skels+=`<div class="user-item"><div class="skel-av skeleton"></div><div class="user-info"><div class="skel-text skeleton"></div><div class="skel-text short skeleton"></div></div></div>`;
                 document.getElementById('chat-list').innerHTML = skels;
 
@@ -3022,6 +3065,12 @@
             
             // --- REAL-TIME SYNC ---
             async sync() {
+                let isSyncing = false;
+                const syncTimer = setTimeout(() => {
+                    if (isSyncing && State.ws && State.ws.readyState === WebSocket.OPEN) App.setMainTitle('Updating...');
+                }, 400); // Only show "Updating..." if the network takes longer than 400ms (prevents annoying flickering)
+                isSyncing = true;
+
                 try {
                     const isTyping = State.chat && document.getElementById('msg-input') && document.getElementById('msg-input').value.trim().length > 0;
                     const d = await req('/api/sync', 'POST', {typingIn: isTyping ? State.chat : null});
@@ -3143,9 +3192,9 @@
                     }
         
                 } catch(e){
-                    // Ignore the error if it's just a temporary network drop
                     if (e.name === 'TypeError' && e.message.includes('Failed to fetch')) {
-                        console.warn("Network offline or TLS handshake failed. Retrying in 5s...");
+                        console.warn("Network offline...");
+                        App.setMainTitle('Waiting for network...');
                         const statusEl = document.getElementById('chat-status');
                         if (statusEl && State.chat) {
                             statusEl.innerHTML = '<span style="color:var(--danger)">Waiting for network...</span>';
@@ -3153,6 +3202,10 @@
                     } else {
                         console.error("Sync Error: ", e); 
                     }
+                } finally {
+                    isSyncing = false;
+                    clearTimeout(syncTimer);
+                    if (State.ws && State.ws.readyState === WebSocket.OPEN) App.setMainTitle('Messages');
                 }
             },
 
@@ -3416,6 +3469,13 @@
                 
                 // 1. INSTANT CACHE LOAD (Zero UI Delay, No Flickering!)
                 const cachedHtml = await localforage.getItem(`y_cache_msgs_${id}`);
+                
+                // Fix: Verify user didn't switch chats while cache was reading
+                if (State.chat !== id) {
+                    State.isFetchingMsgs = false;
+                    return;
+                }
+                
                 let hasCache = false;
                 
                 if (cachedHtml && cachedHtml.includes('msg-row')) {
@@ -3462,6 +3522,7 @@
                 if (State.isPolling) return;
                 
                 State.isPolling = true;
+                const targetChat = State.chat; // Fix: Capture the chat ID
                 
                 // Add a small timeout so if the network is laggy, it doesn't pile up requests
                 const timeout = setTimeout(() => { State.isPolling = false; }, 10000); 
@@ -3472,8 +3533,14 @@
                     const controller = new AbortController();
                     const id = setTimeout(() => controller.abort(), 5000);
 
-                    const msgs = await req(`/api/messages/${State.chat}?after=${fetchAfter}&_t=${Date.now()}`, 'GET', null, { signal: controller.signal });
+                    const msgs = await req(`/api/messages/${targetChat}?after=${fetchAfter}&_t=${Date.now()}`, 'GET', null, { signal: controller.signal });
                     clearTimeout(id);
+                    
+                    // Fix: Stop updating the UI if the user switched chats while loading!
+                    if (State.chat !== targetChat) {
+                        State.isPolling = false;
+                        return;
+                    }
                     
                     if (!msgs || msgs.length === 0) {
                         if (forceFull) {
@@ -3489,7 +3556,7 @@
                     }
 
                     const cont = document.getElementById('msgs');
-                    const chat = State.chats.get(State.chat) || State.chats.get(Number(State.chat));
+                    const chat = State.chats.get(targetChat) || State.chats.get(Number(targetChat));
                     let addedNew = false;
                     let pinned = null;
                     
@@ -3516,7 +3583,7 @@
                     // Update UI if we appended new nodes
                     if (addedNew || forceFull) {
                         I18N.scan(cont);
-                        localforage.setItem(`y_cache_msgs_${State.chat}`, cont.innerHTML);
+                        localforage.setItem(`y_cache_msgs_${targetChat}`, cont.innerHTML);
                         if (isAtBottom || forceFull) {
                             cont.scrollTop = cont.scrollHeight;
                             setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 100);
@@ -3634,6 +3701,8 @@
                 document.getElementById('msg-input').style.height = '44px';
                 
                 const msgsCont = document.getElementById('msgs');
+                const targetChat = State.chat; // Fix: Lock the active chat
+                if (!targetChat) return;
                 
                 // Process the queue sequentially so images arrive in order!
                 for (let i = 0; i < queue.length; i++) {
@@ -3641,9 +3710,9 @@
                     const mediaType = queue[i].type;
                     const currentCap = (i === 0) ? cap : ''; // Only apply caption to the FIRST image
                     
-                    if (State.chat === 'ai') {
+                    if (targetChat === 'ai') {
                         await this.sendToAI(currentCap, mediaType, mediaData);
-                        continue; // Skip the rest of the loop for AI
+                        continue; 
                     }
                     
                     const tempId = 'temp-' + Date.now() + '-' + i;
@@ -3651,34 +3720,41 @@
                         ? `<div style="position:relative; display:inline-block;"><img src="${mediaData}" class="msg-media" style="opacity:0.6;"><div class="media-loading"><div class="media-loading-circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div></div></div>` 
                         : `📁 File`;
                         
-                    msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}" style="opacity: 0.8;">
-                        <div class="msg-bubble">${mediaHtml}${currentCap ? `<div class="msg-caption">${currentCap.replace(/</g,'&lt;')}</div>` : ''}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Sending...</div></div>
-                    </div>`);
-                    msgsCont.scrollTop = msgsCont.scrollHeight;
+                    // Fix: Only inject HTML if user hasn't switched chats
+                    if (State.chat === targetChat) {
+                        msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}" style="opacity: 0.8;">
+                            <div class="msg-bubble">${mediaHtml}${currentCap ? `<div class="msg-caption">${currentCap.replace(/</g,'&lt;')}</div>` : ''}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Sending...</div></div>
+                        </div>`);
+                        msgsCont.scrollTop = msgsCont.scrollHeight;
+                    }
                 
                     try { 
-                        // Base64 directly to database
-                        const res = await req(`/api/messages/${State.chat}`, 'POST', {content: mediaData, caption: currentCap, type: mediaType, reply_to_id: (i === 0 ? State.replyTo : null)}); 
+                        const res = await req(`/api/messages/${targetChat}`, 'POST', {content: mediaData, caption: currentCap, type: mediaType, reply_to_id: (i === 0 ? State.replyTo : null)}); 
                         
-                        const tempEl = document.getElementById(tempId);
-                        const alreadyAdded = document.getElementById(`msg-${res.id}`);
-                        
-                        if (alreadyAdded) {
-                            tempEl?.remove();
-                        } else if (tempEl && res && res.id) {
-                            tempEl.id = `msg-${res.id}`;
-                            tempEl.style.opacity = '1';
-                            const loadingTxt = tempEl.querySelector('.msg-bubble > div:last-child');
-                            if (loadingTxt) loadingTxt.innerHTML = `${UI.formatTime(res.created_at)} <span class="msg-tick">✓</span>`;
+                        // Fix: Only manipulate DOM if user hasn't switched chats
+                        if (State.chat === targetChat) {
+                            const tempEl = document.getElementById(tempId);
+                            const alreadyAdded = document.getElementById(`msg-${res.id}`);
                             
-                            const loader = tempEl.querySelector('.media-loading');
-                            if (loader) loader.remove();
-                            const img = tempEl.querySelector('img.msg-media');
-                            if (img) img.style.opacity = '1';
+                            if (alreadyAdded) {
+                                tempEl?.remove();
+                            } else if (tempEl && res && res.id) {
+                                tempEl.id = `msg-${res.id}`;
+                                tempEl.style.opacity = '1';
+                                const loadingTxt = tempEl.querySelector('.msg-bubble > div:last-child');
+                                if (loadingTxt) loadingTxt.innerHTML = `${UI.formatTime(res.created_at)} <span class="msg-tick">✓</span>`;
+                                
+                                const loader = tempEl.querySelector('.media-loading');
+                                if (loader) loader.remove();
+                                const img = tempEl.querySelector('img.msg-media');
+                                if (img) img.style.opacity = '1';
+                            }
                         }
                     } catch(e) {
-                        document.getElementById(tempId)?.remove();
-                        UI.toast('Failed to send a file');
+                        if (State.chat === targetChat) {
+                            document.getElementById(tempId)?.remove();
+                            UI.toast('Failed to send a file');
+                        }
                     }
                 }
                 this.cancelReply();
