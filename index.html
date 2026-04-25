@@ -2220,8 +2220,48 @@
                 this.closeCtx();
             },
             // Add this function to the App object:
+            // Add this function to the App object:
             connectWS() {
-                // gj
+                if (State.ws && State.ws.readyState === WebSocket.OPEN) return;
+                const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+                State.ws = new WebSocket(`${protocol}//${location.host}/api/ws?token=${State.t}`);
+                
+                State.ws.onmessage = (e) => {
+                    const data = JSON.parse(e.data);
+                    if (data.type === 'new_message') {
+                        const m = data.message;
+                        
+                        // 1. Append instantly if we are looking at this chat
+                        if (State.chat == m.chat_id) {
+                            if (document.getElementById(`msg-${m.id}`)) return; // Prevent duplicates
+                            if (m.id > State.lastMsgId) State.lastMsgId = m.id;
+                            
+                            const isMine = m.sender_id === State.u.userId;
+                            const chat = State.chats.get(State.chat);
+                            const innerHTML = App.buildMsgHTML(m, isMine, chat?.type);
+                            const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
+                            
+                            const cont = document.getElementById('msgs');
+                            const isAtBottom = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 150;
+                            
+                            cont.insertAdjacentHTML('beforeend', rowHtml);
+                            if (!isMine) FX.check(m.content, `msg-${m.id}`);
+                            
+                            if (isAtBottom) {
+                                cont.scrollTop = cont.scrollHeight;
+                                setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 100);
+                            }
+                            localforage.setItem(`y_cache_msgs_${State.chat}`, cont.innerHTML);
+                        }
+                        
+                        // 2. Silently update the sidebar without freezing UI
+                        App.sync();
+                    }
+                };
+
+                State.ws.onclose = () => {
+                    setTimeout(() => App.connectWS(), 3000); // Reconnect if dropped
+                };
             },
             updateChatStatusUI(c) {
                 const statusEl = document.getElementById('chat-status');
@@ -2779,22 +2819,18 @@
                 
                 this.sync(); 
 
-                // THE NEW, SMART, NON-CRASHING LOOPS:
-                
-                if (State.fastLoop) clearInterval(State.fastLoop);
-                State.fastLoop = setInterval(() => {
-                    if (document.visibilityState === 'visible' && State.chat && State.chat !== 'ai') {
-                        App.fastPoll();
-                    }
-                }, 1500);
+                App.connectWS();
 
-                // 2. Background Sync Loop: Updates online statuses and the main chat list every 5s
+                // Kill the high-CPU fast poll loop (WebSocket handles this instantly now!)
+                if (State.fastLoop) clearInterval(State.fastLoop);
+                
+                // Background Sync Loop: Slowed down to 30s just to safely keep online dots updated
                 if (State.syncLoop) clearInterval(State.syncLoop);
                 State.syncLoop = setInterval(() => {
                     if (document.visibilityState === 'visible') {
                         App.sync(); 
                     }
-                }, 5000);
+                }, 30000);
             },
 
             showCtx(e, id, isMine, isMedia = false, mediaUrl = '') {
