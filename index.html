@@ -2153,36 +2153,37 @@
             },
             // --- NEW: CATBOX UPLOADER HELPER ---
             async uploadToCatbox(base64Str) {
-                console.log("[Catbox] Starting upload... Converting base64 to Blob format.");
+                console.log("[Upload] Starting file upload...");
                 try {
+                    // Convert base64 to raw file Blob
                     const res = await fetch(base64Str);
                     const blob = await res.blob();
                     
                     const fd = new FormData();
-                    fd.append('reqtype', 'fileupload');
-                    
-                    // Catbox requires a filename with an extension to process it correctly
                     const ext = blob.type.split('/')[1] || 'png';
                     const filename = 'yuki_' + Date.now() + '.' + ext;
-                    fd.append('fileToUpload', blob, filename);
+                    fd.append('file', blob, filename);
                     
-                    console.log(`[Catbox] Blob created (${blob.size} bytes). Uploading ${filename} to catbox.moe...`);
+                    console.log(`[Upload] Uploading via backend proxy...`);
                     
-                    const catRes = await fetch('https://catbox.moe/user/api.php', { 
+                    // Route to your own backend proxy to bypass CORS browser blocks!
+                    // Note: We use native fetch here instead of req() so FormData isn't stringified
+                    const uploadRes = await fetch(API + '/api/upload', { 
                         method: 'POST', 
+                        headers: { 'Authorization': `Bearer ${State.t}` },
                         body: fd 
                     });
                     
-                    if (!catRes.ok) {
-                        console.error(`[Catbox] Server rejected upload. Status: ${catRes.status}`);
-                        throw new Error("Catbox returned HTTP " + catRes.status);
-                    }
+                    if (!uploadRes.ok) throw new Error("Backend Proxy failed HTTP " + uploadRes.status);
                     
-                    const url = await catRes.text();
-                    console.log(`[Catbox] SUCCESS! File is now public at: ${url}`);
-                    return url;
+                    const data = await uploadRes.json();
+                    if (!data.success || !data.url) throw new Error(data.error || "Invalid upload response");
+                    
+                    console.log(`[Upload] SUCCESS! File is now hosted at: ${data.url}`);
+                    return data.url;
                 } catch (err) {
-                    console.error("[Catbox] FATAL ERROR during upload:", err);
+                    console.error("[Upload] FATAL ERROR during upload:", err);
+                    UI.toast("Upload failed. Try a smaller file.");
                     throw err;
                 }
             },
