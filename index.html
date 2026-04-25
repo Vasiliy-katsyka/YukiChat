@@ -2231,45 +2231,56 @@
                 const wsUrl = API.replace(/^http/, 'ws') + `/api/ws?token=${State.t}`;
                 State.ws = new WebSocket(wsUrl);
                 
+                // FIX 1: Send a Ping every 25 seconds to keep the Cloudflare Worker alive forever!
+                State.wsPing = setInterval(() => {
+                    if (State.ws.readyState === WebSocket.OPEN) {
+                        State.ws.send(JSON.stringify({ type: 'ping' }));
+                    }
+                }, 25000);
+                
                 State.ws.onmessage = (e) => {
                     const data = JSON.parse(e.data);
                     
                     // 1. If it's a new message
                     if (data.type === 'new_message') {
                         const m = data.message;
-                        
-                        // If we are currently IN this chat, append it 0-seconds delay
                         if (State.chat == m.chat_id) {
                             if (document.getElementById(`msg-${m.id}`)) return; 
                             
                             const cont = document.getElementById('msgs');
                             const isAtBottom = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 150;
-                            
-                            // Build and append
                             const innerHTML = App.buildMsgHTML(m, false, State.chats.get(State.chat)?.type);
-                            cont.insertAdjacentHTML('beforeend', `<div class="msg-row received" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, false)">${innerHTML}</div>`);
                             
+                            cont.insertAdjacentHTML('beforeend', `<div class="msg-row received" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, false)">${innerHTML}</div>`);
                             if (isAtBottom) cont.scrollTop = cont.scrollHeight;
                             
                             State.lastMsgId = m.id;
                             localforage.setItem(`y_cache_msgs_${State.chat}`, cont.innerHTML);
                             
-                            // INSTANT READ TICK: Tell the server we saw it immediately
+                            // Tell server we read it
                             req(`/api/messages/${m.id}/action`, 'POST', {action: 'read'});
                         } else {
-                            // If we are NOT in the chat, just refresh the sidebar dots
                             App.sync();
                         }
                     }
                     
-                    // 2. If it's a Read Receipt (Optional: makes ticks turn blue instantly)
+                    // FIX 2: Turn checkmarks blue and double instantly
                     if (data.type === 'read_update' && State.chat == data.chat_id) {
-                        document.querySelectorAll('.msg-tick').forEach(tick => tick.classList.add('read'));
+                        document.querySelectorAll('.msg-tick').forEach(tick => {
+                            tick.classList.add('read');
+                            tick.innerText = '✓✓';
+                        });
+                    }
+
+                    // FIX 3: Instantly show Reactions, Deletions, and Edits
+                    if (data.type === 'message_action' && State.chat == data.chat_id) {
+                        App.fastPoll(); // Instantly grab the updated reaction/deleted state!
                     }
                 };
 
                 State.ws.onclose = () => {
-                    setTimeout(() => App.connectWS(), 3000); // Reconnect if dropped
+                    clearInterval(State.wsPing); // Clean up interval
+                    setTimeout(() => App.connectWS(), 3000);
                 };
             },
             updateChatStatusUI(c) {
