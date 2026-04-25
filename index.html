@@ -858,6 +858,28 @@
         .weather-grad-day::before { background: linear-gradient(180deg, rgba(135, 206, 250, 0.3), transparent) !important; }
         .weather-grad-night::before { background: linear-gradient(180deg, rgba(48, 25, 52, 0.4), transparent) !important; }
         .weather-grad-cloudy::before { background: linear-gradient(180deg, rgba(128, 128, 128, 0.3), transparent) !important; }
+
+        /* Pinned File Upload & AI Button */
+        .n-input-bar-reset .liquid-glass { padding-right: 48px; } /* Space for pinned buttons */
+        #file-upload-btn-wrap { position: absolute; bottom: 6px; right: 6px; z-index: 10; }
+        #input-ai-btn {
+            position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none;
+            display: none; align-items: center; justify-content: center; font-size: 14px; z-index: 10;
+            box-shadow: 0 4px 10px rgba(236, 72, 153, 0.3);
+        }
+        
+        /* AI Modal */
+        #ai-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99999;
+            display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px);
+        }
+        .ai-card { background: var(--bg-panel); width: 90%; max-width: 400px; border-radius: 24px; overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow); }
+        .ai-tabs { display: flex; border-bottom: 1px solid var(--border); }
+        .ai-tab { flex: 1; padding: 14px; text-align: center; font-weight: 600; cursor: pointer; color: var(--text-muted); font-size: 14px; }
+        .ai-tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+        .ai-content { padding: 20px; }
+        .ai-textarea { width: 100%; height: 100px; background: var(--bg-input); border: none; border-radius: 12px; padding: 12px; color: var(--text-main); resize: none; margin-bottom: 12px; font-family: inherit; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -1114,8 +1136,15 @@
                     </button>
                     
                     <div class="liquid-glass n-glass-border" style="flex: 1; position: relative; display: flex; align-items: center; border-radius: 24px;">
-                        <textarea id="msg-input" class="msg-input" placeholder="Message..." rows="1" style="flex: 1; background: transparent; border-radius: 24px; padding: 12px 40px 12px 16px; margin: 0; outline: none; border: none; max-height: 100px; color: var(--text-main); height: 44px; min-height: 44px; overflow-y: auto; box-sizing: border-box;" oninput="this.style.height = '44px'; this.style.height = Math.min(this.scrollHeight, 100) + 'px';"></textarea>
-                        <button class="icon-btn" onclick="document.getElementById('file-upload').click()" style="position: absolute; right: 4px; width: 32px; height: 32px; color:var(--text-main);">
+                        <!-- Textarea updated with line-check logic -->
+                        <textarea id="msg-input" class="msg-input" placeholder="Message..." rows="1" style="flex: 1; background: transparent; border-radius: 24px; padding: 12px 16px; margin: 0; outline: none; border: none; max-height: 100px; color: var(--text-main); height: 44px; min-height: 44px; overflow-y: auto; box-sizing: border-box;" 
+                        oninput="this.style.height = '44px'; this.style.height = Math.min(this.scrollHeight, 100) + 'px'; const lines = this.value.split('\n').length; document.getElementById('input-ai-btn').style.display = (lines >= 3 || this.scrollHeight > 60) ? 'flex' : 'none';"></textarea>
+                        
+                        <!-- Pinned AI Button -->
+                        <button class="icon-btn" id="input-ai-btn" onclick="AITools.open('input')">✨</button>
+                        
+                        <!-- Pinned File Upload Button -->
+                        <button class="icon-btn" id="file-upload-btn-wrap" onclick="document.getElementById('file-upload').click()" style="width: 32px; height: 32px; color:var(--text-main);">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
                         </button>
                         <input type="file" id="file-upload" hidden multiple accept="image/*,video/*" onchange="App.prepMedia(event)">
@@ -1509,6 +1538,7 @@
         </div>
         <div class="ctx-item" onclick="App.initReply()">↩️ Reply</div>
         <div class="ctx-item" onclick="App.msgAct('pin')">📌 Pin / Unpin</div>
+        <div class="ctx-item" id="ctx-ai-tools" onclick="AITools.open('msg')">🤖 AI Tools</div>
         <div class="ctx-item" id="ctx-copy" onclick="App.copyTargetText()">📋 Copy Text</div>
         <div class="ctx-item" id="ctx-save-media" onclick="App.downloadMedia()" style="display:none;">📥 Save to Gallery</div>
         <div class="ctx-item danger" id="ctx-del" onclick="App.msgAct('delete')">🗑️ Delete Message</div>
@@ -1522,6 +1552,29 @@
         </div>
         <div id="media-zoom-container" style="flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none;">
             <img id="media-viewer-img" style="max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.1s ease-out;">
+        </div>
+    </div>
+
+    <!-- AI Assistant Modal -->
+    <div id="ai-modal">
+        <div class="ai-card">
+            <div class="ai-tabs">
+                <div class="ai-tab active" id="tab-ai" onclick="AITools.switchTab('ai')">✨ AI</div>
+                <div class="ai-tab" id="tab-translate" onclick="AITools.switchTab('translate')">🌍 Translate</div>
+                <div class="ai-tab" id="tab-summarize" onclick="AITools.switchTab('summarize')" style="display:none;">📝 Summarize</div>
+            </div>
+            <div class="ai-content">
+                <div id="ai-orig-text" style="font-size:12px; color:var(--text-muted); margin-bottom:12px; max-height:60px; overflow:hidden; text-overflow:ellipsis;"></div>
+                
+                <div id="ai-controls">
+                    <!-- Dynamic Content injected here -->
+                </div>
+    
+                <div style="display:flex; gap:10px; margin-top:16px;">
+                    <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('ai-modal').style.display='none'">Cancel</button>
+                    <button class="btn" style="flex:1" id="ai-action-btn" onclick="AITools.execute()">Process</button>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -2246,6 +2299,89 @@
             togglePopup() {
                 const p = document.getElementById('weather-popup');
                 p.style.display = (p.style.display === 'block') ? 'none' : 'block';
+            }
+        };
+
+        const AITools = {
+            mode: 'input', text: '', tab: 'ai',
+            
+            open(mode) {
+                this.mode = mode;
+                this.text = mode === 'input' ? document.getElementById('msg-input').value : State.targetTxt;
+                if (!this.text) return;
+                
+                if (mode === 'msg') App.closeCtx();
+                
+                document.getElementById('tab-summarize').style.display = mode === 'msg' ? 'block' : 'none';
+                document.getElementById('ai-orig-text').innerText = `"${this.text}"`;
+                document.getElementById('ai-modal').style.display = 'flex';
+                this.switchTab('ai');
+            },
+        
+            switchTab(tab) {
+                this.tab = tab;
+                document.querySelectorAll('.ai-tab').forEach(el => el.classList.remove('active'));
+                document.getElementById(`tab-${tab}`).classList.add('active');
+        
+                const controls = document.getElementById('ai-controls');
+                if (tab === 'ai') {
+                    controls.innerHTML = `<textarea id="ai-prompt" class="ai-textarea" placeholder="Ask Gemini to edit or explain this text..."></textarea>`;
+                    document.getElementById('ai-action-btn').innerText = this.mode === 'input' ? 'Edit Text' : 'Ask AI';
+                } else if (tab === 'translate') {
+                    const defLang = localStorage.getItem('y_lang') || 'en';
+                    controls.innerHTML = `
+                        <select id="ai-lang-select" class="settings-input" style="width:100%; margin-bottom:12px;">
+                            <option value="en" ${defLang==='en'?'selected':''}>English</option>
+                            <option value="ru" ${defLang==='ru'?'selected':''}>Russian</option>
+                            <option value="es">Spanish</option><option value="fr">French</option><option value="de">German</option>
+                        </select>
+                        <textarea id="ai-result" class="ai-textarea" placeholder="Translation will appear here..." readonly></textarea>`;
+                    document.getElementById('ai-action-btn').innerText = 'Translate';
+                } else if (tab === 'summarize') {
+                    controls.innerHTML = `<textarea id="ai-result" class="ai-textarea" placeholder="Summary will appear here..." readonly></textarea>`;
+                    document.getElementById('ai-action-btn').innerText = 'Summarize';
+                }
+            },
+        
+            async execute() {
+                const btn = document.getElementById('ai-action-btn');
+                btn.innerText = 'Processing...'; btn.disabled = true;
+        
+                try {
+                    let result = "";
+                    if (this.tab === 'translate') {
+                        const targetLang = document.getElementById('ai-lang-select').value;
+                        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(this.text)}`;
+                        const res = await fetch(url);
+                        const data = await res.json();
+                        result = data[0].map(x => x[0]).join('');
+                    } 
+                    else {
+                        // Call our new backend helper for AI Tasks
+                        const prompt = document.getElementById('ai-prompt') ? document.getElementById('ai-prompt').value : '';
+                        const action = this.tab === 'summarize' ? 'summarize' : (this.mode === 'input' ? 'edit' : 'ask');
+                        const res = await req('/api/ai/helper', 'POST', { text: this.text, prompt, action });
+                        result = res.result;
+                    }
+        
+                    if (this.mode === 'input' && (this.tab === 'ai' || this.tab === 'translate')) {
+                        // If writing a message, update the input field directly
+                        const inp = document.getElementById('msg-input');
+                        inp.value = result;
+                        inp.style.height = '44px'; inp.style.height = Math.min(inp.scrollHeight, 100) + 'px';
+                        document.getElementById('ai-modal').style.display = 'none';
+                    } else {
+                        // If just reading/summarizing, show the result in the box
+                        if (document.getElementById('ai-result')) document.getElementById('ai-result').value = result;
+                        else document.getElementById('ai-controls').innerHTML = `<textarea class="ai-textarea" readonly>${result}</textarea>`;
+                        btn.innerText = 'Done';
+                    }
+                } catch (e) {
+                    UI.toast("Action failed");
+                    btn.innerText = 'Error';
+                } finally {
+                    btn.disabled = false;
+                }
             }
         };
         
