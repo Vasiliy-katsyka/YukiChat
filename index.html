@@ -2224,8 +2224,8 @@
             // Add this function to the App object:
             connectWS() {
                 if (State.ws && State.ws.readyState === WebSocket.OPEN) return;
-                const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-                State.ws = new WebSocket(`${protocol}//${location.host}/api/ws?token=${State.t}`);
+                const wsUrl = API.replace(/^http/, 'ws') + `/api/ws?token=${State.t}`;
+                State.ws = new WebSocket(wsUrl);
                 
                 State.ws.onmessage = (e) => {
                     const data = JSON.parse(e.data);
