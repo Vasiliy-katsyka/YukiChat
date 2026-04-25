@@ -2228,34 +2228,38 @@
                 
                 State.ws.onmessage = (e) => {
                     const data = JSON.parse(e.data);
+                    
+                    // 1. If it's a new message
                     if (data.type === 'new_message') {
                         const m = data.message;
                         
-                        // 1. Append instantly if we are looking at this chat
+                        // If we are currently IN this chat, append it 0-seconds delay
                         if (State.chat == m.chat_id) {
-                            if (document.getElementById(`msg-${m.id}`)) return; // Prevent duplicates
-                            if (m.id > State.lastMsgId) State.lastMsgId = m.id;
-                            
-                            const isMine = m.sender_id === State.u.userId;
-                            const chat = State.chats.get(State.chat);
-                            const innerHTML = App.buildMsgHTML(m, isMine, chat?.type);
-                            const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
+                            if (document.getElementById(`msg-${m.id}`)) return; 
                             
                             const cont = document.getElementById('msgs');
                             const isAtBottom = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 150;
                             
-                            cont.insertAdjacentHTML('beforeend', rowHtml);
-                            if (!isMine) FX.check(m.content, `msg-${m.id}`);
+                            // Build and append
+                            const innerHTML = App.buildMsgHTML(m, false, State.chats.get(State.chat)?.type);
+                            cont.insertAdjacentHTML('beforeend', `<div class="msg-row received" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, false)">${innerHTML}</div>`);
                             
-                            if (isAtBottom) {
-                                cont.scrollTop = cont.scrollHeight;
-                                setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 100);
-                            }
+                            if (isAtBottom) cont.scrollTop = cont.scrollHeight;
+                            
+                            State.lastMsgId = m.id;
                             localforage.setItem(`y_cache_msgs_${State.chat}`, cont.innerHTML);
+                            
+                            // INSTANT READ TICK: Tell the server we saw it immediately
+                            req(`/api/messages/${m.id}/action`, 'POST', {action: 'read'});
+                        } else {
+                            // If we are NOT in the chat, just refresh the sidebar dots
+                            App.sync();
                         }
-                        
-                        // 2. Silently update the sidebar without freezing UI
-                        App.sync();
+                    }
+                    
+                    // 2. If it's a Read Receipt (Optional: makes ticks turn blue instantly)
+                    if (data.type === 'read_update' && State.chat == data.chat_id) {
+                        document.querySelectorAll('.msg-tick').forEach(tick => tick.classList.add('read'));
                     }
                 };
 
