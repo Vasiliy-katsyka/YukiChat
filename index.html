@@ -819,6 +819,18 @@
         .fx-emp { animation: emp-flash 0.8s ease-out forwards; }
         .bubble-neon { box-shadow: 0 0 15px #f0f, inset 0 0 15px #0ff !important; border: 1px solid #fff !important; }
         .bubble-frozen { background: rgba(255,255,255,0.5) !important; color: #000 !important; border: 2px solid #a5f3fc !important; box-shadow: 0 0 20px #a5f3fc !important; }
+        /* Weather Popup */
+        #weather-popup {
+            position: absolute; top: calc(60px + var(--safe-top)); right: 20px; 
+            background: var(--bg-panel); border-radius: 16px; padding: 16px; 
+            box-shadow: var(--shadow); z-index: 100; display: none; 
+            border: 1px solid var(--border); min-width: 120px; text-align: center;
+        }
+        
+        /* Weather Gradients (overrides the liquid glass before layer) */
+        .weather-grad-day::before { background: linear-gradient(180deg, rgba(135, 206, 250, 0.3), transparent) !important; }
+        .weather-grad-night::before { background: linear-gradient(180deg, rgba(48, 25, 52, 0.4), transparent) !important; }
+        .weather-grad-cloudy::before { background: linear-gradient(180deg, rgba(128, 128, 128, 0.3), transparent) !important; }
     </style>
 </head>
 <body>
@@ -922,10 +934,14 @@
     <!-- ROOT CHAT LIST -->
     <div id="panel-root" class="panel root">
         <!-- WRAPPED IN CLEAR LIQUID GLASS -->
-        <div class="liquid-glass n-glass-header" style="position: absolute; width: 100%; top: 0; z-index: 50;">
+        <!-- UPDATE the glass header container by adding id="root-header-glass" -->
+        <div id="root-header-glass" class="liquid-glass n-glass-header" style="position: absolute; width: 100%; top: 0; z-index: 50;">
             <div class="root-header" style="background: transparent;">
                 <h1 id="main-title" style="transition: color 0.3s, font-size 0.3s;">Messages</h1>
                 <div style="display:flex; gap: 8px; align-items: center;">
+                    
+                    <!-- ADD THIS: Weather Button -->
+                    <button class="icon-btn" id="header-weather-btn" style="display:none;" onclick="Weather.togglePopup()">☀️</button>
                     <!-- NEW Install Button (Hidden by default) -->
                     <button class="icon-btn" id="header-install-btn" style="display:none;" onclick="App.installPWA()">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -955,6 +971,12 @@
                     <button id="search-clear-root" class="icon-btn" style="display:none; position:absolute; right:10px; width:24px; height:24px;" onclick="document.getElementById('search-input-root').value=''; App.searchGlobal('');">✕</button>
                 </div>
             </div>
+        </div>
+
+        <div id="weather-popup">
+            <div id="weather-icon" style="font-size:32px;">☀️</div>
+            <div id="weather-temp" style="font-weight:bold; margin:8px 0; font-size:18px;">--°C</div>
+            <div id="weather-desc" style="color:var(--text-muted); font-size:13px;">Loading...</div>
         </div>
         
         <!-- Exact padding to remove the empty gap while allowing items to scroll BEHIND the glass -->
@@ -1171,6 +1193,15 @@
                         <span id="blur-val-disp" style="color:var(--text-muted);font-size:14px;font-weight:bold;">4px</span>
                     </div>
                     <input type="range" id="set-blur" min="0" max="25" value="4" style="width:100%; cursor:pointer;" oninput="App.setBlur(this.value)">
+                </div>
+                <!-- Insert this inside the "Appearance" settings-card -->
+                <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
+                    <span>Show Weather Emoji</span>
+                    <input type="checkbox" id="set-weather-emoji" style="width:20px;height:20px;" onchange="Weather.toggleSetting('emoji', this.checked)">
+                </div>
+                <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
+                    <span>Weather Header Gradient</span>
+                    <input type="checkbox" id="set-weather-grad" style="width:20px;height:20px;" onchange="Weather.toggleSetting('grad', this.checked)">
                 </div>
             </div>
             <div class="settings-header">Notifications</div>
@@ -2053,6 +2084,87 @@
             }
         };
 
+        const Weather = {
+            data: null,
+            init() {
+                const showEmoji = localStorage.getItem('y_weather_emoji') === 'true';
+                const showGrad = localStorage.getItem('y_weather_grad') === 'true';
+                
+                const cbEmoji = document.getElementById('set-weather-emoji');
+                const cbGrad = document.getElementById('set-weather-grad');
+                if(cbEmoji) cbEmoji.checked = showEmoji;
+                if(cbGrad) cbGrad.checked = showGrad;
+        
+                if (showEmoji || showGrad) this.getLocation();
+            },
+            toggleSetting(type, val) {
+                localStorage.setItem(`y_weather_${type}`, val);
+                if (val && !this.data) this.getLocation();
+                else this.applyUI();
+            },
+            getLocation() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        pos => this.fetchWeather(pos.coords.latitude, pos.coords.longitude), 
+                        err => UI.toast("Location access denied for weather")
+                    );
+                } else {
+                    UI.toast("Geolocation not supported");
+                }
+            },
+            async fetchWeather(lat, lon) {
+                try {
+                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                    const json = await res.json();
+                    this.data = json.current_weather;
+                    this.applyUI();
+                } catch(e) {
+                    console.error("Weather fetch failed", e);
+                }
+            },
+            applyUI() {
+                if (!this.data) return;
+                const showEmoji = localStorage.getItem('y_weather_emoji') === 'true';
+                const showGrad = localStorage.getItem('y_weather_grad') === 'true';
+                
+                const btn = document.getElementById('header-weather-btn');
+                const header = document.getElementById('root-header-glass');
+                
+                const code = this.data.weathercode;
+                const isDay = this.data.is_day;
+                
+                let emoji = '🌤️'; let gradClass = 'weather-grad-day'; let desc = 'Clear';
+        
+                if (code <= 3) {
+                    if (code === 0) { emoji = isDay ? '☀️' : '🌙'; gradClass = isDay ? 'weather-grad-day' : 'weather-grad-night'; desc = 'Clear'; }
+                    else { emoji = '☁️'; gradClass = 'weather-grad-cloudy'; desc = 'Cloudy'; }
+                }
+                else if (code <= 67) { emoji = '🌧️'; gradClass = 'weather-grad-cloudy'; desc = 'Rain'; }
+                else if (code <= 77) { emoji = '❄️'; gradClass = 'weather-grad-cloudy'; desc = 'Snow'; }
+                else if (code >= 95) { emoji = '⛈️'; gradClass = 'weather-grad-cloudy'; desc = 'Storm'; }
+                
+                if (!isDay && gradClass === 'weather-grad-day') gradClass = 'weather-grad-night';
+        
+                if (showEmoji) {
+                    btn.style.display = 'flex';
+                    btn.innerText = emoji;
+                    document.getElementById('weather-icon').innerText = emoji;
+                    document.getElementById('weather-temp').innerText = `${this.data.temperature}°C`;
+                    document.getElementById('weather-desc').innerText = desc;
+                } else {
+                    btn.style.display = 'none';
+                    document.getElementById('weather-popup').style.display = 'none';
+                }
+        
+                header.classList.remove('weather-grad-day', 'weather-grad-night', 'weather-grad-cloudy');
+                if (showGrad) header.classList.add(gradClass);
+            },
+            togglePopup() {
+                const p = document.getElementById('weather-popup');
+                p.style.display = (p.style.display === 'block') ? 'none' : 'block';
+            }
+        };
+        
         const App = {
             // --- AUTHENTICATION ---
             toggleAuthMode() {
@@ -2098,11 +2210,10 @@
                     el.innerText = txt;
                     if (txt === 'Messages') {
                         el.style.color = 'var(--text-main)';
-                        el.style.fontSize = '28px';
                     } else {
-                        el.style.color = 'var(--primary)'; // Make status stand out
-                        el.style.fontSize = '18px'; // Slightly smaller for status (like Telegram)
+                        el.style.color = 'var(--primary)'; 
                     }
+                    el.style.fontSize = '28px'; // Forces SAME size for everything
                 }
             },
             async submitGroup() {
@@ -2918,6 +3029,7 @@
                 let totalBytes = 0;
                 for(let key in localStorage) if(localStorage.hasOwnProperty(key)) totalBytes += ((localStorage[key].length + key.length) * 2);
                 document.getElementById('cache-size').innerText = (totalBytes / 1024).toFixed(1) + ' KB';
+                Weather.init();
                 
                 this.sync(); 
 
