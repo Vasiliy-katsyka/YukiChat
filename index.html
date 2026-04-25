@@ -2606,17 +2606,13 @@
                     if (data.type === 'new_message') {
                         const m = data.message;
                         if (State.chat == m.chat_id) {
+                            
+                            // 1. If this is the sender's optimistic bubble, update it to the server's placeholder!
                             const existingMsg = document.getElementById(`msg-${m.id}`);
                             if (existingMsg) {
-                                // If it's a placeholder that turned into a photo, or text that was edited, update it
                                 const isMine = m.sender_id === State.u.userId;
-                                const newHTML = this.buildMsgHTML(m, isMine, chat?.type);
-                                if (existingMsg.innerHTML !== newHTML) {
-                                    existingMsg.innerHTML = newHTML;
-                                    // Trigger FX if a keyword appeared after the AI update
-                                    if (!isMine) FX.check(m.content, `msg-${m.id}`);
-                                }
-                                return; // Don't append a duplicate
+                                existingMsg.innerHTML = App.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
+                                return; 
                             }
                             
                             const cont = document.getElementById('msgs');
@@ -2641,10 +2637,23 @@
                             tick.innerText = '✓✓';
                         });
                     }
-
+                
                     if (data.type === 'message_action' && State.chat == data.chat_id) {
-                        // Passing 'true' forces the app to re-fetch and update existing IDs
-                        App.fastPoll(true); 
+                        // 2. Silently fetch and patch ONLY the bubbles that changed (AI Image, Reactions, Edits)
+                        // This prevents the entire screen from flickering and wiping!
+                        req(`/api/messages/${data.chat_id}?after=0`).then(msgs => {
+                            msgs.forEach(m => {
+                                const existingMsg = document.getElementById(`msg-${m.id}`);
+                                if (existingMsg) {
+                                    const isMine = m.sender_id === State.u.userId;
+                                    const newHTML = App.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
+                                    if (existingMsg.innerHTML !== newHTML) {
+                                        existingMsg.innerHTML = newHTML;
+                                        if (!isMine) FX.check(m.content, `msg-${m.id}`);
+                                    }
+                                }
+                            });
+                        });
                     }
                 };
 
