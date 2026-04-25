@@ -3649,68 +3649,6 @@
                 }
             },
 
-            async fastPoll() {
-                // Stop if tab is hidden or not in a chat
-                if (!State.chat || State.chat === 'ai' || document.visibilityState !== 'visible') return;
-                
-                // Failsafe mechanism: Prevent getting stuck forever
-                if (State.isPolling) {
-                    if (Date.now() - (State.lastPollStart || 0) > 5000) {
-                        State.isPolling = false; // Un-stick the lock after 5 seconds
-                    } else {
-                        return; // Wait for current request to finish
-                    }
-                }
-                
-                State.isPolling = true;
-                State.lastPollStart = Date.now();
-
-                try {
-                    const msgs = await req(`/api/messages/${State.chat}?after=${State.lastMsgId}&_t=${Date.now()}`);
-                    if (!msgs || msgs.length === 0) {
-                        State.isPolling = false;
-                        return;
-                    }
-
-                    const cont = document.getElementById('msgs');
-                    const chat = State.chats.get(State.chat) || State.chats.get(Number(State.chat));
-                    let addedNew = false;
-                    
-                    // Was the user currently scrolled near the bottom?
-                    const isAtBottom = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 150;
-
-                    msgs.forEach(m => {
-                        if (m.id > State.lastMsgId) State.lastMsgId = m.id;
-                        
-                        // Skip if we already rendered this message
-                        if (document.getElementById(`msg-${m.id}`)) return;
-
-                        const isMine = m.sender_id === State.u.userId;
-                        const innerHTML = this.buildMsgHTML(m, isMine, chat?.type);
-                        const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
-                        
-                        cont.insertAdjacentHTML('beforeend', rowHtml);
-                        if (!isMine) {
-                            FX.check(m.content, `msg-${m.id}`);
-                        }
-                        addedNew = true;
-                    });
-
-                    if (addedNew) {
-                        localStorage.setItem(`y_cache_msgs_${State.chat}`, cont.innerHTML);
-                        // Auto-scroll only if they weren't scrolling up reading old messages
-                        if (isAtBottom) {
-                            cont.scrollTop = cont.scrollHeight;
-                            setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 100);
-                        }
-                    }
-                } catch(e) {
-                    // Ignore background errors so it safely tries again in 1.5 seconds
-                } finally {
-                    State.isPolling = false;
-                }
-            },
-
             async msgAct(act, emoji=null) {
                     try { 
                         // 1. Send action to backend
