@@ -2131,7 +2131,7 @@
                             inner += `<div class="inline-kb">`;
                             rm.inline_keyboard.forEach(row => {
                                 inner += `<div class="inline-row">`;
-                                row.forEach(btn => { inner += `<button class="inline-btn" onclick="App.sendCallback(${m.id}, '${btn.callback_data}')">${btn.text}</button>`; });
+                                row.forEach(btn => { inner += `<button class="inline-btn" onclick="App.sendCallback(event, ${m.id}, '${btn.callback_data}')">${btn.text}</button>`; });
                                 inner += `</div>`;
                             });
                             inner += `</div>`;
@@ -2469,12 +2469,35 @@
                 }
             },
             
-            async sendCallback(msgId, data) {
-                // Triggers the bot's callback query without sending a visible message
+            async sendCallback(e, msgId, data) {
+                // Prevent the click from opening the message's context menu
+                if (e) e.stopPropagation();
+                
+                const btn = e ? e.currentTarget : null;
+                const origText = btn ? btn.innerHTML : '';
+                
+                // Instantly provide visual feedback
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<div class="loader" style="width:16px;height:16px; border-color: color-mix(in srgb, var(--primary) 30%, transparent); border-top-color: var(--primary);"></div>';
+                }
+                
                 try {
                     await req(`/api/messages/${msgId}/action`, 'POST', { action: 'callback', text: data });
-                    // Assume API handles Webhook push natively inside the /action endpoint
-                } catch(e) {}
+                    
+                    // Bots & Webhooks process in the background and insert to the DB without WebSocket triggers.
+                    // We poll a few times to grab their response quickly making the UI feel instantly responsive!
+                    setTimeout(() => App.fastPoll(), 400);
+                    setTimeout(() => App.fastPoll(), 1200);
+                    setTimeout(() => App.fastPoll(), 2500);
+                } catch(err) {
+                    UI.toast('Action failed');
+                } finally {
+                    if (btn) {
+                        btn.innerHTML = origText;
+                        btn.disabled = false;
+                    }
+                }
             },
             toggleTheme() { 
                 const current = document.documentElement.getAttribute('data-theme');
