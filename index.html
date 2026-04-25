@@ -819,6 +819,33 @@
         .fx-emp { animation: emp-flash 0.8s ease-out forwards; }
         .bubble-neon { box-shadow: 0 0 15px #f0f, inset 0 0 15px #0ff !important; border: 1px solid #fff !important; }
         .bubble-frozen { background: rgba(255,255,255,0.5) !important; color: #000 !important; border: 2px solid #a5f3fc !important; box-shadow: 0 0 20px #a5f3fc !important; }
+
+        /* Animated Weather Icons */
+        @keyframes weather-spin { to { transform: rotate(360deg); } }
+        @keyframes weather-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        .w-anim-sun { display: inline-block; animation: weather-spin 12s linear infinite; }
+        .w-anim-cloud { display: inline-block; animation: weather-float 3s ease-in-out infinite; }
+        
+        /* Rain & Frost Header Overlays (applied under the glass) */
+        .weather-grad-frost::before { 
+            background: linear-gradient(180deg, rgba(200, 230, 255, 0.4), transparent) !important; 
+        }
+        .weather-grad-frost::after {
+            content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="f"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3"/></filter><rect width="100%" height="100%" filter="url(%23f)" opacity="0.15"/></svg>');
+            mix-blend-mode: overlay;
+        }
+        .weather-grad-rain::before { 
+            background: linear-gradient(180deg, rgba(100, 110, 120, 0.4), transparent) !important; 
+        }
+        .weather-grad-rain::after {
+            content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit; opacity: 0.4;
+            background: radial-gradient(circle at 15% 30%, rgba(255,255,255,0.6) 1px, transparent 2px), 
+                        radial-gradient(circle at 75% 60%, rgba(255,255,255,0.6) 1.5px, transparent 2px),
+                        radial-gradient(circle at 40% 80%, rgba(255,255,255,0.6) 1px, transparent 2px);
+            background-size: 30px 40px;
+        }
+        
         /* Weather Popup */
         #weather-popup {
             position: absolute; top: calc(60px + var(--safe-top)); right: 20px; 
@@ -973,10 +1000,27 @@
             </div>
         </div>
 
-        <div id="weather-popup">
-            <div id="weather-icon" style="font-size:32px;">☀️</div>
-            <div id="weather-temp" style="font-weight:bold; margin:8px 0; font-size:18px;">--°C</div>
-            <div id="weather-desc" style="color:var(--text-muted); font-size:13px;">Loading...</div>
+        <div id="weather-popup" style="min-width: 200px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <div id="weather-icon" style="font-size:38px; line-height: 1;">☀️</div>
+                <div style="text-align: right;">
+                    <div id="weather-temp" style="font-weight:800; font-size:22px;">--°C</div>
+                    <div id="weather-desc" style="color:var(--text-muted); font-size:13px; font-weight:600;">Loading...</div>
+                </div>
+            </div>
+            
+            <!-- Extra Details -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: left; background: var(--bg-input); padding: 10px; border-radius: 12px; font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">
+                <div id="weather-feels">Feels like: --°</div>
+                <div id="weather-hum">Humidity: --%</div>
+                <div id="weather-wind">Wind: -- km/h</div>
+            </div>
+        
+            <!-- 3-Hour Forecast -->
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-align: left; margin-bottom: 8px; text-transform: uppercase;">Next 3 Hours</div>
+            <div id="weather-forecast" style="display: flex; justify-content: space-between; background: var(--bg-input); padding: 10px; border-radius: 12px;">
+                <!-- Injected via JS -->
+            </div>
         </div>
         
         <!-- Exact padding to remove the empty gap while allowing items to scroll BEHIND the glass -->
@@ -1536,6 +1580,9 @@
                     'Incoming Video Call...': 'Входящий видеовызов...', 'Incoming Audio Call...': 'Входящий аудиовызов...',
                     'User Name': 'Пользователь', '↩️ Reply': '↩️ Ответить', '📌 Pin / Unpin': '📌 Закрепить / Открепить',
                     '📋 Copy Text': '📋 Копировать', '📥 Save to Gallery': '📥 Сохранить', '🗑️ Delete Message': '🗑️ Удалить',
+                    'Updating...': 'Обновление...', 'Waiting for network...': 'Ожидание сети...',
+                    'Feels like': 'Ощущается как', 'Humidity': 'Влажность', 'Wind': 'Ветер',
+                    'Clear': 'Ясно', 'Cloudy': 'Облачно', 'Rain': 'Дождь', 'Snow': 'Снег', 'Storm': 'Гроза',
                     
                     // Dynamic JS Statuses / Toasts
                     'Logging in...': 'Вход...', 'Registering...': 'Регистрация...', 'Please fill in all fields': 'Заполните все поля',
@@ -2085,15 +2132,12 @@
         };
 
         const Weather = {
-            data: null,
+            data: null, hourly: null,
             init() {
                 const showEmoji = localStorage.getItem('y_weather_emoji') === 'true';
                 const showGrad = localStorage.getItem('y_weather_grad') === 'true';
-                
-                const cbEmoji = document.getElementById('set-weather-emoji');
-                const cbGrad = document.getElementById('set-weather-grad');
-                if(cbEmoji) cbEmoji.checked = showEmoji;
-                if(cbGrad) cbGrad.checked = showGrad;
+                if(document.getElementById('set-weather-emoji')) document.getElementById('set-weather-emoji').checked = showEmoji;
+                if(document.getElementById('set-weather-grad')) document.getElementById('set-weather-grad').checked = showGrad;
         
                 if (showEmoji || showGrad) this.getLocation();
             },
@@ -2114,50 +2158,90 @@
             },
             async fetchWeather(lat, lon) {
                 try {
-                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                    // Fetch current + hourly forecast
+                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code,is_day&hourly=temperature_2m,weather_code&timezone=auto`);
                     const json = await res.json();
-                    this.data = json.current_weather;
+                    this.data = json.current;
+                    this.hourly = json.hourly;
                     this.applyUI();
-                } catch(e) {
-                    console.error("Weather fetch failed", e);
+                } catch(e) { console.error("Weather fetch failed", e); }
+            },
+            getMoonPhase() {
+                // Simple accurate moon phase calculation
+                const lp = 2551443; 
+                const now = new Date(); 
+                const newMoon = new Date(1970, 0, 7, 20, 35, 0);
+                const phase = ((now.getTime() - newMoon.getTime()) / 1000) % lp;
+                const f = phase / lp;
+                if (f < 0.05) return '🌑'; if (f < 0.2) return '🌒'; if (f < 0.4) return '🌓';
+                if (f < 0.55) return '🌔'; if (f < 0.7) return '🌕'; if (f < 0.8) return '🌖';
+                if (f < 0.95) return '🌗'; return '🌘';
+            },
+            getIconInfo(code, isDay) {
+                if (code <= 3) {
+                    if (code === 0) return { e: isDay ? '☀️' : this.getMoonPhase(), c: isDay ? 'weather-grad-day' : 'weather-grad-night', d: 'Clear', a: isDay ? 'w-anim-sun' : '' };
+                    return { e: '☁️', c: 'weather-grad-cloudy', d: 'Cloudy', a: 'w-anim-cloud' };
                 }
+                if (code <= 67) return { e: '🌧️', c: 'weather-grad-rain', d: 'Rain', a: 'w-anim-cloud' };
+                if (code <= 77) return { e: '❄️', c: 'weather-grad-frost', d: 'Snow', a: 'w-anim-cloud' };
+                return { e: '⛈️', c: 'weather-grad-rain', d: 'Storm', a: '' };
             },
             applyUI() {
                 if (!this.data) return;
                 const showEmoji = localStorage.getItem('y_weather_emoji') === 'true';
                 const showGrad = localStorage.getItem('y_weather_grad') === 'true';
-                
                 const btn = document.getElementById('header-weather-btn');
                 const header = document.getElementById('root-header-glass');
                 
-                const code = this.data.weathercode;
                 const isDay = this.data.is_day;
+                const info = this.getIconInfo(this.data.weather_code, isDay);
                 
-                let emoji = '🌤️'; let gradClass = 'weather-grad-day'; let desc = 'Clear';
-        
-                if (code <= 3) {
-                    if (code === 0) { emoji = isDay ? '☀️' : '🌙'; gradClass = isDay ? 'weather-grad-day' : 'weather-grad-night'; desc = 'Clear'; }
-                    else { emoji = '☁️'; gradClass = 'weather-grad-cloudy'; desc = 'Cloudy'; }
-                }
-                else if (code <= 67) { emoji = '🌧️'; gradClass = 'weather-grad-cloudy'; desc = 'Rain'; }
-                else if (code <= 77) { emoji = '❄️'; gradClass = 'weather-grad-cloudy'; desc = 'Snow'; }
-                else if (code >= 95) { emoji = '⛈️'; gradClass = 'weather-grad-cloudy'; desc = 'Storm'; }
-                
-                if (!isDay && gradClass === 'weather-grad-day') gradClass = 'weather-grad-night';
+                // Dynamic Frost Override if literally freezing
+                if (this.data.temperature_2m <= 0) info.c = 'weather-grad-frost';
         
                 if (showEmoji) {
                     btn.style.display = 'flex';
-                    btn.innerText = emoji;
-                    document.getElementById('weather-icon').innerText = emoji;
-                    document.getElementById('weather-temp').innerText = `${this.data.temperature}°C`;
-                    document.getElementById('weather-desc').innerText = desc;
+                    btn.innerHTML = `<span class="${info.a}">${info.e}</span>`;
+                    
+                    // Populate Popup Main
+                    document.getElementById('weather-icon').innerHTML = `<span class="${info.a}">${info.e}</span>`;
+                    document.getElementById('weather-temp').innerText = `${Math.round(this.data.temperature_2m)}°C`;
+                    document.getElementById('weather-desc').innerText = I18N.t(info.d);
+                    
+                    // Populate Details
+                    document.getElementById('weather-feels').innerText = `${I18N.t('Feels like')}: ${Math.round(this.data.apparent_temperature)}°`;
+                    document.getElementById('weather-hum').innerText = `${I18N.t('Humidity')}: ${this.data.relative_humidity_2m}%`;
+                    document.getElementById('weather-wind').innerText = `${I18N.t('Wind')}: ${Math.round(this.data.wind_speed_10m)} km/h`;
+        
+                    // Populate Forecast (Next 3 hours)
+                    let forecastHtml = '';
+                    const currentHour = new Date().getHours();
+                    for (let i = 1; i <= 3; i++) {
+                        const targetIdx = currentHour + i;
+                        if(targetIdx < this.hourly.temperature_2m.length) {
+                            const hCode = this.hourly.weather_code[targetIdx];
+                            const hTemp = Math.round(this.hourly.temperature_2m[targetIdx]);
+                            // Guessing day/night for forecast based on fixed hours for simplicity
+                            const hIsDay = (targetIdx % 24) >= 6 && (targetIdx % 24) <= 19; 
+                            const hInfo = this.getIconInfo(hCode, hIsDay);
+                            forecastHtml += `
+                                <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+                                    <span style="font-size:10px; color:var(--text-muted)">${(targetIdx % 24).toString().padStart(2, '0')}:00</span>
+                                    <span style="font-size:16px">${hInfo.e}</span>
+                                    <span style="font-size:12px; font-weight:600">${hTemp}°</span>
+                                </div>`;
+                        }
+                    }
+                    document.getElementById('weather-forecast').innerHTML = forecastHtml;
                 } else {
                     btn.style.display = 'none';
                     document.getElementById('weather-popup').style.display = 'none';
                 }
         
-                header.classList.remove('weather-grad-day', 'weather-grad-night', 'weather-grad-cloudy');
-                if (showGrad) header.classList.add(gradClass);
+                header.className = 'liquid-glass n-glass-header'; // Reset classes
+                if (showGrad) header.classList.add(info.c);
+                
+                I18N.scan(document.getElementById('weather-popup')); // Translate popup UI
             },
             togglePopup() {
                 const p = document.getElementById('weather-popup');
