@@ -320,8 +320,8 @@
             inset: 0;
             z-index: -2;
             border-radius: inherit;
-            backdrop-filter: blur(1px);
-            -webkit-backdrop-filter: blur(1px);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
             filter: url(#glass-distortion);
             -webkit-filter: url(#glass-distortion);
             pointer-events: none;
@@ -456,8 +456,8 @@
             inset: 0;
             z-index: -2;
             border-radius: inherit;
-            backdrop-filter: blur(2px); /* Tiny blur helps smooth the distortion */
-            -webkit-backdrop-filter: blur(2px);
+            backdrop-filter: blur(4px); /* Tiny blur helps smooth the distortion */
+            -webkit-backdrop-filter: blur(4px);
             /* THE MAGIC DISTORTION */
             filter: url(#glass-distortion);
             -webkit-filter: url(#glass-distortion);
@@ -3380,7 +3380,18 @@
                     I18N.scan(cont);
                 } else {
                     State.lastMsgId = 0;
-                    cont.innerHTML = `<div style="padding:20px; display:flex; justify-content:center;"><div class="loader" style="border-top-color:var(--primary);"></div></div>`;
+                    // Beautiful Chat Skeleton UI
+                    let skelHtml = '';
+                    for(let i=0; i<3; i++) {
+                        skelHtml += `
+                        <div class="msg-row received" style="margin-bottom:12px;">
+                            <div class="msg-bubble skeleton" style="width: ${Math.floor(Math.random() * 40 + 30)}%; height: 44px; border-radius: 20px; border-bottom-left-radius: 4px; background: color-mix(in srgb, var(--bg-input) 50%, transparent); box-shadow: none;"></div>
+                        </div>
+                        <div class="msg-row sent" style="margin-bottom:12px;">
+                            <div class="msg-bubble skeleton" style="width: ${Math.floor(Math.random() * 30 + 20)}%; height: 44px; border-radius: 20px; border-bottom-right-radius: 4px; background: color-mix(in srgb, var(--primary) 20%, transparent); box-shadow: none;"></div>
+                        </div>`;
+                    }
+                    cont.innerHTML = `<div style="padding: 20px; display:flex; flex-direction:column; width: 100%;">${skelHtml}</div>`;
                 }
 
                 State.isFetchingMsgs = false;
