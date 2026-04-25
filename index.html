@@ -860,7 +860,7 @@
         .weather-grad-cloudy::before { background: linear-gradient(180deg, rgba(128, 128, 128, 0.3), transparent) !important; }
 
         /* Pinned File Upload & AI Button */
-        .n-input-bar-reset .liquid-glass { padding-right: 48px; } /* Space for pinned buttons */
+        .n-input-bar-reset div.liquid-glass { padding-right: 48px; } /* Space for pinned buttons */
         #file-upload-btn-wrap { position: absolute; bottom: 6px; right: 6px; z-index: 10; }
         #input-ai-btn {
             position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border-radius: 50%;
@@ -4031,6 +4031,7 @@
                 this.cancelMedia();
                 document.getElementById('msg-input').value = '';
                 document.getElementById('msg-input').style.height = '44px';
+                document.getElementById('input-ai-btn').style.display = 'none';
                 
                 const msgsCont = document.getElementById('msgs');
                 const targetChat = State.chat; // Fix: Lock the active chat
@@ -4101,6 +4102,7 @@
                 if(!txt || !State.chat) return; 
                 inp.value = '';
                 inp.style.height = '44px';
+                document.getElementById('input-ai-btn').style.display = 'none';
 
                 const tempId = 'temp-' + Date.now();
                 const msgsCont = document.getElementById('msgs');
