@@ -2469,11 +2469,28 @@
                 }
             },
             
-            async sendCallback(e, msgId, data) {
-                // Prevent the click from opening the message's context menu
-                if (e) e.stopPropagation();
+            async sendCallback(arg1, arg2, arg3) {
+                let e, msgId, data;
                 
-                const btn = e ? e.currentTarget : null;
+                // Detect if the first argument is the Event (new code) or the msgId (old cached code)
+                if (arg1 && typeof arg1.stopPropagation === 'function') {
+                    e = arg1;
+                    msgId = arg2;
+                    data = arg3;
+                } else {
+                    e = window.event; // Fallback for old cached buttons
+                    msgId = arg1;
+                    data = arg2;
+                }
+
+                // Stop the reaction menu from popping up
+                if (e && typeof e.stopPropagation === 'function') {
+                    e.stopPropagation();
+                }
+                
+                // Find the specific button element that was clicked
+                const target = e ? (e.currentTarget || e.target) : null;
+                const btn = target && target.closest ? target.closest('.inline-btn') : null;
                 const origText = btn ? btn.innerHTML : '';
                 
                 // Instantly provide visual feedback
@@ -2485,8 +2502,7 @@
                 try {
                     await req(`/api/messages/${msgId}/action`, 'POST', { action: 'callback', text: data });
                     
-                    // Bots & Webhooks process in the background and insert to the DB without WebSocket triggers.
-                    // We poll a few times to grab their response quickly making the UI feel instantly responsive!
+                    // Fast poll to get the bot's background response instantly
                     setTimeout(() => App.fastPoll(), 400);
                     setTimeout(() => App.fastPoll(), 1200);
                     setTimeout(() => App.fastPoll(), 2500);
