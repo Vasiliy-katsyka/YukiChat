@@ -3650,19 +3650,26 @@
             },
 
             async msgAct(act, emoji=null) {
-                    try { 
-                        // 1. Send action to backend
-                        await req(`/api/messages/${State.targetId}/action`, 'POST', {action:act, emoji}); 
-                        
-                        // 2. Smoothly close the new floating context menu
-                        this.closeCtx();
-                        
-                        // 3. Silently reload messages to reflect the delete/pin/reaction via DOM Diffing
-                        this.loadMsgs(State.chat); 
-                    } catch(e) {
-                        UI.toast('Action failed');
+                try { 
+                    // 1. Send action to backend
+                    await req(`/api/messages/${State.targetId}/action`, 'POST', {action:act, emoji}); 
+                    
+                    // 2. Smoothly close the context menu
+                    this.closeCtx();
+                    
+                    // 3. OPTIMIZED: Don't reload the whole chat. 
+                    // Just update the one message or wait for the next fastPoll/WebSocket to catch it.
+                    if (act === 'delete') {
+                        document.getElementById(`msg-${State.targetId}`)?.remove();
+                    } else {
+                        // For reactions/pins, let the background sync handle the update 
+                        // so we don't trigger a heavy UI wipe/crash.
+                        this.fastPoll(); 
                     }
-                },
+                } catch(e) {
+                    UI.toast('Action failed');
+                }
+            },
 
             // --- PROFILE & SETTINGS ---
             viewProfile(chatId) {
