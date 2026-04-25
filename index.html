@@ -1135,11 +1135,10 @@
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
                     </button>
                     
-                    <div class="liquid-glass n-glass-border" style="flex: 1; position: relative; display: flex; align-items: center; border-radius: 24px;">
+                    <div class="liquid-glass n-glass-border" style="flex: 1; min-width: 0; position: relative; display: flex; align-items: center; border-radius: 24px;">
                         <!-- Textarea updated with line-check logic -->
-                        <textarea id="msg-input" class="msg-input" placeholder="Message..." rows="1" style="flex: 1; background: transparent; border-radius: 24px; padding: 12px 16px; margin: 0; outline: none; border: none; max-height: 100px; color: var(--text-main); height: 44px; min-height: 44px; overflow-y: auto; box-sizing: border-box;" 
-                        oninput="this.style.height = '44px'; this.style.height = Math.min(this.scrollHeight, 100) + 'px'; const lines = this.value.split('\n').length; document.getElementById('input-ai-btn').style.display = (lines >= 3 || this.scrollHeight > 60) ? 'flex' : 'none';"></textarea>
-                        
+                        <textarea id="msg-input" class="msg-input" placeholder="Message..." rows="1" style="flex: 1; min-width: 0; width: 100%; background: transparent; border-radius: 24px; padding: 12px 16px; margin: 0; outline: none; border: none; max-height: 100px; color: var(--text-main); height: 44px; min-height: 44px; overflow-y: auto; box-sizing: border-box;" 
+                        oninput="..."></textarea>
                         <!-- Pinned AI Button -->
                         <button class="icon-btn" id="input-ai-btn" onclick="AITools.open('input')">✨</button>
                         
