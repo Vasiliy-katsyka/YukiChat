@@ -249,17 +249,39 @@
         .reply-block { background: rgba(0,0,0,0.05); padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; border-left: 3px solid var(--primary); opacity: 0.8; }
         [data-theme="dark"] .reply-block { background: rgba(255,255,255,0.1); }
 
+        /* --- BEAUTIFUL PULSING SKELETONS --- */
         .skeleton {
-            background: linear-gradient(110deg, color-mix(in srgb, var(--bg-input) 60%, transparent) 8%, color-mix(in srgb, var(--border) 40%, transparent) 18%, color-mix(in srgb, var(--bg-input) 60%, transparent) 33%);
+            background: var(--bg-input);
+            background-image: linear-gradient(
+                90deg, 
+                transparent 0%, 
+                color-mix(in srgb, var(--text-main) 5%, transparent) 50%, 
+                transparent 100%
+            );
             background-size: 200% 100%;
-            animation: cute-shimmer 1.8s infinite linear, cute-pulse 2s infinite ease-in-out;
-            border-radius: 16px; /* Cuter, rounder corners */
+            animation: skeleton-shimmer 1.8s infinite linear;
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
         }
+        
+        @keyframes skeleton-shimmer {
+            0% { background-position: 150% 0; }
+            100% { background-position: -150% 0; }
+        }
+        
+        /* Chat List Skeleton specific sizes */
+        .skel-chat-item {
+            display: flex; gap: 16px; padding: 12px 20px; align-items: center;
+        }
+        .skel-av { width: 50px; height: 50px; border-radius: 50% !important; flex-shrink: 0; }
+        .skel-info { flex: 1; }
+        .skel-line { height: 14px; width: 60%; margin-bottom: 8px; }
+        .skel-line.short { width: 35%; }
         @keyframes cute-shimmer { to { background-position-x: -200%; } }
         @keyframes cute-pulse { 0%, 100% { opacity: 0.8; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.98); } }
         
         /* Fix the skeleton shapes in your chat list */
-        .skel-av { border-radius: 50% !important; }
         .skel-text { margin-bottom: 8px; border-radius: 12px; height: 14px; width: 80%; }
         .skel-text.short { width: 50%; opacity: 0.7; }
 
@@ -297,35 +319,6 @@
         /* 1. Theme-Aware Glass Glow Colors */
         :root { --glass-glow: rgba(255, 255, 255, 0.7); }[data-theme="dark"] { --glass-glow: var(--border); }[data-theme="oled"] { --glass-glow: var(--border); }
         [data-theme="dracula"] { --glass-glow: var(--border); }
-
-        /* 2. Reusable Liquid Glass Utility */
-        .liquid-glass {
-            position: relative;
-            isolation: isolate;
-            background: transparent !important;
-            border: none !important;
-        }
-        .liquid-glass::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            z-index: -1;
-            border-radius: inherit; /* Perfectly molds to the shape of the parent */
-            box-shadow: inset 0 0 23px -5px var(--bg-panel); /* Uses theme color */
-            pointer-events: none; /* Prevents blocking clicks on inputs/buttons */
-        }
-        .liquid-glass::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            z-index: -2;
-            border-radius: inherit;
-            backdrop-filter: blur(1px);
-            -webkit-backdrop-filter: blur(1px);
-            filter: url(#glass-distortion);
-            -webkit-filter: url(#glass-distortion);
-            pointer-events: none;
-        }
 
         /* 3. Base Bottom Nav Layout (Inherits the glass effect) */
         .bottom-nav {
@@ -431,36 +424,36 @@
         /* --- 1. CLEAN IOS-STYLE LIQUID GLASS --- */
         /* Remove the old muddy SVG pseudo-elements completely */
         /* --- 1. TRUE SVG LIQUID GLASS --- */
-        .n-liquid {
+        /* --- ENHANCED FROSTED GLASS --- */
+        .n-liquid, .liquid-glass {
             position: relative !important;
             isolation: isolate !important;
             background: transparent !important;
-            border: none !important; /* FIX: Removes the unwanted line under the header */
+            border: none !important;
         }
         
-        .n-liquid::before {
+        .n-liquid::before, .liquid-glass::before {
             content: '';
             position: absolute;
             inset: 0;
             z-index: -1;
             border-radius: inherit;
-            box-shadow: inset 0 0 15px -5px var(--glass-glow);
-            /* FIX: Changed from --bg-panel to --glass-glow to make the glass visible and frosted */
-            background-color: color-mix(in srgb, var(--glass-glow) 8%, transparent);
+            /* This creates the 'frosted' surface */
+            background-color: color-mix(in srgb, var(--bg-panel) 40%, transparent);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-main) 10%, transparent);
             pointer-events: none;
         }
         
-        .n-liquid::after {
+        .n-liquid::after, .liquid-glass::after {
             content: '';
             position: absolute;
             inset: 0;
             z-index: -2;
             border-radius: inherit;
-            backdrop-filter: blur(2px); /* Tiny blur helps smooth the distortion */
-            -webkit-backdrop-filter: blur(2px);
-            /* THE MAGIC DISTORTION */
+            /* Increased blur from 2px to 15px for that premium look */
+            backdrop-filter: blur(15px) saturate(180%);
+            -webkit-backdrop-filter: blur(15px) saturate(180%);
             filter: url(#glass-distortion);
-            -webkit-filter: url(#glass-distortion);
             pointer-events: none;
         }
         
@@ -2795,7 +2788,18 @@
                 const t = localStorage.getItem('y_theme') || 'dark'; this.setTheme(t);
                 const w = localStorage.getItem('y_wall') || ''; this.setWallpaper(w);
 
-                let skels=''; for(let i=0;i<6;i++) skels+=`<div class="user-item"><div class="skel-av skeleton"></div><div class="user-info"><div class="skel-text skeleton"></div><div class="skel-text short skeleton"></div></div></div>`;
+                // Inside App.start()
+                let skels = '';
+                for(let i=0; i<8; i++) {
+                    skels += `
+                        <div class="skel-chat-item">
+                            <div class="skel-av skeleton"></div>
+                            <div class="skel-info">
+                                <div class="skel-line skeleton"></div>
+                                <div class="skel-line short skeleton"></div>
+                            </div>
+                        </div>`;
+                }
                 document.getElementById('chat-list').innerHTML = skels;
 
                 const p = new URLSearchParams(window.location.search);
@@ -3109,7 +3113,11 @@
 
             async searchGlobal(q) {
                 const isNewPanel = Router.stack.includes('panel-new');
-                const resEl = document.getElementById(isNewPanel ? 'global-search-res' : 'chat-list');
+                resEl.innerHTML = localHtml + `
+                    <div style="padding: 20px;">
+                        <div class="skel-chat-item"><div class="skel-av skeleton"></div><div class="skel-info"><div class="skel-line skeleton"></div></div></div>
+                        <div class="skel-chat-item"><div class="skel-av skeleton"></div><div class="skel-info"><div class="skel-line skeleton"></div></div></div>
+                    </div>`;
                 
                 // Toggle the "X" Clear Button visibility
                 const clearBtnId = isNewPanel ? 'search-clear-new' : 'search-clear-root';
@@ -3380,7 +3388,14 @@
                     I18N.scan(cont);
                 } else {
                     State.lastMsgId = 0;
-                    cont.innerHTML = `<div style="padding:20px; display:flex; justify-content:center;"><div class="loader" style="border-top-color:var(--primary);"></div></div>`;
+                    // Inside loadMsgs(id)
+                    if (!hasCache) {
+                        cont.innerHTML = `
+                            <div class="msg-row received"><div class="msg-bubble skeleton" style="width:60%; height:45px; opacity:0.6;"></div></div>
+                            <div class="msg-row sent"><div class="msg-bubble skeleton" style="width:40%; height:45px; opacity:0.6;"></div></div>
+                            <div class="msg-row received"><div class="msg-bubble skeleton" style="width:75%; height:60px; opacity:0.6;"></div></div>
+                        `;
+                    }
                 }
 
                 State.isFetchingMsgs = false;
