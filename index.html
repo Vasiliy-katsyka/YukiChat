@@ -4329,22 +4329,59 @@
                 try { await req('/api/user/profile','PUT',body); UI.toast('Updated'); } catch(e){ UI.toast(e.message); }
             },
 
-            // --- SESSIONS ---
+            // --- SESSIONS & SECURITY ---
             async loadSessions() {
                 Router.push('panel-sessions');
                 const cont = document.getElementById('sessions-list'); if(!cont) return;
-                cont.innerHTML = '<div style="padding:20px; text-align:center;">Loading...</div>';
+                cont.innerHTML = '<div style="padding:40px; text-align:center;"><div class="loader" style="margin:auto; border-top-color:var(--primary);"></div></div>';
+                
                 try {
-                    const sess = await req('/api/sessions'); let h='';
+                    const sess = await req('/api/sessions'); 
+                    
+                    // Header with Terminate All Button
+                    let h = `
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:0 4px;">
+                            <span class="settings-header" style="margin:0;">Active Logins</span>
+                            ${sess.length > 1 ? `<button onclick="App.terminateAllSessions()" style="color:var(--danger); font-size:13px; font-weight:700;">Log out all others</button>` : ''}
+                        </div>
+                    `;
+
                     sess.forEach(s => {
-                        h+=`<div class="user-item" style="display:block">
-                            <div style="font-weight:600; margin-bottom:4px">${s.device} ${s.is_current ? '<span class="badge" style="margin-left:8px">Current</span>' : ''}</div>
-                            <div style="font-size:13px; color:var(--text-muted)">${s.ip} • ${s.location}</div>
-                            ${!s.is_current ? `<button class="btn btn-outline" style="padding:6px 12px; font-size:12px; margin-top:8px; border-color:var(--danger); color:var(--danger)" onclick="App.revokeSession('${s.token}')">Revoke</button>`:''}
+                        // Intelligent Icon Detection
+                        const isMob = /iPhone|Android|Mobile/i.test(s.device);
+                        const icon = isMob ? '📱' : '💻';
+                        
+                        // Modern Pill Indicator for current session
+                        const currentLabel = s.is_current ? 
+                            `<span style="background:color-mix(in srgb, var(--primary) 15%, transparent); color:var(--primary); padding:3px 10px; border-radius:10px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">This Device</span>` : '';
+
+                        h += `
+                        <div class="user-item n-liquid" style="display:flex; align-items:center; gap:16px; margin-bottom:12px; border-radius:20px; padding:16px; border:1px solid var(--border);">
+                            <div style="font-size:24px; width:44px; height:44px; display:flex; align-items:center; justify-content:center; background:var(--bg-input); border-radius:14px;">${icon}</div>
+                            <div style="flex:1; overflow:hidden;">
+                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:2px;">
+                                    <b style="font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.device}</b>
+                                    ${currentLabel}
+                                </div>
+                                <div style="font-size:13px; color:var(--text-muted); opacity:0.8;">${s.ip} • ${s.location}</div>
+                                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Last active: ${UI.formatTime(s.created_at)}</div>
+                                
+                                ${!s.is_current ? `<button class="btn btn-outline" style="height:32px; padding:0 12px; font-size:12px; margin-top:10px; border-color:var(--danger); color:var(--danger); width:auto;" onclick="App.revokeSession('${s.token}')">Revoke Access</button>` : ''}
+                            </div>
                         </div>`;
                     });
-                    cont.innerHTML = h || '<div style="text-align:center; padding:20px;">No sessions</div>';
-                } catch(e){}
+                    cont.innerHTML = h || '<div style="text-align:center; padding:40px; color:var(--text-muted);">No sessions found</div>';
+                    I18N.scan(cont);
+                } catch(e) { UI.toast("Failed to load sessions"); }
+            },
+
+            async terminateAllSessions() {
+                if(!confirm("Log out of all other devices? This will keep you logged in only here.")) return;
+                try {
+                    await req('/api/sessions/terminate-all', 'POST');
+                    UI.toast("All other sessions terminated");
+                    this.loadSessions();
+                } catch(e) { UI.toast("Failed to terminate sessions"); }
             },
             async revokeSession(t) { 
                 try { await req('/api/sessions/revoke', 'POST', {tokenToRevoke: t}); this.loadSessions(); UI.toast('Revoked'); } catch(e){} 
