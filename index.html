@@ -1138,7 +1138,9 @@
                     
                     <div class="liquid-glass n-glass-border" style="flex: 1; min-width: 0; position: relative; display: flex; align-items: center; border-radius: 24px;">
                         <!-- Textarea updated with line-check logic -->
-                        <textarea id="msg-input" class="msg-input" placeholder="Message..." rows="1" style="flex: 1; min-width: 0; width: 100%; background: transparent; border-radius: 24px; padding: 12px 16px; margin: 0; outline: none; border: none; max-height: 100px; color: var(--text-main); height: 44px; min-height: 44px; overflow-y: auto; box-sizing: border-box;" oninput="this.style.height='44px'; this.style.height=Math.min(this.scrollHeight, 100)+'px'; document.getElementById('input-ai-btn').style.display = this.value.trim().length > 0 ? 'flex' : 'none';"></textarea>
+
+                        <textarea id="msg-input" class="msg-input" placeholder="Message..." rows="1" style="flex: 1; min-width: 0; width: 100%; background: transparent; border-radius: 24px; padding: 12px 16px; margin: 0; outline: none; border: none; max-height: 100px; color: var(--text-main); height: 44px; min-height: 44px; overflow-y: auto; box-sizing: border-box;" oninput="this.style.height='44px'; let sh = this.scrollHeight; this.style.height = Math.min(sh, 100) + 'px'; document.getElementById('input-ai-btn').style.display = sh >= 80 ? 'flex' : 'none';"></textarea>
+                        
                         <!-- Pinned AI Button -->
                         <button class="icon-btn" id="input-ai-btn" onclick="AITools.open('input')">✨</button>
                         
