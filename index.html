@@ -185,7 +185,7 @@
         .search-bar input { flex: 1; border: none; background: transparent; outline: none; font-size: 15px; color: var(--text-main); }
         
         .user-item { display: flex; align-items: center; gap: 16px; padding: 12px 20px; cursor: pointer; transition: background 0.2s; position: relative; }
-        .user-item:hover { background: var(--bg-hover); }
+        .user-item:hover { background: color-mix(in srgb, var(--text-main) 8%, transparent) !important; }
         .user-info { flex: 1; overflow: hidden; }
         .user-name { font-weight: 600; font-size: 16px; display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center; }
         .user-last-msg { font-size: 14px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 20px; }
@@ -792,9 +792,10 @@
             #desktop-settings-btn { display: none !important; }
         }
         @media (hover: hover) {
-            .icon-btn:hover { background: var(--bg-hover); transform: scale(1.05); }
+            /* Replace var(--bg-hover) with the color-mix below */
+            .icon-btn:hover { background: color-mix(in srgb, var(--text-main) 8%, transparent); transform: scale(1.05); }
             .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
-            .user-item:hover { background: var(--bg-hover); padding-left: 24px; /* subtle slide effect */ }
+            .user-item:hover { background: color-mix(in srgb, var(--text-main) 8%, transparent) !important; padding-left: 24px; /* subtle slide effect */ }
             .bottom-nav .nav-item:hover { color: var(--text-main); transform: translateY(-2px); }
         }
         @keyframes bounce-spin {
