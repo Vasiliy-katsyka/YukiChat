@@ -2741,12 +2741,14 @@
                 const count = State.selectedChats.size;
                 if(action === 'delete' && !confirm(`Leave/Delete ${count} selected chats?`)) return;
                 
-                for (let id of State.selectedChats) {
-                    try { 
-                        if (action === 'pin') await req(`/api/chats/${id}/pin`, 'POST');
-                        if (action === 'delete') await req(`/api/chats/${id}/leave`, 'POST'); // Fallback to leaveChat logic
-                    } catch(e){}
-                }
+                // Execute all requests concurrently without halting the UI loop
+                const tasks = Array.from(State.selectedChats).map(id => {
+                    if (action === 'pin') return req(`/api/chats/${id}/pin`, 'POST').catch(()=>{});
+                    if (action === 'delete') return req(`/api/chats/${id}/leave`, 'POST').catch(()=>{});
+                });
+                
+                await Promise.all(tasks); // Waits for all to finish at once
+                
                 this.clearChatSelection();
                 this.sync();
             },
@@ -3721,7 +3723,7 @@
                 UI.toast('Opening chat...'); 
                 try {
                     const d = await req('/api/chats', 'POST', {type:'dm', target_user_id:id}); 
-                    await this.sync(); // Force local update BEFORE trying to open
+                    this.sync(); // Force local update BEFORE trying to open
                     Router.pop(); 
                     this.openChat(d.chat_id); 
                 } catch(e) { UI.toast('Failed to open chat'); }
@@ -3731,7 +3733,7 @@
                 UI.toast('Joining...'); 
                 try {
                     const d = await req('/api/chats/join', 'POST', {handle}); 
-                    await this.sync(); // Force local update BEFORE trying to open
+                    this.sync(); // Force local update BEFORE trying to open
                     Router.pop(); 
                     this.openChat(d.chat_id); 
                 } catch(e) { UI.toast(e.message); }
@@ -3743,7 +3745,7 @@
                 UI.toast('Creating...');
                 try { 
                     const d = await req('/api/chats', 'POST', {type, name, handle}); 
-                    await this.sync(); // Force local update BEFORE trying to open
+                    this.sync(); // Force local update BEFORE trying to open
                     Router.pop(); 
                     this.openChat(d.chat_id); 
                 } catch(e) { UI.toast(e.message); }
@@ -4078,22 +4080,19 @@
                 if (!targetChat) return;
                 
                 // Process the queue sequentially so images arrive in order!
-                for (let i = 0; i < queue.length; i++) {
-                    const mediaData = queue[i].data;
-                    const mediaType = queue[i].type;
-                    const currentCap = (i === 0) ? cap : ''; // Only apply caption to the FIRST image
+                // 1. Inject all placeholder UI bubbles instantly
+                const uploadTasks = queue.map(async (item, i) => {
+                    const mediaData = item.data;
+                    const mediaType = item.type;
+                    const currentCap = (i === 0) ? cap : '';
                     
-                    if (targetChat === 'ai') {
-                        await this.sendToAI(currentCap, mediaType, mediaData);
-                        continue; 
-                    }
-                    
+                    if (targetChat === 'ai') return this.sendToAI(currentCap, mediaType, mediaData);
+                
                     const tempId = 'temp-' + Date.now() + '-' + i;
                     const mediaHtml = mediaType === 'photo' 
                         ? `<div style="position:relative; display:inline-block;"><img src="${mediaData}" class="msg-media" style="opacity:0.6;"><div class="media-loading"><div class="media-loading-circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div></div></div>` 
                         : `📁 File`;
                         
-                    // Fix: Only inject HTML if user hasn't switched chats
                     if (State.chat === targetChat) {
                         msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}" style="opacity: 0.8;">
                             <div class="msg-bubble">${mediaHtml}${currentCap ? `<div class="msg-caption">${currentCap.replace(/</g,'&lt;')}</div>` : ''}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Sending...</div></div>
@@ -4101,24 +4100,23 @@
                         msgsCont.scrollTop = msgsCont.scrollHeight;
                     }
                 
+                    // 2. Fire the network request
                     try { 
-                        const res = await req(`/api/messages/${targetChat}`, 'POST', {content: mediaData, caption: currentCap, type: mediaType, reply_to_id: (i === 0 ? State.replyTo : null)}); 
+                        const res = await req(`/api/messages/${targetChat}`, 'POST', {
+                            content: mediaData, caption: currentCap, type: mediaType, reply_to_id: (i === 0 ? State.replyTo : null)
+                        }); 
                         
-                        // Fix: Only manipulate DOM if user hasn't switched chats
                         if (State.chat === targetChat) {
                             const tempEl = document.getElementById(tempId);
                             const alreadyAdded = document.getElementById(`msg-${res.id}`);
                             
-                            if (alreadyAdded) {
-                                tempEl?.remove();
-                            } else if (tempEl && res && res.id) {
+                            if (alreadyAdded) tempEl?.remove();
+                            else if (tempEl && res && res.id) {
                                 tempEl.id = `msg-${res.id}`;
                                 tempEl.style.opacity = '1';
                                 const loadingTxt = tempEl.querySelector('.msg-bubble > div:last-child');
                                 if (loadingTxt) loadingTxt.innerHTML = `${UI.formatTime(res.created_at)} <span class="msg-tick">✓</span>`;
-                                
-                                const loader = tempEl.querySelector('.media-loading');
-                                if (loader) loader.remove();
+                                tempEl.querySelector('.media-loading')?.remove();
                                 const img = tempEl.querySelector('img.msg-media');
                                 if (img) img.style.opacity = '1';
                             }
@@ -4129,7 +4127,10 @@
                             UI.toast('Failed to send a file');
                         }
                     }
-                }
+                });
+                
+                // 3. Process them all in parallel
+                await Promise.all(uploadTasks);
                 this.cancelReply();
             },
 
