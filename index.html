@@ -2983,7 +2983,17 @@
             // Fallback for old HTML just in case
             async auth(isLog) { State.authMode = isLog ? 'login' : 'register'; await this.submitAuth(); },
 
-            logout() { localStorage.clear(); location.reload(); },
+            async logout() { 
+                // 1. Show loader so user knows something is happening
+                App.setMainTitle('Logging out...');
+                
+                // 2. Clear both storage types (CRITICAL)
+                localStorage.clear(); 
+                await localforage.clear(); 
+                
+                // 3. Redirect to home
+                location.href = '/'; 
+            },
             installPWA() { 
                 if (deferredPrompt) {
                     // Android / Chrome desktop logic
@@ -3917,30 +3927,39 @@
                     
                     const isAtBottom = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 150;
 
+                    let htmlBatch = '';
+                    let fxChecks =[];
+                    
                     msgs.forEach(m => {
                         if (m.is_pinned) pinned = m.content;
                         if (m.id > State.lastMsgId) State.lastMsgId = m.id;
                         
-                        // SKIP if we already have it (Fixes duplication bugs)
                         if (document.getElementById(`msg-${m.id}`)) return;
-
+                    
                         const isMine = m.sender_id === State.u.userId;
                         const innerHTML = this.buildMsgHTML(m, isMine, chat?.type);
-                        const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
+                        htmlBatch += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
                         
-                        cont.insertAdjacentHTML('beforeend', rowHtml);
-                        if (!isMine) FX.check(m.content, `msg-${m.id}`);
+                        if (!isMine) fxChecks.push({ content: m.content, id: `msg-${m.id}` });
                         addedNew = true;
                     });
-
-                    // Update UI if we appended new nodes
+                    
+                    // 1. Inject all 50 messages AT ONCE (Stops CSS thrashing)
+                    if (htmlBatch) cont.insertAdjacentHTML('beforeend', htmlBatch);
+                    fxChecks.forEach(fx => FX.check(fx.content, fx.id));
+                    
                     if (addedNew || forceFull) {
-                        I18N.scan(cont);
-                        localforage.setItem(`y_cache_msgs_${targetChat}`, cont.innerHTML);
+                        // 2. REMOVED I18N.scan(cont) - Scanning 50 user messages for translations freezes the UI
+                    
                         if (isAtBottom || forceFull) {
                             cont.scrollTop = cont.scrollHeight;
-                            setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 100);
+                            setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 10);
                         }
+                        
+                        // 3. Save cache in the BACKGROUND so the UI doesn't freeze
+                        setTimeout(() => {
+                            localforage.setItem(`y_cache_msgs_${targetChat}`, cont.innerHTML);
+                        }, 500); 
                     }
 
                     // Update Pinned Message UI
