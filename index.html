@@ -2469,21 +2469,26 @@
                 }
         
                 let safeContent = m.content || '';
-                let cleanTxt = safeContent.replace(/</g,'&lt;');
                 const rawAttr = m.type === 'text' ? `data-raw="${safeContent.replace(/"/g, '&quot;')}"` : '';
         
-                if (m.type === 'text') {
-                    cleanTxt = cleanTxt.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;">$1</pre>');
-                    cleanTxt = cleanTxt.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
-                    cleanTxt = cleanTxt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                    cleanTxt = cleanTxt.replace(/\*(.*?)\*/g, '<em>$1</em>');
-                    cleanTxt = cleanTxt.replace(/^### (.*$)/gim, '<h3 style="margin:16px 0 8px;font-size:16px;">$1</h3>');
-                    cleanTxt = cleanTxt.replace(/^## (.*$)/gim, '<h2 style="margin:18px 0 8px;font-size:18px;">$1</h2>');
-                    cleanTxt = cleanTxt.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">$1</a><div class="link-preview" data-url="$1"></div>');
-                    cleanTxt = cleanTxt.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
-                }
+                // Универсальная функция парсинга маркдауна (для текста и подписей)
+                const formatText = (text) => {
+                    if (!text) return '';
+                    let t = text.replace(/</g,'&lt;');
+                    t = t.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;">$1</pre>');
+                    t = t.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
+                    t = t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    t = t.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                    t = t.replace(/^### (.*$)/gim, '<h3 style="margin:16px 0 8px;font-size:16px;">$1</h3>');
+                    t = t.replace(/^## (.*$)/gim, '<h2 style="margin:18px 0 8px;font-size:18px;">$1</h2>');
+                    t = t.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">$1</a><div class="link-preview" data-url="$1"></div>');
+                    t = t.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
+                    return t;
+                };
         
-                // Changed from window.open to App.openMedia
+                // Применяем маркдаун к контенту
+                let cleanTxt = formatText(safeContent);
+        
                 if (m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="event.stopPropagation(); App.openMedia('${m.content}')">`;
                 else if (m.type === 'sticker') inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
                 else inner += cleanTxt;
@@ -2503,7 +2508,8 @@
                     } catch(e) {}
                 }
         
-                if(m.caption) inner += `<div class="msg-caption">${m.caption.replace(/</g,'&lt;')}</div>`;
+                // Применяем маркдаун к подписи (caption)
+                if(m.caption) inner += `<div class="msg-caption">${formatText(m.caption)}</div>`;
         
                 let rxs = JSON.parse(m.reactions||'{}'); let rxH = ''; for(let k in rxs) rxH += rxs[k];
                 if(rxH) inner += `<div style="position:absolute; bottom:-10px; right:8px; background:var(--bg-base); border-radius:12px; padding:2px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:14px; border:1px solid var(--border); z-index:2;">${rxH}</div>`;
@@ -2513,10 +2519,8 @@
                 const senderName = (!isMine && chatType !== 'dm') ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
                 const bubbleStyle = m.type === 'sticker' ? 'background: transparent; padding: 0; box-shadow: none;' : '';
         
-                // Add context menu attributes securely
                 const ctxCall = `event, ${m.id}, ${isMine}, ${m.type === 'photo'}, '${m.type === 'photo' ? m.content : ''}'`;
         
-                // Modified wrapper to include `data-raw`
                 return `<div class="msg-bubble" style="${bubbleStyle}" ${rawAttr}>${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tickHtml}${viewsH}</div></div>`;
             },
             // --- NEW: CATBOX UPLOADER HELPER ---
