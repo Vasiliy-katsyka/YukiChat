@@ -2471,14 +2471,15 @@
                 let safeContent = m.content || '';
                 const rawAttr = m.type === 'text' ? `data-raw="${safeContent.replace(/"/g, '&quot;')}"` : '';
         
-                // Универсальная функция парсинга маркдауна (для текста и подписей)
+                // Универсальная функция парсинга маркдауна (пуленепробиваемая)
                 const formatText = (text) => {
                     if (!text) return '';
-                    let t = text.replace(/</g,'&lt;');
+                    let t = String(text).replace(/</g,'&lt;');
                     t = t.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;">$1</pre>');
                     t = t.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
-                    t = t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                    t = t.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                    // Используем [\s\S]*? чтобы маркдаун работал даже если внутри есть переносы строк
+                    t = t.replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>');
+                    t = t.replace(/\*([\s\S]*?)\*/g, '<em>$1</em>');
                     t = t.replace(/^### (.*$)/gim, '<h3 style="margin:16px 0 8px;font-size:16px;">$1</h3>');
                     t = t.replace(/^## (.*$)/gim, '<h2 style="margin:18px 0 8px;font-size:18px;">$1</h2>');
                     t = t.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">$1</a><div class="link-preview" data-url="$1"></div>');
