@@ -2727,16 +2727,24 @@
                 
                     if (data.type === 'message_action' && State.chat == data.chat_id) {
                         // 2. Silently fetch and patch ONLY the bubbles that changed (AI Image, Reactions, Edits)
-                        // This prevents the entire screen from flickering and wiping!
                         req(`/api/messages/${data.chat_id}?after=0`).then(msgs => {
                             msgs.forEach(m => {
                                 const existingMsg = document.getElementById(`msg-${m.id}`);
                                 if (existingMsg) {
                                     const isMine = m.sender_id === State.u.userId;
                                     const newHTML = App.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
+                                    
                                     if (existingMsg.innerHTML !== newHTML) {
                                         existingMsg.innerHTML = newHTML;
                                         if (!isMine) FX.check(m.content, `msg-${m.id}`);
+                                        
+                                        // FIX: Re-initialize Lottie for updated reaction pills!
+                                        if (localStorage.getItem('y_anim_react') !== 'false' && window.lottie) {
+                                            existingMsg.querySelectorAll('.rx-pill [data-url]:not([data-loaded])').forEach(el => {
+                                                el.setAttribute('data-loaded', 'true');
+                                                lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
+                                            });
+                                        }
                                     }
                                 }
                             });
@@ -4308,15 +4316,17 @@
             async msgAct(act, emoji=null, overrideMsgId=null) {
                 const msgId = overrideMsgId || State.targetId;
                 
-                // 1. INSTANT MASSIVE LOTTIE ANIMATION
+                // 1. INSTANT OPTIMISTIC UI & MASSIVE ANIMATION
                 if (act === 'react' && emoji) {
-                    if (localStorage.getItem('y_anim_react') !== 'false' && window.REACTION_LOTTIES && window.REACTION_LOTTIES[emoji]) {
-                        const msgEl = document.getElementById(`msg-${msgId}`);
-                        if (msgEl) {
+                    const msgEl = document.getElementById(`msg-${msgId}`);
+                    const animOn = localStorage.getItem('y_anim_react') !== 'false';
+                    
+                    if (msgEl) {
+                        // A. Play the massive float animation
+                        if (animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[emoji]) {
                             const rect = msgEl.getBoundingClientRect();
                             const floatEl = document.createElement('div');
                             floatEl.className = 'floating-reaction';
-                            // Center it over the message bubble
                             floatEl.style.left = `${rect.left + rect.width / 2}px`;
                             floatEl.style.top = `${rect.top}px`;
                             document.body.appendChild(floatEl);
@@ -4327,22 +4337,45 @@
                                     path: window.REACTION_LOTTIES[emoji]
                                 });
                             }
-                            // Cleanup after the 2.2s animation finishes
                             setTimeout(() => floatEl.remove(), 2500); 
+                        }
+
+                        // B. Instantly draw a temporary pill on the message bubble
+                        const bubble = msgEl.querySelector('.msg-bubble');
+                        let rxWrap = bubble.querySelector('.msg-reactions-wrap');
+                        if (!rxWrap) {
+                            rxWrap = document.createElement('div');
+                            rxWrap.className = 'msg-reactions-wrap';
+                            bubble.appendChild(rxWrap);
+                        }
+                        
+                        const tempPill = document.createElement('div');
+                        tempPill.className = 'rx-pill';
+                        
+                        if (animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[emoji]) {
+                            tempPill.innerHTML = `<div data-url="${window.REACTION_LOTTIES[emoji]}" style="width:20px;height:20px;"></div> <span style="margin-left:4px">1</span>`;
+                            rxWrap.appendChild(tempPill);
+                            
+                            if (window.lottie) {
+                                const lDiv = tempPill.querySelector('[data-url]');
+                                lottie.loadAnimation({ container: lDiv, renderer: 'svg', loop: true, autoplay: true, path: lDiv.dataset.url });
+                            }
+                        } else {
+                            tempPill.innerHTML = `${emoji} <span style="margin-left:4px">1</span>`;
+                            rxWrap.appendChild(tempPill);
                         }
                     }
                 }
         
-                this.closeCtx(); // Hide menu smoothly
+                this.closeCtx(); // Hide context menu smoothly
                 
-                // 2. Send in background and update UI silently
+                // 2. Send in background (The WebSocket will overwrite the temporary pill with the real total count in ~200ms)
                 try { 
                     await req(`/api/messages/${msgId}/action`, 'POST', {action:act, emoji}); 
                     if (act === 'delete') document.getElementById(`msg-${msgId}`)?.remove();
-                    else this.fastPoll(); // Grabs the new reaction count from the server in ~200ms
                 } catch(e) {
                     UI.toast('Action failed');
-                    this.fastPoll(); 
+                    this.fastPoll(); // Fetch original state if offline/failed
                 }
             },
 
