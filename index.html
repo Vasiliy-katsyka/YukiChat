@@ -1684,7 +1684,7 @@
         
                 // Map settings to your engine specifications
                 const bezel = radius > 0 ? radius : 20; 
-                const thickness = 5; // ✅ LOWERED THICKNESS (Try between 5 and 15)
+                const thickness = 15; // ✅ LOWERED THICKNESS (Try between 5 and 15)
                 const lightDeg = -60; 
                 const shape = 'squircle'; 
         
@@ -1695,7 +1695,7 @@
                 const existingSvg = document.getElementById(`svg-${filterId}`);
                 if (existingSvg) existingSvg.remove();
         
-                const scaleAmount = maps.maxDisp * 2 * 5; // ✅ LOWERED REFRACTION BOOST (Try between 5 and 15)
+                const scaleAmount = maps.maxDisp * 2 * 15; // ✅ LOWERED REFRACTION BOOST (Try between 5 and 15)
         
                 const svgHTML = `
                     <svg id="svg-${filterId}" aria-hidden="true" color-interpolation-filters="sRGB">
