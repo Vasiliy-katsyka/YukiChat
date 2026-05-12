@@ -315,6 +315,18 @@
             box-shadow: inset 0 0 23px -5px var(--bg-panel); /* Uses theme color */
             pointer-events: none; /* Prevents blocking clicks on inputs/buttons */
         }
+        .liquid-glass::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: -2;
+            border-radius: inherit;
+            backdrop-filter: blur(var(--glass-blur, 4px));
+            -webkit-backdrop-filter: blur(var(--glass-blur, 4px));
+            filter: url(#glass-distortion);
+            -webkit-filter: url(#glass-distortion);
+            pointer-events: none;
+        }
 
         /* 3. Base Bottom Nav Layout (Inherits the glass effect) */
         .bottom-nav {
@@ -439,15 +451,16 @@
             pointer-events: none;
         }
         
-        .liquid-glass::after, .n-liquid::after {
+        .n-liquid::after {
             content: '';
             position: absolute;
             inset: 0;
             z-index: -2;
             border-radius: inherit;
-            /* Uses your dynamic engine map, falls back to regular blur while loading */
-            backdrop-filter: var(--dynamic-glass-filter, blur(var(--glass-blur, 4px)));
-            -webkit-backdrop-filter: var(--dynamic-glass-filter, blur(var(--glass-blur, 4px)));
+            backdrop-filter: blur(var(--glass-blur, 4px));
+            -webkit-backdrop-filter: blur(var(--glass-blur, 4px));
+            filter: url(#glass-distortion);
+            -webkit-filter: url(#glass-distortion);
             pointer-events: none;
         }
         
@@ -929,6 +942,15 @@
                 <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="B" />
             </filter>
         </defs>
+    </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+      <defs>
+        <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.008 0.008" numOctaves="2" seed="92" result="noise" />
+          <feGaussianBlur in="noise" stdDeviation="2" result="blurred" />
+          <feDisplacementMap in="SourceGraphic" in2="blurred" scale="77" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </defs>
     </svg>
     <div class="toast" id="toast">Message</div>
 
@@ -1640,215 +1662,6 @@
                 window.history.replaceState({}, document.title, "/"); 
             }
         }
-        const LiquidGlassEngine = {
-            LUT_SIZE: 1000,
-            init() {
-                const cont = document.createElement('div');
-                cont.id = 'lg-svg-container';
-                cont.style.cssText = 'width:0; height:0; position:absolute; pointer-events:none; overflow:hidden;';
-                document.body.appendChild(cont);
-        
-                // Auto-tracks dynamic UI sizing (like typing in input bar)
-                this.observer = new ResizeObserver(entries => {
-                    for (let entry of entries) {
-                        const el = entry.target;
-                        const w = Math.round(entry.contentRect.width || el.offsetWidth);
-                        const h = Math.round(entry.contentRect.height || el.offsetHeight);
-                        if (w > 0 && h > 0) {
-                            clearTimeout(el._lgTimer);
-                            el._lgTimer = setTimeout(() => this.applyToElement(el, w, h), 100);
-                        }
-                    }
-                });
-        
-                this.observeAll();
-                setInterval(() => this.observeAll(), 1500); // Catches dynamically added elements
-            },
-        
-            observeAll() {
-                document.querySelectorAll('.liquid-glass, .n-liquid').forEach(el => {
-                    if (!el._lgObserved) {
-                        el._lgObserved = true;
-                        el._lgId = 'lg-flt-' + Math.random().toString(36).substr(2, 9);
-                        this.observer.observe(el);
-                    }
-                });
-            },
-        
-            applyToElement(el, w, h) {
-                if (w > 1500 || h > 1500) return; // Canvas safety limits
-        
-                const style = window.getComputedStyle(el);
-                let radius = parseFloat(style.borderRadius) || 0;
-                radius = Math.min(radius, w / 2, h / 2);
-        
-                // Map settings to your engine specifications
-                const bezel = radius > 0 ? radius : 20; 
-                const thickness = 15; // ✅ LOWERED THICKNESS (Try between 5 and 15)
-                const lightDeg = -60; 
-                const shape = 'squircle'; 
-        
-                const maps = this.generateMaps(w, h, radius, bezel, thickness, lightDeg, shape);
-                if (!maps) return;
-        
-                const filterId = el._lgId;
-                const existingSvg = document.getElementById(`svg-${filterId}`);
-                if (existingSvg) existingSvg.remove();
-        
-                const scaleAmount = maps.maxDisp * 2 * 15; // ✅ LOWERED REFRACTION BOOST (Try between 5 and 15)
-        
-                const svgHTML = `
-                    <svg id="svg-${filterId}" aria-hidden="true" color-interpolation-filters="sRGB">
-                        <defs>
-                            <filter id="${filterId}" x="0" y="0" width="1" height="1" filterUnits="objectBoundingBox" primitiveUnits="userSpaceOnUse">
-                                <feImage href="${maps.dispDataUrl}" result="disp" x="0" y="0" width="${w}" height="${h}" />
-                                <feDisplacementMap in="SourceGraphic" in2="disp" scale="${scaleAmount}" xChannelSelector="R" yChannelSelector="G" result="refracted" />
-                                <feImage href="${maps.specDataUrl}" result="spec" x="0" y="0" width="${w}" height="${h}" />
-                                <feBlend mode="screen" in="spec" in2="refracted" result="final" />
-                            </filter>
-                        </defs>
-                    </svg>`;
-                
-                document.getElementById('lg-svg-container').insertAdjacentHTML('beforeend', svgHTML);
-                // Seamlessly transitions CSS to use the highly-accurate physics map
-                el.style.setProperty('--dynamic-glass-filter', `url(#${filterId})`);
-            },
-        
-            generateMaps(width, height, borderRadius, bezelWidth, thickness, lightDeg, shape) {
-                // [YOUR EXACT MATH ENGINE]
-                const displacementLUT = new Float32Array(this.LUT_SIZE);
-                let maxDisp = 0;
-                
-                for (let i = 0; i < this.LUT_SIZE; i++) {
-                    let u = i / (this.LUT_SIZE - 1);
-                    let d = 0;
-        
-                    if (u > 0 && u < 1) {
-                        let f_u = 0, f_prime_u = 0;
-                        
-                        if (shape === 'squircle') {
-                            let oneMinusU = 1 - u;
-                            let base = 1 - Math.pow(oneMinusU, 4);
-                            if (base < 0.0001) base = 0.0001; 
-                            f_u = Math.pow(base, 0.25);
-                            f_prime_u = Math.pow(oneMinusU, 3) / Math.pow(base, 0.75);
-                        } else { 
-                            let oneMinusU = 1 - u;
-                            let base = 1 - Math.pow(oneMinusU, 2);
-                            if (base < 0.0001) base = 0.0001;
-                            f_u = Math.sqrt(base);
-                            f_prime_u = oneMinusU / Math.sqrt(base);
-                        }
-                        
-                        let z_surf = thickness * f_u;
-                        let m = (thickness / bezelWidth) * f_prime_u;
-                        let c = 1 / Math.sqrt(m * m + 1); 
-                        let r = 1 / 1.5; 
-                        let term = r * c - Math.sqrt(Math.max(0, 1 - r * r * (1 - c * c)));
-                        let N_norm_x = -m * c; 
-                        let N_norm_y = c;
-                        let V_x = term * N_norm_x;
-                        let V_y = -r + term * N_norm_y;
-                        if (V_y !== 0) d = V_x * (-z_surf / V_y);
-                    }
-                    displacementLUT[i] = d;
-                    if (Math.abs(d) > maxDisp) maxDisp = Math.abs(d);
-                }
-                
-                if (maxDisp < 0.0001) maxDisp = 1;
-        
-                const canvasDisp = document.createElement('canvas');
-                const canvasSpec = document.createElement('canvas');
-                canvasDisp.width = width; canvasDisp.height = height;
-                canvasSpec.width = width; canvasSpec.height = height;
-                const ctxDisp = canvasDisp.getContext('2d', { willReadFrequently: true });
-                const ctxSpec = canvasSpec.getContext('2d', { willReadFrequently: true });
-                
-                const imgDataDisp = ctxDisp.createImageData(width, height);
-                const imgDataSpec = ctxSpec.createImageData(width, height);
-                
-                const lightAngle = lightDeg * Math.PI / 180;
-                const Lx = Math.cos(lightAngle), Ly = Math.sin(lightAngle), Lz = 0.8; 
-                const L_len = Math.sqrt(Lx*Lx + Ly*Ly + Lz*Lz);
-                const L3 = [Lx/L_len, Ly/L_len, Lz/L_len]; 
-        
-                const cx = width / 2, cy = height / 2;
-                const innerW = Math.max(0, width / 2 - borderRadius);
-                const innerH = Math.max(0, height / 2 - borderRadius);
-        
-                for (let y = 0; y < height; y++) {
-                    for (let x = 0; x < width; x++) {
-                        let px = x + 0.5, py = y + 0.5;
-                        let qx = Math.abs(px - cx), qy = Math.abs(py - cy);
-                        let dx = qx - innerW, dy = qy - innerH;
-                        
-                        let distToBorder = 0, nx = 0, ny = 0, isInside = false;
-                        
-                        if (dx > 0 && dy > 0) {
-                            let distToCorner = Math.sqrt(dx*dx + dy*dy);
-                            distToBorder = borderRadius - distToCorner;
-                            if (distToBorder >= 0) isInside = true;
-                            if (distToCorner > 0) { nx = -(dx / distToCorner) * Math.sign(px - cx); ny = -(dy / distToCorner) * Math.sign(py - cy); }
-                        } else if (dx > 0 && dy <= 0) {
-                            distToBorder = borderRadius - dx;
-                            if (distToBorder >= 0) isInside = true;
-                            nx = -Math.sign(px - cx); ny = 0;
-                        } else if (dx <= 0 && dy > 0) {
-                            distToBorder = borderRadius - dy;
-                            if (distToBorder >= 0) isInside = true;
-                            nx = 0; ny = -Math.sign(py - cy);
-                        } else {
-                            distToBorder = borderRadius - Math.max(dx, dy);
-                            isInside = true;
-                        }
-                        
-                        let idx = (y * width + x) * 4;
-                        if (!isInside) {
-                            imgDataDisp.data[idx] = 128; imgDataDisp.data[idx+1] = 128; imgDataDisp.data[idx+2] = 128; imgDataDisp.data[idx+3] = 0;
-                            imgDataSpec.data[idx] = 0; imgDataSpec.data[idx+1] = 0; imgDataSpec.data[idx+2] = 0; imgDataSpec.data[idx+3] = 0;
-                            continue;
-                        }
-                        
-                        let u = distToBorder / bezelWidth;
-                        if (u > 1) u = 1; if (u < 0) u = 0;
-                        let d = displacementLUT[Math.floor(u * (this.LUT_SIZE - 1))];
-                        
-                        let r_val = Math.round(128 + ((nx * d) / maxDisp) * 127);
-                        let g_val = Math.round(128 + ((ny * d) / maxDisp) * 127);
-                        
-                        imgDataDisp.data[idx] = Math.min(255, Math.max(0, r_val));
-                        imgDataDisp.data[idx+1] = Math.min(255, Math.max(0, g_val));
-                        imgDataDisp.data[idx+2] = 128; imgDataDisp.data[idx+3] = 255;
-                        
-                        let m = 0;
-                        if (u < 1 && u > 0) {
-                            if (shape === 'squircle') {
-                                let base = 1 - Math.pow(1 - u, 4);
-                                if(base < 0.0001) base = 0.0001;
-                                m = (thickness / bezelWidth) * (Math.pow(1 - u, 3) / Math.pow(base, 0.75));
-                            } else {
-                                let base = 1 - Math.pow(1 - u, 2);
-                                if(base < 0.0001) base = 0.0001;
-                                m = (thickness / bezelWidth) * ((1 - u) / Math.sqrt(base));
-                            }
-                        }
-                        
-                        let len3 = Math.sqrt((-nx*m)*(-nx*m) + (-ny*m)*(-ny*m) + 1);
-                        let N3x = (-nx*m)/len3, N3y = (-ny*m)/len3, N3z = 1/len3;
-                        let dot = N3x * L3[0] + N3y * L3[1] + N3z * L3[2];
-                        let specular = dot > 0 ? Math.pow(dot, 45) : 0;
-                        let combinedSpec = specular * 0.7 + Math.pow(1 - N3z, 2) * Math.max(0, dot) * 0.5;
-                        
-                        imgDataSpec.data[idx] = 255; imgDataSpec.data[idx+1] = 255; imgDataSpec.data[idx+2] = 255;
-                        imgDataSpec.data[idx+3] = Math.min(255, Math.max(0, combinedSpec * 255));
-                    }
-                }
-                
-                ctxDisp.putImageData(imgDataDisp, 0, 0);
-                ctxSpec.putImageData(imgDataSpec, 0, 0);
-                return { dispDataUrl: canvasDisp.toDataURL('image/png'), specDataUrl: canvasSpec.toDataURL('image/png'), maxDisp: maxDisp };
-            }
-        };
         const I18N = {
             lang: localStorage.getItem('y_lang') || 'en',
             dict: {
@@ -4884,7 +4697,6 @@
             });
         }, 100);
         window.onload = () => { 
-            LiquidGlassEngine.init();
             I18N.scan();
             if(State.t) { 
                 document.getElementById('panel-auth').classList.remove('active'); 
