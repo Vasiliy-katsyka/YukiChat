@@ -881,6 +881,50 @@
         .ai-tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
         .ai-content { padding: 20px; }
         .ai-textarea { width: 100%; height: 100px; background: var(--bg-input); border: none; border-radius: 12px; padding: 12px; color: var(--text-main); resize: none; margin-bottom: 12px; font-family: inherit; font-size: 14px; }
+    
+        /* Prevent blue text selection background on mobile for reactions */
+        .ctx-reactions span, .msg-reaction-badge {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .ctx-reactions span:active {
+            transform: scale(0.8);
+        }
+        
+        /* Base styles for the reaction badge */
+        .msg-reaction-badge {
+            position: absolute; bottom: -10px; right: 8px;
+            background: var(--bg-base); border-radius: 12px; padding: 2px 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3); font-size: 14px;
+            border: 1px solid var(--border); z-index: 2;
+        }
+        
+        /* 1. The Cute Bubble Pop Animation */
+        @keyframes cute-reaction-pop {
+            0% { transform: scale(0.5) rotate(-15deg); opacity: 0; }
+            50% { transform: scale(1.4) rotate(10deg); }
+            75% { transform: scale(0.9) rotate(-5deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .anim-reaction {
+            animation: cute-reaction-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+        }
+        
+        /* 2. The Floating Emoji Animation (Flys up and fades out) */
+        @keyframes float-emoji-up {
+            0% { transform: translate(-50%, 0) scale(0.8); opacity: 1; }
+            100% { transform: translate(-50%, -60px) scale(1.8); opacity: 0; }
+        }
+        .floating-reaction {
+            position: fixed;
+            font-size: 28px;
+            pointer-events: none;
+            z-index: 99999;
+            animation: float-emoji-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
     </style>
 </head>
 <body>
@@ -1274,6 +1318,10 @@
                         <span id="blur-val-disp" style="color:var(--text-muted);font-size:14px;font-weight:bold;">4px</span>
                     </div>
                     <input type="range" id="set-blur" min="0" max="25" value="4" style="width:100%; cursor:pointer;" oninput="App.setBlur(this.value)">
+                </div>
+                <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
+                    <span>Animated Reactions</span>
+                    <input type="checkbox" id="set-anim-react" style="width:20px;height:20px;" onchange="localStorage.setItem('y_anim_react', this.checked)">
                 </div>
                 <!-- Insert this inside the "Appearance" settings-card -->
                 <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
@@ -2513,8 +2561,8 @@
                 if(m.caption) inner += `<div class="msg-caption">${formatText(m.caption)}</div>`;
         
                 let rxs = JSON.parse(m.reactions||'{}'); let rxH = ''; for(let k in rxs) rxH += rxs[k];
-                if(rxH) inner += `<div style="position:absolute; bottom:-10px; right:8px; background:var(--bg-base); border-radius:12px; padding:2px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-size:14px; border:1px solid var(--border); z-index:2;">${rxH}</div>`;
-        
+                if(rxH) inner += `<div class="msg-reaction-badge">${rxH}</div>`;
+                        
                 let viewsH = (chatType === 'channel' && m.views) ? `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>` : '';
                 const tickHtml = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
                 const senderName = (!isMine && chatType !== 'dm') ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
@@ -3258,6 +3306,11 @@
                 const nameEl = document.getElementById('set-name');
                 if(nameEl.tagName === 'INPUT') nameEl.value = State.u.username; else nameEl.textContent = State.u.username;
                 document.getElementById('set-bio').value = State.u.bio || '';
+                // Initialize Animated Reactions Setting (Default to true)
+                const animReact = localStorage.getItem('y_anim_react') !== 'false';
+                if (document.getElementById('set-anim-react')) {
+                    document.getElementById('set-anim-react').checked = animReact;
+                }
                 
                 const t = localStorage.getItem('y_theme') || 'dark'; this.setTheme(t);
                 const w = localStorage.getItem('y_wall') || ''; this.setWallpaper(w);
@@ -4201,24 +4254,71 @@
             },
 
             async msgAct(act, emoji=null) {
+                const msgId = State.targetId; // Lock target ID before closing context
+                
+                // 1. INSTANT OPTIMISTIC UI (0ms delay)
+                if (act === 'react') {
+                    const msgEl = document.getElementById(`msg-${msgId}`);
+                    if (msgEl) {
+                        const bubble = msgEl.querySelector('.msg-bubble');
+                        if (bubble) {
+                            let badge = bubble.querySelector('.msg-reaction-badge');
+                            if (!badge) {
+                                badge = document.createElement('div');
+                                badge.className = 'msg-reaction-badge';
+                                bubble.appendChild(badge);
+                            }
+                            
+                            // Toggle the emoji instantly on the UI
+                            let currentText = badge.innerText;
+                            if (currentText.includes(emoji)) {
+                                currentText = currentText.replace(emoji, '');
+                            } else {
+                                currentText += emoji;
+                            }
+                            badge.innerText = currentText;
+                            
+                            // Remove if empty, otherwise Animate!
+                            if (currentText.trim() === '') {
+                                badge.remove();
+                            } else {
+                                // Check user settings for animation
+                                if (localStorage.getItem('y_anim_react') !== 'false') {
+                                    // Trigger Pop Animation on the badge
+                                    badge.classList.remove('anim-reaction');
+                                    void badge.offsetWidth; // Force reflow to restart animation
+                                    badge.classList.add('anim-reaction');
+                                    
+                                    // Spawn a beautiful floating emoji that flies up
+                                    const rect = badge.getBoundingClientRect();
+                                    const floatEl = document.createElement('div');
+                                    floatEl.className = 'floating-reaction';
+                                    floatEl.innerText = emoji;
+                                    floatEl.style.left = `${rect.left + rect.width / 2}px`;
+                                    floatEl.style.top = `${rect.top}px`;
+                                    document.body.appendChild(floatEl);
+                                    
+                                    setTimeout(() => floatEl.remove(), 800); // Cleanup
+                                }
+                            }
+                        }
+                    }
+                }
+            
+                this.closeCtx(); // Close menu smoothly
+                
+                // 2. Send in the background
                 try { 
-                    // 1. Send action to backend
-                    await req(`/api/messages/${State.targetId}/action`, 'POST', {action:act, emoji}); 
+                    await req(`/api/messages/${msgId}/action`, 'POST', {action:act, emoji}); 
                     
-                    // 2. Smoothly close the context menu
-                    this.closeCtx();
-                    
-                    // 3. OPTIMIZED: Don't reload the whole chat. 
-                    // Just update the one message or wait for the next fastPoll/WebSocket to catch it.
                     if (act === 'delete') {
-                        document.getElementById(`msg-${State.targetId}`)?.remove();
-                    } else {
-                        // For reactions/pins, let the background sync handle the update 
-                        // so we don't trigger a heavy UI wipe/crash.
+                        document.getElementById(`msg-${msgId}`)?.remove();
+                    } else if (act !== 'react') {
                         this.fastPoll(); 
                     }
                 } catch(e) {
                     UI.toast('Action failed');
+                    this.fastPoll(); // Restore actual state from server if it failed
                 }
             },
 
