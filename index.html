@@ -19,6 +19,7 @@
     <link rel="apple-touch-icon" href="/icon-192.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -882,48 +883,49 @@
         .ai-content { padding: 20px; }
         .ai-textarea { width: 100%; height: 100px; background: var(--bg-input); border: none; border-radius: 12px; padding: 12px; color: var(--text-main); resize: none; margin-bottom: 12px; font-family: inherit; font-size: 14px; }
     
-        /* Prevent blue text selection background on mobile for reactions */
-        .ctx-reactions span, .msg-reaction-badge {
+        /* Prevent blue text selection background */
+        .ctx-reactions span, .rx-pill {
             -webkit-tap-highlight-color: transparent;
             user-select: none;
             -webkit-user-select: none;
             cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .ctx-reactions span:active {
-            transform: scale(0.8);
         }
         
-        /* Base styles for the reaction badge */
-        .msg-reaction-badge {
-            position: absolute; bottom: -10px; right: 8px;
-            background: var(--bg-base); border-radius: 12px; padding: 2px 6px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3); font-size: 14px;
-            border: 1px solid var(--border); z-index: 2;
+        /* Scrollable Lottie Context Menu */
+        .ctx-reactions {
+            display: flex; gap: 14px; padding: 12px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 24px; overflow-x: auto; scroll-snap-type: x mandatory;
         }
+        .ctx-reactions::-webkit-scrollbar { display: none; }
+        .ctx-reactions span { 
+            display: flex; align-items: center; justify-content: center;
+            width: 36px; height: 36px; flex-shrink: 0; transition: 0.2s; 
+        }
+        .ctx-reactions span:active { transform: scale(0.7); }
         
-        /* 1. The Cute Bubble Pop Animation */
-        @keyframes cute-reaction-pop {
-            0% { transform: scale(0.5) rotate(-15deg); opacity: 0; }
-            50% { transform: scale(1.4) rotate(10deg); }
-            75% { transform: scale(0.9) rotate(-5deg); }
-            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        /* Telegram-style Grouped Reaction Pills */
+        .msg-reactions-wrap {
+            display: flex; flex-wrap: wrap; gap: 6px; position: absolute; bottom: -14px; right: 8px; z-index: 2;
         }
-        .anim-reaction {
-            animation: cute-reaction-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+        .rx-pill {
+            display: flex; align-items: center; justify-content: center; background: var(--bg-base); 
+            border-radius: 12px; padding: 2px 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); 
+            font-size: 13px; border: 1px solid var(--border); font-weight: 600; transition: 0.2s;
         }
+        .rx-pill:active { transform: scale(0.85); background: var(--bg-hover); }
         
-        /* 2. The Floating Emoji Animation (Flys up and fades out) */
-        @keyframes float-emoji-up {
-            0% { transform: translate(-50%, 0) scale(0.8); opacity: 1; }
-            100% { transform: translate(-50%, -60px) scale(1.8); opacity: 0; }
+        /* The BIG Exciting Float Animation */
+        @keyframes exciting-lottie-float {
+            0% { transform: translate(-50%, 0) scale(0); opacity: 0; }
+            15% { transform: translate(-50%, -40px) scale(3.5); opacity: 1; }
+            70% { transform: translate(-50%, -80px) scale(3.5); opacity: 1; }
+            100% { transform: translate(-50%, -150px) scale(1); opacity: 0; }
         }
         .floating-reaction {
-            position: fixed;
-            font-size: 28px;
-            pointer-events: none;
-            z-index: 99999;
-            animation: float-emoji-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            position: fixed; width: 120px; height: 120px;
+            pointer-events: none; z-index: 99999;
+            animation: exciting-lottie-float 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
     </style>
 </head>
@@ -1588,10 +1590,7 @@
     <!-- Floating Context Menu -->
     <div id="n-ctx-backdrop" class="n-ctx-backdrop" onclick="App.closeCtx()"></div>
     <div id="ctx-menu">
-        <div class="ctx-reactions">
-            <span onclick="App.msgAct('react','❤️')">❤️</span><span onclick="App.msgAct('react','😂')">😂</span><span onclick="App.msgAct('react','👍')">👍</span>
-            <span onclick="App.msgAct('react','😢')">😢</span><span onclick="App.msgAct('react','🔥')">🔥</span>
-        </div>
+        <div class="ctx-reactions" id="ctx-reactions-bar"></div>
         <div class="ctx-item" onclick="App.initReply()">↩️ Reply</div>
         <div class="ctx-item" onclick="App.msgAct('pin')">📌 Pin / Unpin</div>
         <div class="ctx-item" id="ctx-ai-tools" onclick="AITools.open('msg')">🤖 AI Tools</div>
@@ -1946,6 +1945,18 @@
                 if(this.particles.length > 0 || this.activeBgLogic || Date.now() < this.fxEndTime) requestAnimationFrame(() => this.loop());
                 else { this.isRunning = false; ctx.clearRect(0,0, this.cvs.width, this.cvs.height); }
             }
+        };
+        window.REACTION_LOTTIES = {
+            '❤️': 'https://fonts.gstatic.com/s/e/notoemoji/latest/2764_fe0f/lottie.json',
+            '😂': 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f602/lottie.json',
+            '👍': 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f44d/lottie.json',
+            '😢': 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f622/lottie.json',
+            '🔥': 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f525/lottie.json',
+            '😮': 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f62e/lottie.json',
+            '😡': 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f621/lottie.json',
+            '🎉': 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f389/lottie.json',
+            '💩': 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f4a9/lottie.json',
+            '🙏': 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f64f/lottie.json'
         };
         const State = { 
             t: localStorage.getItem('y_t'), u: JSON.parse(localStorage.getItem('y_u')||'{}'), 
@@ -2560,8 +2571,22 @@
                 // Применяем маркдаун к подписи (caption)
                 if(m.caption) inner += `<div class="msg-caption">${formatText(m.caption)}</div>`;
         
-                let rxs = JSON.parse(m.reactions||'{}'); let rxH = ''; for(let k in rxs) rxH += rxs[k];
-                if(rxH) inner += `<div class="msg-reaction-badge">${rxH}</div>`;
+                let rxs = JSON.parse(m.reactions||'{}');
+                let rxCounts = {};
+                for(let k in rxs) { rxCounts[rxs[k]] = (rxCounts[rxs[k]] || 0) + 1; }
+                
+                let rxH = '';
+                const animOn = localStorage.getItem('y_anim_react') !== 'false';
+                
+                for(let em in rxCounts) {
+                    let content = (animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[em]) 
+                        ? `<div data-url="${window.REACTION_LOTTIES[em]}" style="width:20px;height:20px;pointer-events:none;"></div>` 
+                        : em;
+                    rxH += `<div class="rx-pill" onclick="event.stopPropagation(); App.msgAct('react', '${em}', ${m.id})">
+                                ${content} <span style="margin-left:4px">${rxCounts[em]}</span>
+                            </div>`;
+                }
+                if(rxH) inner += `<div class="msg-reactions-wrap">${rxH}</div>`;
                         
                 let viewsH = (chatType === 'channel' && m.views) ? `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>` : '';
                 const tickHtml = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
@@ -3382,6 +3407,26 @@
                 document.getElementById('n-ctx-backdrop').style.display = 'block';
                 
                 const menu = document.getElementById('ctx-menu');
+                const reactBar = document.getElementById('ctx-reactions-bar');
+                const animOn = localStorage.getItem('y_anim_react') !== 'false';
+                reactBar.innerHTML = ''; // Clear previous
+                
+                Object.keys(window.REACTION_LOTTIES).forEach(em => {
+                    const span = document.createElement('span');
+                    span.onclick = () => App.msgAct('react', em);
+                    if (animOn) {
+                        span.innerHTML = `<div style="width:40px;height:40px;" data-url="${window.REACTION_LOTTIES[em]}"></div>`;
+                    } else {
+                        span.innerText = em;
+                    }
+                    reactBar.appendChild(span);
+                });
+                
+                if (animOn && window.lottie) {
+                    reactBar.querySelectorAll('[data-url]').forEach(el => {
+                        lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
+                    });
+                }
                 menu.style.display = 'flex';
                 setTimeout(() => menu.classList.add('show'), 10);
         
@@ -4029,6 +4074,13 @@
                             localforage.setItem(`y_cache_msgs_${targetChat}`, cont.innerHTML);
                         }, 500); 
                     }
+                    // Activate Lotties in message badges
+                    if (localStorage.getItem('y_anim_react') !== 'false' && window.lottie) {
+                        cont.querySelectorAll('.rx-pill [data-url]:not([data-loaded])').forEach(el => {
+                            el.setAttribute('data-loaded', 'true');
+                            lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
+                        });
+                    }
 
                     // Update Pinned Message UI
                     const pinEl = document.getElementById('pinned-msg');
@@ -4253,72 +4305,44 @@
                 }
             },
 
-            async msgAct(act, emoji=null) {
-                const msgId = State.targetId; // Lock target ID before closing context
+            async msgAct(act, emoji=null, overrideMsgId=null) {
+                const msgId = overrideMsgId || State.targetId;
                 
-                // 1. INSTANT OPTIMISTIC UI (0ms delay)
-                if (act === 'react') {
-                    const msgEl = document.getElementById(`msg-${msgId}`);
-                    if (msgEl) {
-                        const bubble = msgEl.querySelector('.msg-bubble');
-                        if (bubble) {
-                            let badge = bubble.querySelector('.msg-reaction-badge');
-                            if (!badge) {
-                                badge = document.createElement('div');
-                                badge.className = 'msg-reaction-badge';
-                                bubble.appendChild(badge);
-                            }
+                // 1. INSTANT MASSIVE LOTTIE ANIMATION
+                if (act === 'react' && emoji) {
+                    if (localStorage.getItem('y_anim_react') !== 'false' && window.REACTION_LOTTIES && window.REACTION_LOTTIES[emoji]) {
+                        const msgEl = document.getElementById(`msg-${msgId}`);
+                        if (msgEl) {
+                            const rect = msgEl.getBoundingClientRect();
+                            const floatEl = document.createElement('div');
+                            floatEl.className = 'floating-reaction';
+                            // Center it over the message bubble
+                            floatEl.style.left = `${rect.left + rect.width / 2}px`;
+                            floatEl.style.top = `${rect.top}px`;
+                            document.body.appendChild(floatEl);
                             
-                            // Toggle the emoji instantly on the UI
-                            let currentText = badge.innerText;
-                            if (currentText.includes(emoji)) {
-                                currentText = currentText.replace(emoji, '');
-                            } else {
-                                currentText += emoji;
+                            if (window.lottie) {
+                                lottie.loadAnimation({
+                                    container: floatEl, renderer: 'svg', loop: false, autoplay: true,
+                                    path: window.REACTION_LOTTIES[emoji]
+                                });
                             }
-                            badge.innerText = currentText;
-                            
-                            // Remove if empty, otherwise Animate!
-                            if (currentText.trim() === '') {
-                                badge.remove();
-                            } else {
-                                // Check user settings for animation
-                                if (localStorage.getItem('y_anim_react') !== 'false') {
-                                    // Trigger Pop Animation on the badge
-                                    badge.classList.remove('anim-reaction');
-                                    void badge.offsetWidth; // Force reflow to restart animation
-                                    badge.classList.add('anim-reaction');
-                                    
-                                    // Spawn a beautiful floating emoji that flies up
-                                    const rect = badge.getBoundingClientRect();
-                                    const floatEl = document.createElement('div');
-                                    floatEl.className = 'floating-reaction';
-                                    floatEl.innerText = emoji;
-                                    floatEl.style.left = `${rect.left + rect.width / 2}px`;
-                                    floatEl.style.top = `${rect.top}px`;
-                                    document.body.appendChild(floatEl);
-                                    
-                                    setTimeout(() => floatEl.remove(), 800); // Cleanup
-                                }
-                            }
+                            // Cleanup after the 2.2s animation finishes
+                            setTimeout(() => floatEl.remove(), 2500); 
                         }
                     }
                 }
-            
-                this.closeCtx(); // Close menu smoothly
+        
+                this.closeCtx(); // Hide menu smoothly
                 
-                // 2. Send in the background
+                // 2. Send in background and update UI silently
                 try { 
                     await req(`/api/messages/${msgId}/action`, 'POST', {action:act, emoji}); 
-                    
-                    if (act === 'delete') {
-                        document.getElementById(`msg-${msgId}`)?.remove();
-                    } else if (act !== 'react') {
-                        this.fastPoll(); 
-                    }
+                    if (act === 'delete') document.getElementById(`msg-${msgId}`)?.remove();
+                    else this.fastPoll(); // Grabs the new reaction count from the server in ~200ms
                 } catch(e) {
                     UI.toast('Action failed');
-                    this.fastPoll(); // Restore actual state from server if it failed
+                    this.fastPoll(); 
                 }
             },
 
