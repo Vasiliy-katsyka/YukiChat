@@ -2856,32 +2856,10 @@
                 // --- Premium Animated Emojis parsing ---
                 const animOn = localStorage.getItem('y_anim_react') !== 'false';
                 if (animOn && window.REACTION_LOTTIES && m.type === 'text') {
-                    // Render ONLY first 4 reactions by default
-                    const allEmojis = Object.keys(window.REACTION_LOTTIES);
-                    State.menuReactions = allEmojis; // Save to state for expander
-                    
-                    const renderReactions = (limit) => {
-                        reactBar.innerHTML = '';
-                        allEmojis.slice(0, limit).forEach(em => {
-                            const span = document.createElement('span');
-                            span.onclick = () => App.msgAct('react', em);
-                            if (animOn) {
-                                span.innerHTML = `<div style="width:36px;height:36px;" data-url="${window.REACTION_LOTTIES[em]}"></div>`;
-                            } else {
-                                span.innerText = em;
-                            }
-                            reactBar.appendChild(span);
-                        });
-                        if (animOn && window.lottie) {
-                            reactBar.querySelectorAll('[data-url]').forEach(el => {
-                                lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
-                            });
-                        }
-                    };
-                    
-                    renderReactions(4); // Init with 4
-                    document.getElementById('ctx-react-expand').style.display = 'block';
-                    reactBar.style.flexWrap = 'nowrap';
+                    Object.keys(window.REACTION_LOTTIES).forEach(em => {
+                        const safeEm = em.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        cleanTxt = cleanTxt.replace(new RegExp(safeEm, 'g'), `<span class="inline-lottie" data-url="${window.REACTION_LOTTIES[em]}"></span>`);
+                    });
                 }
                 if (m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="event.stopPropagation(); App.openMedia('${m.content}')">`;
                 else if (m.type === 'sticker') inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
@@ -3775,16 +3753,32 @@
                 const animOn = localStorage.getItem('y_anim_react') !== 'false';
                 reactBar.innerHTML = ''; // Clear previous
                 
-                Object.keys(window.REACTION_LOTTIES).forEach(em => {
-                    const span = document.createElement('span');
-                    span.onclick = () => App.msgAct('react', em);
-                    if (animOn) {
-                        span.innerHTML = `<div style="width:40px;height:40px;" data-url="${window.REACTION_LOTTIES[em]}"></div>`;
-                    } else {
-                        span.innerText = em;
+                // Render ONLY first 4 reactions by default
+                const allEmojis = Object.keys(window.REACTION_LOTTIES);
+                State.menuReactions = allEmojis; // Save to state for expander
+                
+                const renderReactions = (limit) => {
+                    reactBar.innerHTML = '';
+                    allEmojis.slice(0, limit).forEach(em => {
+                        const span = document.createElement('span');
+                        span.onclick = () => App.msgAct('react', em);
+                        if (animOn) {
+                            span.innerHTML = `<div style="width:36px;height:36px;" data-url="${window.REACTION_LOTTIES[em]}"></div>`;
+                        } else {
+                            span.innerText = em;
+                        }
+                        reactBar.appendChild(span);
+                    });
+                    if (animOn && window.lottie) {
+                        reactBar.querySelectorAll('[data-url]').forEach(el => {
+                            lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
+                        });
                     }
-                    reactBar.appendChild(span);
-                });
+                };
+                
+                renderReactions(4); // Init with 4
+                document.getElementById('ctx-react-expand').style.display = 'block';
+                reactBar.style.flexWrap = 'nowrap';
                 
                 if (animOn && window.lottie) {
                     reactBar.querySelectorAll('[data-url]').forEach(el => {
