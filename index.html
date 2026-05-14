@@ -979,7 +979,115 @@
             position: fixed; width: 120px; height: 120px;
             pointer-events: none; z-index: 99999;
             animation: exciting-lottie-float 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }/* FIX DESKTOP LAYOUT SHIFTING & EMPTY STATE */
+        @media (min-width: 768px) {
+            :root { --sidebar-width: 360px; }
+            body { flex-direction: row; }
+            
+            /* 1. Left Vertical Rail (Always visible) */
+            body:has(#panel-auth.active) .bottom-nav { display: none !important; }
+            .bottom-nav, .bottom-nav.hidden { 
+                display: flex !important; flex-direction: column !important; justify-content: flex-start !important;
+                gap: 16px !important; top: 0 !important; left: 0 !important; bottom: 0 !important; 
+                width: 72px !important; height: 100vh !important; 
+                transform: none !important; opacity: 1 !important; visibility: visible !important;
+                border-radius: 0 !important; padding-top: calc(20px + var(--safe-top)) !important;
+                border-right: 1px solid var(--border) !important; background: var(--bg-panel) !important;
+                box-shadow: none !important; pointer-events: auto !important; z-index: 99 !important;
+            }
+            .bottom-nav .nav-item { flex: none !important; height: 56px !important; }
+            
+            /* 2. Resizable Sidebar */
+            .panel { position: absolute !important; width: calc(100vw - 72px - var(--sidebar-width)) !important; left: calc(72px + var(--sidebar-width)) !important; z-index: 10; }
+            
+            div.panel.root { 
+                position: absolute !important; left: 72px !important; width: var(--sidebar-width) !important; 
+                flex-shrink: 0; border-right: 1px solid var(--border); z-index: 1; transform: none !important;
+                overflow: visible !important; /* Lets resizer hang outside */
+            }
+            
+            /* 3. Main Chat View pinned next to it */
+            #panel-chat { 
+                position: absolute !important; left: calc(72px + var(--sidebar-width)) !important; 
+                flex: 1 !important; width: calc(100vw - 72px - var(--sidebar-width)) !important; 
+                z-index: 0; transform: none !important; visibility: visible !important; pointer-events: auto !important; 
+            }
+            .link-preview { margin-top:8px; border-left:3px solid var(--primary); padding:8px; background:var(--bg-input); border-radius:8px; font-size:12px; display:none; } 
+            .link-preview img { width:100%; border-radius:4px; margin-bottom:4px; } 
+            #panel-chat .panel-header .icon-btn[onclick="Router.pop()"] { display: none; }
+        
+            #panel-chat:not(.active)::before { content: ''; position: absolute; inset: 0; background: var(--bg-base); z-index: 100; }
+            #panel-chat:not(.active)::after { content: 'Select a chat to start messaging'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-input); color: var(--text-muted); padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 500; z-index: 101; box-shadow: var(--shadow); }
+        
+            /* 4. Full screen overlays & Context menu */
+            #panel-auth, #panel-call { width: 100vw !important; left: 0 !important; z-index: 9999; }
+            .panel.active { transform: translateX(0) !important; }
+            #ctx-menu { width: calc(100vw - 72px - var(--sidebar-width)) !important; left: calc(72px + var(--sidebar-width)) !important; }
+        
+            /* 5. Desktop Modals */
+            #panel-settings, #panel-profile, #panel-new, #panel-create-channel, #panel-sessions {
+                position: fixed !important; top: 50% !important; left: 50% !important; width: 440px !important; height: 85vh !important; max-height: 800px; transform: translate(-50%, -40%) scale(0.95) !important; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid var(--border); opacity: 0; visibility: hidden; transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important; z-index: 9000 !important;
+            }
+            #panel-settings.active, #panel-profile.active, #panel-new.active, #panel-create-channel.active, #panel-sessions.active { transform: translate(-50%, -50%) scale(1) !important; opacity: 1; visibility: visible !important; }
+            body::after { content: ''; position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 8999; opacity: 0; pointer-events: none; transition: 0.3s; }
+            body:has(#panel-settings.active, #panel-profile.active, #panel-new.active)::after { opacity: 1; pointer-events: auto; }
+            
+            /* Fixed dynamic FAB to follow sidebar */
+            .fab { bottom: 30px; left: auto !important; right: 24px !important; }
+            #panel-root .panel-body, #panel-settings .panel-body { padding-bottom: var(--safe-bottom) !important; }
+
+            /* Constraints */
+            .n-input-bar-reset { display: flex; justify-content: center; }
+            .n-input-bar-reset > * { max-width: 800px; margin: 0 auto; }
+            .messages { align-items: center; }
+            .msg-row { max-width: 1000px; width: 100%; }
+
+            /* Scrollbars */
+            ::-webkit-scrollbar { width: 6px; height: 6px; }
+            ::-webkit-scrollbar-track { background: transparent; }
+            ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text-muted) 30%, transparent); border-radius: 10px; }
+            ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--text-muted) 60%, transparent); }
+            * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text-muted) 30%, transparent) transparent; }
+
+            /* 6. Drag Handle & Telegram-style Mini Mode */
+            #sidebar-resizer {
+                display: block !important; position: absolute; right: -3px; top: 0; bottom: 0; width: 6px;
+                cursor: col-resize; z-index: 9999; transition: background 0.2s;
+            }
+            #sidebar-resizer:hover, #sidebar-resizer.active { background: var(--primary); }
+
+            div.panel.root.mini-sidebar .user-info, 
+            div.panel.root.mini-sidebar .call-badge,
+            div.panel.root.mini-sidebar .search-wrap,
+            div.panel.root.mini-sidebar #main-title { display: none !important; }
+            
+            div.panel.root.mini-sidebar .root-header { justify-content: center; padding-left: 0; padding-right: 0; }
+            div.panel.root.mini-sidebar .user-item { justify-content: center; padding: 12px 0; }
+            div.panel.root.mini-sidebar .fab { right: 50% !important; transform: translateX(50%); width: 48px; height: 48px; }
+            div.panel.root.mini-sidebar .fab:active { transform: translateX(50%) scale(0.92); }
         }
+
+        /* 3-Column Profile Layout on massive screens */
+        @media (min-width: 1100px) {
+            #panel-chat { display: flex !important; flex-direction: column !important; }
+            #panel-profile.active {
+                position: absolute !important; right: 0 !important; left: auto !important; top: 0 !important; bottom: 0 !important;
+                width: 320px !important; height: 100vh !important; transform: none !important; border-radius: 0;
+                border-left: 1px solid var(--border); box-shadow: none !important; z-index: 10 !important;
+            }
+            body:has(#panel-profile.active) #panel-chat { width: calc(100vw - 72px - var(--sidebar-width) - 320px) !important; }
+            body:has(#panel-profile.active)::after { display: none; } 
+        }
+
+        #sidebar-resizer { display: none; } /* Hidden by default on mobile */
+        @media (max-width: 767px) { #desktop-settings-btn { display: none !important; } }
+        @media (hover: hover) {
+            .icon-btn:hover { background: color-mix(in srgb, var(--text-main) 8%, transparent); transform: scale(1.05); }
+            .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+            .user-item:hover { background: color-mix(in srgb, var(--text-main) 8%, transparent) !important; padding-left: 24px; }
+            .bottom-nav .nav-item:hover { color: var(--text-main); transform: translateY(-2px); }
+        }
+        @keyframes bounce-spin { 0% { transform: scale(0.8) rotate(0deg); border-radius: 20px; } 50% { transform: scale(1.1) rotate(180deg); border-radius: 50%; } 100% { transform: scale(0.8) rotate(360deg); border-radius: 20px; } }
     </style>
 </head>
 <body>
@@ -1082,6 +1190,7 @@
     <!-- ROOT CHAT LIST -->
     <!-- ROOT CHAT LIST -->
     <div id="panel-root" class="panel root">
+        <div id="sidebar-resizer"></div>
         <!-- WRAPPED IN CLEAR LIQUID GLASS -->
         <!-- UPDATE the glass header container by adding id="root-header-glass" -->
         <div id="root-header-glass" class="liquid-glass n-glass-header" style="position: absolute; width: 100%; top: 0; z-index: 50;">
@@ -4802,6 +4911,58 @@
                 }
             }, 800);
         };
+        // --- DESKTOP RESIZABLE SIDEBAR LOGIC ---
+        window.addEventListener('load', () => {
+            const resizer = document.getElementById('sidebar-resizer');
+            const rootPanel = document.getElementById('panel-root');
+            let isResizing = false;
+        
+            // 1. Load saved width from localStorage
+            const savedWidth = localStorage.getItem('y_sidebar_width');
+            if (savedWidth && window.innerWidth >= 768) {
+                document.documentElement.style.setProperty('--sidebar-width', savedWidth + 'px');
+                if (parseInt(savedWidth) <= 80) rootPanel.classList.add('mini-sidebar');
+            }
+        
+            // 2. Start Dragging
+            resizer.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                resizer.classList.add('active');
+                document.body.style.cursor = 'col-resize';
+                e.preventDefault(); // Prevent text selection while dragging
+            });
+        
+            // 3. Handle Dragging
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                
+                // Subtract the 72px Left Navigation Rail to get the pure sidebar width
+                let newWidth = e.clientX - 72; 
+                
+                // Snap points (Telegram style)
+                if (newWidth < 160) newWidth = 80;       // Snap to Avatar-only mini mode
+                else if (newWidth < 240) newWidth = 240; // Minimum expanded width
+                else if (newWidth > window.innerWidth / 2) newWidth = window.innerWidth / 2; // Don't allow it to cover the whole screen
+                
+                document.documentElement.style.setProperty('--sidebar-width', newWidth + 'px');
+                
+                if (newWidth <= 80) rootPanel.classList.add('mini-sidebar');
+                else rootPanel.classList.remove('mini-sidebar');
+            });
+        
+            // 4. End Dragging
+            document.addEventListener('mouseup', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    resizer.classList.remove('active');
+                    document.body.style.cursor = '';
+                    
+                    // Save the width for next time they open the app
+                    const finalWidth = document.documentElement.style.getPropertyValue('--sidebar-width').replace('px', '');
+                    localStorage.setItem('y_sidebar_width', finalWidth);
+                }
+            });
+        });
     </script>
 </body>
 </html>
