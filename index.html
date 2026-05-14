@@ -405,10 +405,63 @@
         .media-loading-circle { width: 44px; height: 44px; background: rgba(0,0,0,0.5); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
         
         @media (min-width: 768px) {
-            .bottom-nav { display: none; }
+            /* REPLACE inside @media (min-width: 768px): */
+            .bottom-nav { 
+                display: flex !important; 
+                flex-direction: column; 
+                justify-content: flex-start;
+                gap: 16px;
+                top: 0; left: 0; bottom: 0; 
+                width: 72px; height: 100vh; 
+                transform: none !important; 
+                border-radius: 0;
+                padding-top: calc(20px + var(--safe-top));
+                border-right: 1px solid var(--border);
+                background: var(--bg-panel);
+                box-shadow: none;
+            }
+            .bottom-nav .nav-item { flex: none; height: 56px; }
+            
+            /* Shift the root panel to make room for the new Left Rail */
+            div.panel.root { left: 72px !important; width: 320px !important; }
+            #panel-chat { left: 392px !important; width: calc(100vw - 392px) !important; }
             .fab { bottom: 30px; }
             #panel-root .panel-body, #panel-settings .panel-body { padding-bottom: var(--safe-bottom) !important; }
         }
+        /* The 3-Column Layout (Chat list | Active Chat | Profile) */
+        @media (min-width: 1100px) {
+            #panel-chat { display: flex !important; flex-direction: column !important; }
+            #panel-profile.active {
+                position: absolute !important;
+                right: 0 !important; left: auto !important; top: 0 !important; bottom: 0 !important;
+                width: 320px !important; height: 100vh !important;
+                transform: none !important; border-radius: 0;
+                border-left: 1px solid var(--border);
+                box-shadow: none !important;
+                z-index: 10 !important;
+            }
+            /* Shrink chat area when profile is open */
+            body:has(#panel-profile.active) #panel-chat { width: calc(100vw - 392px - 320px) !important; }
+            body:has(#panel-profile.active)::after { display: none; } /* Hide dark backdrop */
+        }
+        
+        /* ADD TO THE BOTTOM OF YOUR STYLE BLOCK (Outside media queries): */
+        
+        /* Drop Zone Overlay */
+        #drop-zone-overlay {
+            position: absolute; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            display: none; align-items: center; justify-content: center;
+            border: 4px dashed var(--primary); border-radius: 20px; margin: 20px;
+            color: #fff; font-size: 24px; font-weight: bold; pointer-events: none;
+        }
+        
+        /* Compact Mode */
+        body.compact-mode { --msg-size: 13.5px; }
+        body.compact-mode .msg-bubble { padding: 6px 12px; }
+        body.compact-mode .avatar { width: 40px; height: 40px; }
+        body.compact-mode .user-item { padding: 8px 20px; }
+        body.compact-mode .msg-bubble > div:last-child { position: static; text-align: right; margin-top: 2px !important; bottom: auto; display: inline-block; float: right; margin-left: 8px; font-size: 10px !important;}
         /* Add these 6 new unique themes below [data-theme="dracula"] */[data-theme="ocean"] { --bg-base: #082f49; --bg-panel: #0c4a6e; --bg-input: #0284c7; --border: #38bdf8; --primary: #7dd3fc; --text-main: #f0f9ff; --text-muted: #bae6fd; --msg-sent: #0284c7; --msg-sent-txt: #f0f9ff; --msg-recv: #082f49; --msg-recv-txt: #e0f2fe; --chat-bg: #082f49; }
         [data-theme="forest"] { --bg-base: #14532d; --bg-panel: #166534; --bg-input: #15803d; --border: #4ade80; --primary: #86efac; --text-main: #f0fdf4; --text-muted: #bbf7d0; --msg-sent: #15803d; --msg-sent-txt: #f0fdf4; --msg-recv: #14532d; --msg-recv-txt: #dcfce7; --chat-bg: #14532d; }[data-theme="sunset"] { --bg-base: #450a0a; --bg-panel: #7f1d1d; --bg-input: #991b1b; --border: #f87171; --primary: #fca5a5; --text-main: #fef2f2; --text-muted: #fecaca; --msg-sent: #991b1b; --msg-sent-txt: #fef2f2; --msg-recv: #450a0a; --msg-recv-txt: #fee2e2; --chat-bg: #450a0a; }
         [data-theme="cyber"] { --bg-base: #09090b; --bg-panel: #18181b; --bg-input: #27272a; --border: #ec4899; --primary: #06b6d4; --text-main: #fdf2f8; --text-muted: #a1a1aa; --msg-sent: #ec4899; --msg-sent-txt: #09090b; --msg-recv: #27272a; --msg-recv-txt: #06b6d4; --chat-bg: #09090b; }
@@ -1134,6 +1187,7 @@
         <!-- Added n-chat-area-relative -->
         <div class="chat-area n-chat-area-relative" id="chat-area-bg">
             <canvas id="bg-canvas" style="position:absolute; inset:0; z-index:1; pointer-events:none; width:100%; height:100%;"></canvas>
+            <div id="drop-zone-overlay">Drop files here to send</div>
             <div id="dom-fx-layer" style="position:absolute; inset:0; z-index:40; pointer-events:none; overflow:hidden;"></div>
             <canvas id="fx-canvas" style="position:absolute; inset:0; z-index:100; pointer-events:none; width:100%; height:100%;"></canvas>
             <!-- Added absolute positioning to pinned messages so it sits under the header -->
@@ -1313,6 +1367,10 @@
                         <div class="theme-preview" data-theme-val="deep-purple" onclick="App.setTheme('deep-purple')"><div class="theme-preview-inner" style="background:#1e1b4b;"><div class="mini-bubble right" style="background:#c7d2fe"></div><div class="mini-bubble left" style="background:#3730a3"></div></div><span class="theme-label">Indigo</span></div>
                         <div class="theme-preview" data-theme-val="crimson-dark" onclick="App.setTheme('crimson-dark')"><div class="theme-preview-inner" style="background:#450a0a;"><div class="mini-bubble right" style="background:#fecaca"></div><div class="mini-bubble left" style="background:#991b1b"></div></div><span class="theme-label">Wine</span></div>
                     </div>
+                </div>
+                <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
+                    <span>Compact Mode</span>
+                    <input type="checkbox" id="set-compact" style="width:20px;height:20px;" onchange="App.toggleCompactMode(this.checked)">
                 </div>
                 <div class="settings-row" style="margin:16px 0 0 0; background:transparent; flex-direction:column; align-items:flex-start; gap:16px; border-top:1px solid var(--border); padding-top:16px; border-radius:0;">
                     <div style="display:flex; justify-content:space-between; width:100%;">
@@ -2461,6 +2519,11 @@
                 document.getElementById('auth-toggle-txt').textContent = State.authMode === 'register' ? 'Already have an account?' : "Don't have an account?";
                 document.getElementById('auth-toggle-txt').nextElementSibling.textContent = State.authMode === 'register' ? 'Log In' : 'Sign Up';
             },
+            toggleCompactMode(enabled) {
+                if (enabled) document.body.classList.add('compact-mode');
+                else document.body.classList.remove('compact-mode');
+                localStorage.setItem('y_compact', enabled);
+            },
             authAv(e) {
                 const f = e.target.files[0]; if(!f) return; const r = new FileReader();
                 r.onload = ev => { 
@@ -3228,28 +3291,69 @@
                 document.getElementById('set-av').src = State.u.avatar || getDefAv(State.u.username);
                 document.getElementById('nav-av').src = State.u.avatar || getDefAv(State.u.username);
                 Router.updateNav();
-                // Add Enter to Send, Shift+Enter for New Line
+                // --- NEW: Keyboard Shortcuts ---
+                document.addEventListener('keydown', (e) => {
+                    const isInput = ['INPUT', 'TEXTAREA'].includes(e.target.tagName);
+                    
+                    // Ctrl+K or '/' for Search
+                    if (((e.ctrlKey || e.metaKey) && e.key === 'k') || (!isInput && e.key === '/')) {
+                        e.preventDefault();
+                        document.querySelector('.search-bar input')?.focus();
+                        if(Router.stack[Router.stack.length-1] !== 'panel-root') App.switchTab('chats');
+                    }
+                    
+                    // Esc: Close Modals, Cancel Reply, Close Chat
+                    if (e.key === 'Escape') {
+                        if (State.replyTo) App.cancelReply();
+                        else if (document.getElementById('ctx-menu').classList.contains('show')) App.closeCtx();
+                        else if (Router.stack.length > 1 && Router.stack[Router.stack.length-1] !== 'panel-chat') Router.pop();
+                    }
+                
+                    // Up Arrow: Edit/Reply to last message if input is empty
+                    if (e.key === 'ArrowUp' && e.target.id === 'msg-input' && !e.target.value) {
+                        e.preventDefault();
+                        const myMsgs = Array.from(document.querySelectorAll('.msg-row.sent'));
+                        if (myMsgs.length > 0) {
+                            const lastMsg = myMsgs[myMsgs.length - 1];
+                            State.targetId = lastMsg.id.replace('msg-', '');
+                            const bubble = lastMsg.querySelector('.msg-bubble');
+                            State.targetTxt = bubble ? (bubble.getAttribute('data-raw') || 'Media') : '';
+                            App.initReply();
+                        }
+                    }
+                });
+                
+                // Shift+Enter / Enter sending
                 const msgInput = document.getElementById('msg-input');
                 if(msgInput) {
                     msgInput.addEventListener('keydown', (e) => {
                         if (e.key === 'Enter' && !e.shiftKey && window.innerWidth >= 768) {
-                            e.preventDefault(); // Prevents a new line
+                            e.preventDefault();
                             App.sendText();
                         }
                     });
                 }
-                // 1. Global Search Shortcut (Ctrl+K)
-                document.addEventListener('keydown', (e) => {
-                    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                        e.preventDefault();
-                        const searchInput = document.querySelector('.search-bar input');
-                        if(searchInput) {
-                            searchInput.focus();
-                            // Automatically switch to chat tab if not there
-                            if(Router.stack[Router.stack.length-1] !== 'panel-root') App.switchTab('chats');
-                        }
+                
+                // --- NEW: Drag & Drop Dropzone UI ---
+                const chatArea = document.getElementById('panel-chat');
+                const dropOverlay = document.getElementById('drop-zone-overlay');
+                chatArea.addEventListener('dragover', (e) => { e.preventDefault(); dropOverlay.style.display = 'flex'; });
+                chatArea.addEventListener('dragleave', (e) => { 
+                    if(e.relatedTarget === dropOverlay || e.target === dropOverlay) return;
+                    e.preventDefault(); dropOverlay.style.display = 'none'; 
+                });
+                chatArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropOverlay.style.display = 'none';
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        App.prepMedia({ target: { files: e.dataTransfer.files, value: '' } });
                     }
                 });
+                
+                // Init Compact Mode setting
+                const isCompact = localStorage.getItem('y_compact') === 'true';
+                if (document.getElementById('set-compact')) document.getElementById('set-compact').checked = isCompact;
+                this.toggleCompactMode(isCompact);
 
                 const msgsCont = document.getElementById('msgs');
                 let touchStartX = 0;
@@ -3316,26 +3420,7 @@
                 mCont.addEventListener('touchend', () => {
                     if(State.mScale <= 1) { mPanX = 0; mPanY = 0; mImg.style.transform = `scale(1) translate(0px, 0px)`; }
                 });
-                // 2. Drag & Drop Media Upload
-                const chatArea = document.getElementById('panel-chat');
-                chatArea.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    chatArea.style.opacity = '0.7'; // Visual feedback
-                });
-                chatArea.addEventListener('dragleave', (e) => {
-                    e.preventDefault();
-                    chatArea.style.opacity = '1';
-                });
-                chatArea.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    chatArea.style.opacity = '1';
-                    
-                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                        // Mock an event object to pass to your existing prepMedia function
-                        const mockEvent = { target: { files: [e.dataTransfer.files[0]], value: '' } };
-                        App.prepMedia(mockEvent);
-                    }
-                });
+                
                 const nameEl = document.getElementById('set-name');
                 if(nameEl.tagName === 'INPUT') nameEl.value = State.u.username; else nameEl.textContent = State.u.username;
                 document.getElementById('set-bio').value = State.u.bio || '';
@@ -3669,6 +3754,12 @@
                         navBadge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
                         navBadge.textContent = totalUnread > 99 ? '99+' : totalUnread;
                     }
+
+                    // --- NEW: Window Title Management ---
+                    const activeChatObj = State.chat ? State.chats.get(State.chat) || State.chats.get(Number(State.chat)) : null;
+                    const activeChatName = activeChatObj ? (activeChatObj.type === 'dm' ? activeChatObj.dm_username : activeChatObj.name) : '';
+                    const titlePrefix = totalUnread > 0 ? `(${totalUnread}) ` : '';
+                    document.title = titlePrefix + (activeChatName ? `${activeChatName} - YukiChat` : 'YukiChat');
                     
                     if (!isSearching) {
                         document.getElementById('chat-list').innerHTML = html || `<div style="padding:40px;text-align:center;color:var(--text-muted)">${I18N.t('No chats found')}</div>`;
