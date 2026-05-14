@@ -2854,8 +2854,8 @@
                 // Применяем маркдаун к контенту
                 let cleanTxt = formatText(safeContent);
                 // --- Premium Animated Emojis parsing ---
-                const animOn = localStorage.getItem('y_anim_react') !== 'false';
-                if (animOn && window.REACTION_LOTTIES && m.type === 'text') {
+                const useAnim = localStorage.getItem('y_anim_react') !== 'false';
+                if (useAnim && window.REACTION_LOTTIES && m.type === 'text') {
                     Object.keys(window.REACTION_LOTTIES).forEach(em => {
                         const safeEm = em.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                         cleanTxt = cleanTxt.replace(new RegExp(safeEm, 'g'), `<span class="inline-lottie" data-url="${window.REACTION_LOTTIES[em]}"></span>`);
