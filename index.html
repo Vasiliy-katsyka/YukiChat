@@ -1088,6 +1088,30 @@
             .bottom-nav .nav-item:hover { color: var(--text-main); transform: translateY(-2px); }
         }
         @keyframes bounce-spin { 0% { transform: scale(0.8) rotate(0deg); border-radius: 20px; } 50% { transform: scale(1.1) rotate(180deg); border-radius: 50%; } 100% { transform: scale(0.8) rotate(360deg); border-radius: 20px; } }
+        /* --- CHAT FOLDERS (TABS) --- */
+        .chat-folders { display: flex; gap: 8px; padding: 0 20px 10px; overflow-x: auto; border-bottom: 1px solid var(--border); }
+        .chat-folders::-webkit-scrollbar { display: none; }
+        .folder-tab { padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: 0.2s; white-space: nowrap; background: var(--bg-input); }
+        .folder-tab.active { background: var(--primary); color: var(--bg-base); }
+        
+        /* --- MEDIA PANEL TABS (STICKERS/GIFS/EMOJIS) --- */
+        .media-tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+        .media-tab { flex: 1; text-align: center; padding: 12px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; }
+        .media-tab.active { color: var(--text-main); border-bottom-color: var(--text-main); }
+        .gif-search { width: calc(100% - 32px); margin: 0 16px 8px; padding: 10px 16px; border-radius: 12px; border: none; background: var(--bg-input); color: var(--text-main); font-family: inherit; font-size: 13px; outline: none; }
+
+        /* --- INLINE PREMIUM EMOJIS --- */
+        .inline-lottie { display: inline-block; width: 22px; height: 22px; vertical-align: sub; margin: 0 2px; }
+
+        /* --- CONTEXT MENU UPDATES --- */
+        .ctx-reactions-wrapper { display: flex; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 8px 16px; }
+        .ctx-reactions { flex: 1; border: none; padding: 0; display: flex; gap: 10px; overflow: hidden; }
+        .ctx-item { gap: 14px; color: #fff; }
+        .ctx-item svg { opacity: 0.8; }
+
+        /* --- FORWARD MODAL --- */
+        #forward-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99999; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(5px); }
+        #forward-content { background: var(--bg-panel); width: 100%; max-width: 400px; height: 70vh; border-top-left-radius: 24px; border-top-right-radius: 24px; display: flex; flex-direction: column; overflow: hidden; }
     </style>
 </head>
 <body>
@@ -1229,6 +1253,12 @@
                     <button id="search-clear-root" class="icon-btn" style="display:none; position:absolute; right:10px; width:24px; height:24px;" onclick="document.getElementById('search-input-root').value=''; App.searchGlobal('');">✕</button>
                 </div>
             </div>
+            <!-- NEW CHAT FOLDERS -->
+            <div id="chat-folders-nav" class="chat-folders">
+                <div class="folder-tab active" onclick="App.setFilter('all', this)">All Chats</div>
+                <div class="folder-tab" onclick="App.setFilter('dms', this)">Personal</div>
+                <div class="folder-tab" onclick="App.setFilter('groups', this)">Groups & Channels</div>
+            </div>
         </div>
 
         <div id="weather-popup" style="min-width: 200px;">
@@ -1335,9 +1365,12 @@
                 <div class="input-bar n-input-bar-reset" id="input-bar">
                     <!-- Sticker Panel -->
                     <div class="sticker-panel" id="sticker-panel">
-                        <div style="padding: 12px 20px; font-weight: 600; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;">
-                            Stickers <span onclick="App.toggleStickers()" style="cursor:pointer; color:var(--text-muted)">✕</span>
+                        <div class="media-tabs">
+                            <div class="media-tab active" id="tab-stickers" onclick="App.setMediaTab('stickers')">Stickers</div>
+                            <div class="media-tab" id="tab-gifs" onclick="App.setMediaTab('gifs')">GIFs</div>
+                            <div class="media-tab" id="tab-emojis" onclick="App.setMediaTab('emojis')">Emojis</div>
                         </div>
+                        <input type="text" id="gif-search-input" class="gif-search" placeholder="Search GIFs..." style="display:none;" oninput="App.loadGifs(this.value)">
                         <div class="sticker-grid" id="sticker-grid"></div>
                     </div>
                 
@@ -1757,13 +1790,25 @@
     <!-- Floating Context Menu -->
     <div id="n-ctx-backdrop" class="n-ctx-backdrop" onclick="App.closeCtx()"></div>
     <div id="ctx-menu">
-        <div class="ctx-reactions" id="ctx-reactions-bar"></div>
-        <div class="ctx-item" onclick="App.initReply()">↩️ Reply</div>
-        <div class="ctx-item" onclick="App.msgAct('pin')">📌 Pin / Unpin</div>
-        <div class="ctx-item" id="ctx-ai-tools" onclick="AITools.open('msg')">🤖 AI Tools</div>
-        <div class="ctx-item" id="ctx-copy" onclick="App.copyTargetText()">📋 Copy Text</div>
-        <div class="ctx-item" id="ctx-save-media" onclick="App.downloadMedia()" style="display:none;">📥 Save to Gallery</div>
-        <div class="ctx-item danger" id="ctx-del" onclick="App.msgAct('delete')">🗑️ Delete Message</div>
+        <div class="ctx-reactions-wrapper">
+            <div class="ctx-reactions" id="ctx-reactions-bar"></div>
+            <button class="icon-btn" onclick="App.expandReactions()" style="width:30px;height:30px;color:#fff;margin-left:8px;" id="ctx-react-expand"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+        </div>
+        <div class="ctx-item" onclick="App.initReply()"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg> Reply</div>
+        <div class="ctx-item" onclick="App.initForward()"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"></path></svg> Forward</div>
+        <div class="ctx-item" onclick="App.msgAct('pin')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Pin / Unpin</div>
+        <div class="ctx-item" id="ctx-ai-tools" onclick="AITools.open('msg')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 7l-5-5-5 5"></path></svg> AI Tools</div>
+        <div class="ctx-item" id="ctx-copy" onclick="App.copyTargetText()"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path></svg> Copy Text</div>
+        <div class="ctx-item" id="ctx-save-media" onclick="App.downloadMedia()" style="display:none;"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Save to Gallery</div>
+        <div class="ctx-item danger" id="ctx-del" onclick="App.msgAct('delete')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg> Delete Message</div>
+    </div>
+    
+    <!-- FORWARD MODAL (Paste right under ctx-menu) -->
+    <div id="forward-modal" onclick="this.style.display='none'">
+        <div id="forward-content" onclick="event.stopPropagation()">
+            <div style="padding:16px 20px; font-weight:600; border-bottom:1px solid var(--border);">Forward to...</div>
+            <div id="forward-chat-list" style="flex:1; overflow-y:auto;"></div>
+        </div>
     </div>
     
     <!-- OLED Media Viewer Overlay -->
@@ -2633,6 +2678,94 @@
                 else document.body.classList.remove('compact-mode');
                 localStorage.setItem('y_compact', enabled);
             },
+            setFilter(type, el) {
+                State.chatFilter = type;
+                document.querySelectorAll('.folder-tab').forEach(t => t.classList.remove('active'));
+                el.classList.add('active');
+                this.sync(); // Force re-render instantly
+            },
+            // --- TABS & GIFS & EMOJIS ---
+            setMediaTab(tab) {
+                document.querySelectorAll('.media-tab').forEach(t => t.classList.remove('active'));
+                document.getElementById('tab-' + tab).classList.add('active');
+                document.getElementById('gif-search-input').style.display = tab === 'gifs' ? 'block' : 'none';
+                
+                if (tab === 'stickers') this.loadStickerKeyboard();
+                if (tab === 'gifs') this.loadGifs();
+                if (tab === 'emojis') this.loadPremiumEmojis();
+            },
+            
+            async loadGifs(q = '') {
+                const grid = document.getElementById('sticker-grid');
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 20px;"><div class="loader" style="margin:auto; border-top-color:var(--primary);"></div></div>';
+                try {
+                    // Tenor Public Beta API
+                    const url = `https://g.tenor.com/v1/search?q=${q||'trending'}&key=LIVDSRZULELA&limit=30`;
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    let html = '';
+                    data.results.forEach(g => {
+                        html += `<img class="sticker-item" src="${g.media[0].tinygif.url}" style="border-radius:8px;" onclick="App.sendSticker(this.src)">`;
+                    });
+                    grid.innerHTML = html;
+                } catch (e) { grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:var(--danger);">Failed to load GIFs</div>'; }
+            },
+            
+            loadPremiumEmojis() {
+                const grid = document.getElementById('sticker-grid');
+                let html = '';
+                Object.keys(window.REACTION_LOTTIES).forEach(em => {
+                    html += `<div class="sticker-item" style="display:flex;align-items:center;justify-content:center;" onclick="document.getElementById('msg-input').value += '${em}'; App.toggleStickers();">
+                                <div data-url="${window.REACTION_LOTTIES[em]}" style="width:40px;height:40px;"></div>
+                             </div>`;
+                });
+                grid.innerHTML = html;
+                
+                // Init Lotties in grid
+                grid.querySelectorAll('[data-url]').forEach(el => {
+                    lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
+                });
+            },
+
+            // --- FORWARDING ---
+            initForward() {
+                this.closeCtx();
+                State.forwardTxt = State.targetTxt;
+                State.forwardMedia = State.targetMedia;
+                
+                const list = document.getElementById('forward-chat-list');
+                let html = '';
+                State.chats.forEach(c => {
+                    if (c.id === 'ai') return;
+                    const name = c.type === 'dm' ? c.dm_username : c.name;
+                    const av = c.type === 'dm' ? (c.dm_avatar || defAv) : (c.avatar || defAv);
+                    html += `<div class="user-item" onclick="App.submitForward('${c.id}')" style="padding:10px 20px;">
+                                <img src="${av}" class="avatar" style="width:40px;height:40px;">
+                                <div class="user-info"><b>${name}</b></div>
+                             </div>`;
+                });
+                list.innerHTML = html;
+                document.getElementById('forward-modal').style.display = 'flex';
+            },
+            
+            submitForward(chatId) {
+                document.getElementById('forward-modal').style.display = 'none';
+                
+                // If it was media, send as media with caption
+                if (State.forwardMedia) {
+                    State.capMediaQueue = [{ data: State.forwardMedia, type: 'photo' }];
+                    document.getElementById('msg-input').value = State.forwardTxt ? `> Forwarded\n\n${State.forwardTxt}` : '> Forwarded Media';
+                    const origChat = State.chat;
+                    State.chat = chatId; 
+                    this.sendMedia().then(() => { State.chat = origChat; UI.toast('Forwarded!'); });
+                } else {
+                    // Send as text
+                    const origChat = State.chat;
+                    State.chat = chatId;
+                    document.getElementById('msg-input').value = `> Forwarded\n\n${State.forwardTxt}`;
+                    this.sendText().then(() => { State.chat = origChat; UI.toast('Forwarded!'); });
+                }
+            },
             authAv(e) {
                 const f = e.target.files[0]; if(!f) return; const r = new FileReader();
                 r.onload = ev => { 
@@ -2720,7 +2853,36 @@
         
                 // Применяем маркдаун к контенту
                 let cleanTxt = formatText(safeContent);
-        
+                // --- Premium Animated Emojis parsing ---
+                const animOn = localStorage.getItem('y_anim_react') !== 'false';
+                if (animOn && window.REACTION_LOTTIES && m.type === 'text') {
+                    // Render ONLY first 4 reactions by default
+                    const allEmojis = Object.keys(window.REACTION_LOTTIES);
+                    State.menuReactions = allEmojis; // Save to state for expander
+                    
+                    const renderReactions = (limit) => {
+                        reactBar.innerHTML = '';
+                        allEmojis.slice(0, limit).forEach(em => {
+                            const span = document.createElement('span');
+                            span.onclick = () => App.msgAct('react', em);
+                            if (animOn) {
+                                span.innerHTML = `<div style="width:36px;height:36px;" data-url="${window.REACTION_LOTTIES[em]}"></div>`;
+                            } else {
+                                span.innerText = em;
+                            }
+                            reactBar.appendChild(span);
+                        });
+                        if (animOn && window.lottie) {
+                            reactBar.querySelectorAll('[data-url]').forEach(el => {
+                                lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
+                            });
+                        }
+                    };
+                    
+                    renderReactions(4); // Init with 4
+                    document.getElementById('ctx-react-expand').style.display = 'block';
+                    reactBar.style.flexWrap = 'nowrap';
+                }
                 if (m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="event.stopPropagation(); App.openMedia('${m.content}')">`;
                 else if (m.type === 'sticker') inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
                 else inner += cleanTxt;
@@ -3651,7 +3813,31 @@
                 document.getElementById('ctx-copy').style.display = State.targetTxt ? 'flex' : 'none';
                 document.getElementById('ctx-del').style.display = isMine ? 'flex' : 'none';
             },
-        
+            expandReactions() {
+                const reactBar = document.getElementById('ctx-reactions-bar');
+                document.getElementById('ctx-react-expand').style.display = 'none'; // hide button
+                reactBar.style.flexWrap = 'wrap'; // allow wrapping
+                
+                const animOn = localStorage.getItem('y_anim_react') !== 'false';
+                reactBar.innerHTML = '';
+                
+                State.menuReactions.forEach(em => {
+                    const span = document.createElement('span');
+                    span.onclick = () => App.msgAct('react', em);
+                    if (animOn) {
+                        span.innerHTML = `<div style="width:36px;height:36px;" data-url="${window.REACTION_LOTTIES[em]}"></div>`;
+                    } else {
+                        span.innerText = em;
+                    }
+                    reactBar.appendChild(span);
+                });
+                
+                if (animOn && window.lottie) {
+                    reactBar.querySelectorAll('[data-url]').forEach(el => {
+                        lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
+                    });
+                }
+            },
             closeCtx() {
                 const menu = document.getElementById('ctx-menu');
                 menu.classList.remove('show');
@@ -3774,7 +3960,11 @@
                     let totalUnread = 0;
                     let html = '';
                     
-                    d.chats.forEach(c => {
+                    let filteredChats = d.chats;
+                    if (State.chatFilter === 'dms') filteredChats = filteredChats.filter(c => c.type === 'dm');
+                    if (State.chatFilter === 'groups') filteredChats = filteredChats.filter(c => c.type === 'group' || c.type === 'channel');
+                    
+                    filteredChats.forEach(c => {
                         State.chats.set(c.id, c);
                         const isDM = c.type==='dm'; const n = isDM?c.dm_username:c.name; 
                         const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
@@ -4284,7 +4474,7 @@
                     }
                     // Activate Lotties in message badges
                     if (localStorage.getItem('y_anim_react') !== 'false' && window.lottie) {
-                        cont.querySelectorAll('.rx-pill [data-url]:not([data-loaded])').forEach(el => {
+                        cont.querySelectorAll('[data-url]:not([data-loaded])').forEach(el => {
                             el.setAttribute('data-loaded', 'true');
                             lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
                         });
