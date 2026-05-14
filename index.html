@@ -1112,6 +1112,31 @@
         /* --- FORWARD MODAL --- */
         #forward-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99999; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(5px); }
         #forward-content { background: var(--bg-panel); width: 100%; max-width: 400px; height: 70vh; border-top-left-radius: 24px; border-top-right-radius: 24px; display: flex; flex-direction: column; overflow: hidden; }
+        /* --- CHAT FOLDERS (TABS) --- */
+        #mobile-folders-nav { display: none; gap: 8px; padding: 0 20px 10px; overflow-x: auto; border-bottom: 1px solid var(--border); margin-top: -4px; }
+        #mobile-folders-nav::-webkit-scrollbar { display: none; }
+        .folder-tab { padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: 0.2s; white-space: nowrap; background: var(--bg-input); }
+        .folder-tab.active { background: var(--primary); color: var(--bg-base); }
+        
+        /* Desktop Folders in Side Rail */
+        #desktop-folders-nav { display: none; flex-direction: column; gap: 8px; width: 100%; align-items: center; margin-top: 8px; border-top: 1px solid var(--border); padding-top: 16px; flex: 1; overflow-y: auto; overflow-x: hidden; }
+        #desktop-folders-nav::-webkit-scrollbar { display: none; }
+
+        /* Dynamic Chat List Padding */
+        #chat-list { padding-top: calc(125px + var(--safe-top)); }
+        body.has-folders #mobile-folders-nav { display: flex; }
+        body.has-folders #chat-list { padding-top: calc(165px + var(--safe-top)); }
+
+        @media (min-width: 768px) {
+            body.has-folders #mobile-folders-nav { display: none !important; }
+            body.has-folders #desktop-folders-nav { display: flex !important; }
+            body.has-folders #chat-list { padding-top: calc(125px + var(--safe-top)) !important; } /* Reset padding on PC */
+            
+            .folder-icon-tab { width: 44px; height: 44px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text-muted); cursor: pointer; transition: 0.2s; position: relative; flex-shrink: 0; }
+            .folder-icon-tab:hover { background: var(--bg-hover); }
+            .folder-icon-tab.active { background: color-mix(in srgb, var(--primary) 15%, transparent); color: var(--primary); }
+        }
+    
     </style>
 </head>
 <body>
@@ -1253,13 +1278,11 @@
                     <button id="search-clear-root" class="icon-btn" style="display:none; position:absolute; right:10px; width:24px; height:24px;" onclick="document.getElementById('search-input-root').value=''; App.searchGlobal('');">✕</button>
                 </div>
             </div>
-            <!-- NEW CHAT FOLDERS -->
-            <div id="chat-folders-nav" class="chat-folders">
-                <div class="folder-tab active" onclick="App.setFilter('all', this)">All Chats</div>
-                <div class="folder-tab" onclick="App.setFilter('dms', this)">Personal</div>
-                <div class="folder-tab" onclick="App.setFilter('groups', this)">Groups & Channels</div>
-            </div>
+            
+            <!-- MOBILE FOLDERS NAV -->
+            <div id="mobile-folders-nav"></div>
         </div>
+
 
         <div id="weather-popup" style="min-width: 200px;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
@@ -1285,7 +1308,9 @@
         </div>
         
         <!-- Exact padding to remove the empty gap while allowing items to scroll BEHIND the glass -->
-        <div class="panel-body" id="chat-list" style="padding-top: calc(125px + var(--safe-top)); height: 100%; overflow-y: auto;"></div>
+        
+        <!-- REMOVED INLINE PADDING (Controlled by CSS now) -->
+        <div class="panel-body" id="chat-list" style="height: 100%; overflow-y: auto;"></div>
         
         <button class="fab" onclick="Router.push('panel-new')">
             <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -1471,6 +1496,16 @@
                 // Auto-select current language in dropdown
                 if(localStorage.getItem('y_lang') === 'ru') document.getElementById('lang-ru').selected = true;
             </script>
+            <div class="settings-header">Chat Folders</div>
+            <div class="settings-card">
+                <div class="settings-row" style="margin:0; background:transparent; cursor:pointer;" onclick="App.openFolderSettings()">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        Manage Chat Folders
+                    </div>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </div>
+            </div>
             <div class="settings-header">Appearance</div>
             <div class="settings-card">
             <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
@@ -1510,16 +1545,16 @@
                         <div class="theme-preview" data-theme-val="crimson-dark" onclick="App.setTheme('crimson-dark')"><div class="theme-preview-inner" style="background:#450a0a;"><div class="mini-bubble right" style="background:#fecaca"></div><div class="mini-bubble left" style="background:#991b1b"></div></div><span class="theme-label">Wine</span></div>
                     </div>
                 </div>
-                <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
-                    <span>Compact Mode</span>
-                    <input type="checkbox" id="set-compact" style="width:20px;height:20px;" onchange="App.toggleCompactMode(this.checked)">
-                </div>
                 <div class="settings-row" style="margin:16px 0 0 0; background:transparent; flex-direction:column; align-items:flex-start; gap:16px; border-top:1px solid var(--border); padding-top:16px; border-radius:0;">
                     <div style="display:flex; justify-content:space-between; width:100%;">
                         <span style="font-weight: 600;">Glass Blur Intensity</span>
                         <span id="blur-val-disp" style="color:var(--text-muted);font-size:14px;font-weight:bold;">4px</span>
                     </div>
                     <input type="range" id="set-blur" min="0" max="25" value="4" style="width:100%; cursor:pointer;" oninput="App.setBlur(this.value)">
+                </div>
+                <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
+                    <span>Compact Mode</span>
+                    <input type="checkbox" id="set-compact" style="width:20px;height:20px;" onchange="App.toggleCompactMode(this.checked)">
                 </div>
                 <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
                     <span>Animated Reactions</span>
@@ -1732,7 +1767,50 @@
             </div>
         </div>
     </div>-->
+<!-- CHAT FOLDERS PANELS -->
+    <div id="panel-folders" class="panel">
+        <div class="panel-header">
+            <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+            <div class="panel-title">Chat Folders</div>
+            <div style="width:40px"></div>
+        </div>
+        <div class="panel-body" style="padding: 20px;">
+            <div class="settings-row" style="background:var(--bg-input);">
+                <span>Enable Folders</span>
+                <input type="checkbox" id="set-folders-enable" style="width:20px;height:20px;" onchange="App.toggleFolders(this.checked)">
+            </div>
+            <div class="settings-header">My Folders</div>
+            <div id="folders-list" style="margin-bottom: 24px;"></div>
+            <button class="btn" onclick="App.openEditFolder(null)">+ Create New Folder</button>
+        </div>
+    </div>
 
+    <div id="panel-edit-folder" class="panel">
+        <div class="panel-header">
+            <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+            <div class="panel-title" id="folder-edit-title">Edit Folder</div>
+            <button class="icon-btn" onclick="App.saveFolder()" style="color:var(--primary)"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></button>
+        </div>
+        <div class="panel-body" style="padding: 20px;">
+            <input type="hidden" id="folder-id">
+            <div style="display:flex; gap:12px; margin-bottom: 24px;">
+                <input type="text" id="folder-icon" class="settings-input" style="width:60px; text-align:center; font-size:24px;" placeholder="📁">
+                <input type="text" id="folder-name" class="settings-input" style="flex:1;" placeholder="Folder Name">
+            </div>
+            
+            <div class="settings-header">Included Types</div>
+            <div class="settings-card" style="padding: 16px;">
+                <label style="display:flex; justify-content:space-between; margin-bottom:16px;"><span>Personal (DMs)</span> <input type="checkbox" id="f-type-dm" style="width:18px;height:18px;"></label>
+                <label style="display:flex; justify-content:space-between; margin-bottom:16px;"><span>Groups</span> <input type="checkbox" id="f-type-group" style="width:18px;height:18px;"></label>
+                <label style="display:flex; justify-content:space-between;"><span>Channels</span> <input type="checkbox" id="f-type-channel" style="width:18px;height:18px;"></label>
+            </div>
+            
+            <div class="settings-header">Specific Chats</div>
+            <div class="settings-card" id="folder-specific-chats" style="max-height: 250px; overflow-y:auto; padding: 8px 16px;"></div>
+            
+            <button class="btn btn-outline" id="folder-delete-btn" style="color:var(--danger); border-color:var(--danger); margin-top:24px;" onclick="App.deleteFolder()">Delete Folder</button>
+        </div>
+    </div>
     <!-- CALL UI PANEL -->
     <!-- PERMANENT MEDIA ELEMENTS (Fixes Audio Drops & iOS Autoplay Blocks) -->
     <audio id="rtc-audio" autoplay playsinline style="display:none;"></audio>
@@ -1855,11 +1933,13 @@
         </div>
         <div class="nav-item" id="nav-profile" onclick="App.switchTab('profile')">
             <div class="icon-wrap">
-                <!-- Uses actual user profile picture! -->
                 <img src="" id="nav-av" style="width:26px; height:26px; border-radius:50%; object-fit:cover;">
             </div>
             <span>Profile</span>
         </div>
+        
+        <!-- DESKTOP FOLDERS RAIL -->
+        <div id="desktop-folders-nav"></div>
     </div>
     <script>
         // --- YUKICHAT MEET SSO BRIDGE ---
@@ -2683,6 +2763,134 @@
                 document.querySelectorAll('.folder-tab').forEach(t => t.classList.remove('active'));
                 el.classList.add('active');
                 this.sync(); // Force re-render instantly
+            },
+            // --- CHAT FOLDERS LOGIC ---
+            initFolders() {
+                State.chatFilter = 'all';
+                State.foldersEnabled = localStorage.getItem('y_folders_enabled') === 'true';
+                
+                // Default setup if none exists
+                const defFolders = [
+                    { id: 'all', name: 'All Chats', icon: '💬' },
+                    { id: 'dms', name: 'Personal', icon: '👤', types: ['dm'], chats: [] },
+                    { id: 'groups', name: 'Groups', icon: '👥', types: ['group', 'channel'], chats: [] }
+                ];
+                State.folders = JSON.parse(localStorage.getItem('y_folders') || JSON.stringify(defFolders));
+                
+                this.toggleFolders(State.foldersEnabled, true);
+            },
+            
+            toggleFolders(enabled, init = false) {
+                State.foldersEnabled = enabled;
+                localStorage.setItem('y_folders_enabled', enabled);
+                if(enabled) document.body.classList.add('has-folders');
+                else document.body.classList.remove('has-folders');
+                
+                const cb = document.getElementById('set-folders-enable');
+                if(cb) cb.checked = enabled;
+                
+                this.renderFoldersNav();
+                if(!init) this.sync();
+            },
+            
+            renderFoldersNav() {
+                let mHtml = ''; let dHtml = '';
+                State.folders.forEach(f => {
+                    const isActive = State.chatFilter === f.id ? 'active' : '';
+                    mHtml += `<div class="folder-tab ${isActive}" onclick="App.setFilter('${f.id}')">${f.name}</div>`;
+                    dHtml += `<div class="folder-icon-tab ${isActive}" onclick="App.setFilter('${f.id}')" title="${f.name}">${f.icon || '📁'}</div>`;
+                });
+                document.getElementById('mobile-folders-nav').innerHTML = mHtml;
+                const dNav = document.getElementById('desktop-folders-nav');
+                if(dNav) dNav.innerHTML = dHtml;
+            },
+            
+            setFilter(id) {
+                State.chatFilter = id;
+                this.renderFoldersNav();
+                this.sync(); 
+            },
+            
+            openFolderSettings() {
+                Router.push('panel-folders');
+                const list = document.getElementById('folders-list');
+                let html = '';
+                State.folders.forEach(f => {
+                    if(f.id === 'all') return; // Can't edit default "All"
+                    html += `<div class="settings-row" style="cursor:pointer;" onclick="App.openEditFolder('${f.id}')">
+                                <div><b>${f.icon||'📁'} ${f.name}</b></div>
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                             </div>`;
+                });
+                list.innerHTML = html;
+            },
+            
+            openEditFolder(id) {
+                let f = id ? State.folders.find(x => x.id === id) : { id: 'f_' + Date.now(), name: '', icon: '', types: [], chats: [] };
+                
+                document.getElementById('folder-id').value = f.id;
+                document.getElementById('folder-name').value = f.name;
+                document.getElementById('folder-icon').value = f.icon;
+                document.getElementById('f-type-dm').checked = f.types && f.types.includes('dm');
+                document.getElementById('f-type-group').checked = f.types && f.types.includes('group');
+                document.getElementById('f-type-channel').checked = f.types && f.types.includes('channel');
+                document.getElementById('folder-delete-btn').style.display = id ? 'block' : 'none';
+                
+                // Render chat picker
+                let chatsHtml = '';
+                State.chats.forEach(c => {
+                    if (c.id === 'ai') return;
+                    const name = c.type === 'dm' ? c.dm_username : c.name;
+                    const checked = (f.chats && f.chats.includes(c.id)) ? 'checked' : '';
+                    chatsHtml += `<label style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);">
+                                    <span style="font-size:14px;">${name}</span> 
+                                    <input type="checkbox" class="f-chat-cb" value="${c.id}" style="width:18px;height:18px;" ${checked}>
+                                  </label>`;
+                });
+                document.getElementById('folder-specific-chats').innerHTML = chatsHtml;
+                
+                Router.push('panel-edit-folder');
+            },
+            
+            saveFolder() {
+                const id = document.getElementById('folder-id').value;
+                const name = document.getElementById('folder-name').value.trim();
+                const icon = document.getElementById('folder-icon').value.trim() || '📁';
+                if(!name) return UI.toast("Name is required");
+                
+                const types = [];
+                if(document.getElementById('f-type-dm').checked) types.push('dm');
+                if(document.getElementById('f-type-group').checked) types.push('group');
+                if(document.getElementById('f-type-channel').checked) types.push('channel');
+                
+                const chats = Array.from(document.querySelectorAll('.f-chat-cb:checked')).map(cb => Number(cb.value) || cb.value);
+                
+                const existing = State.folders.findIndex(x => x.id === id);
+                const newFolder = { id, name, icon, types, chats };
+                
+                if (existing >= 0) State.folders[existing] = newFolder;
+                else State.folders.push(newFolder);
+                
+                localStorage.setItem('y_folders', JSON.stringify(State.folders));
+                this.renderFoldersNav();
+                Router.pop();
+                this.openFolderSettings(); // refresh list
+                this.sync();
+            },
+            
+            deleteFolder() {
+                const id = document.getElementById('folder-id').value;
+                if(!confirm("Delete this folder?")) return;
+                
+                State.folders = State.folders.filter(x => x.id !== id);
+                localStorage.setItem('y_folders', JSON.stringify(State.folders));
+                
+                if(State.chatFilter === id) this.setFilter('all');
+                else this.renderFoldersNav();
+                
+                Router.pop();
+                this.openFolderSettings();
+                this.sync();
             },
             // --- TABS & GIFS & EMOJIS ---
             setMediaTab(tab) {
@@ -3540,6 +3748,7 @@
                 document.getElementById('set-av').src = State.u.avatar || getDefAv(State.u.username);
                 document.getElementById('nav-av').src = State.u.avatar || getDefAv(State.u.username);
                 Router.updateNav();
+                this.initFolders();
                 // --- NEW: Keyboard Shortcuts ---
                 document.addEventListener('keydown', (e) => {
                     const isInput = ['INPUT', 'TEXTAREA'].includes(e.target.tagName);
@@ -3954,9 +4163,18 @@
                     let totalUnread = 0;
                     let html = '';
                     
+                    // --- APPLY FOLDER FILTERS ---
                     let filteredChats = d.chats;
-                    if (State.chatFilter === 'dms') filteredChats = filteredChats.filter(c => c.type === 'dm');
-                    if (State.chatFilter === 'groups') filteredChats = filteredChats.filter(c => c.type === 'group' || c.type === 'channel');
+                    if (State.foldersEnabled && State.chatFilter !== 'all') {
+                        const folder = State.folders.find(x => x.id === State.chatFilter);
+                        if (folder) {
+                            filteredChats = filteredChats.filter(c => {
+                                const matchType = folder.types && folder.types.includes(c.type);
+                                const matchSpecific = folder.chats && folder.chats.includes(c.id);
+                                return matchType || matchSpecific; 
+                            });
+                        }
+                    }
                     
                     filteredChats.forEach(c => {
                         State.chats.set(c.id, c);
