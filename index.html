@@ -1113,11 +1113,11 @@
         #forward-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99999; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(5px); }
         #forward-content { background: var(--bg-panel); width: 100%; max-width: 400px; height: 70vh; border-top-left-radius: 24px; border-top-right-radius: 24px; display: flex; flex-direction: column; overflow: hidden; }
         /* --- CHAT FOLDERS (TABS) --- */
-        #mobile-folders-nav { display: none; gap: 8px; padding: 0 20px 10px; overflow-x: auto; border-bottom: 1px solid var(--border); margin-top: -4px; }
+        #mobile-folders-nav { display: none; gap: 16px; padding: 0 20px; border-bottom: 1px solid var(--border); margin-top: 0; }
         #mobile-folders-nav::-webkit-scrollbar { display: none; }
-        .folder-tab { padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: 0.2s; white-space: nowrap; background: var(--bg-input); }
-        .folder-tab.active { background: var(--primary); color: var(--bg-base); }
-        
+        .folder-tab { padding: 12px 0 10px; border-radius: 0; font-size: 14px; font-weight: 600; color: var(--text-muted); background: transparent; cursor: pointer; transition: 0.2s; white-space: nowrap; border-bottom: 3px solid transparent; }
+        .folder-tab.active { background: transparent; color: var(--primary); border-bottom: 3px solid var(--primary); }
+                
         /* Desktop Folders in Side Rail */
         #desktop-folders-nav { display: none; flex-direction: column; gap: 8px; width: 100%; align-items: center; margin-top: 8px; border-top: 1px solid var(--border); padding-top: 16px; flex: 1; overflow-y: auto; overflow-x: hidden; }
         #desktop-folders-nav::-webkit-scrollbar { display: none; }
@@ -1126,7 +1126,38 @@
         #chat-list { padding-top: calc(125px + var(--safe-top)); }
         body.has-folders #mobile-folders-nav { display: flex; }
         body.has-folders #chat-list { padding-top: calc(165px + var(--safe-top)); }
-
+        @media (min-width: 768px) {
+            /* Transform secondary panels into floating modals on PC */
+            #panel-settings, #panel-profile, #panel-new, #panel-create-channel, #panel-sessions, #panel-folders, #panel-edit-folder {
+                position: fixed !important;
+                top: 50% !important;
+                left: 50% !important;
+                width: 440px !important;
+                height: 85vh !important;
+                max-height: 800px;
+                transform: translate(-50%, -40%) scale(0.95) !important;
+                border-radius: 24px;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                border: 1px solid var(--border);
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+                z-index: 9000 !important;
+            }
+            
+            /* Active Modal State */
+            #panel-settings.active, #panel-profile.active, #panel-new.active, #panel-create-channel.active, #panel-sessions.active, #panel-folders.active, #panel-edit-folder.active {
+                transform: translate(-50%, -50%) scale(1) !important;
+                opacity: 1;
+                visibility: visible !important;
+            }
+            
+            /* Add a dark blur backdrop behind modals */
+            body:has(#panel-settings.active, #panel-profile.active, #panel-new.active, #panel-folders.active, #panel-edit-folder.active)::after {
+                opacity: 1;
+                pointer-events: auto;
+            }
+        }
         @media (min-width: 768px) {
             body.has-folders #mobile-folders-nav { display: none !important; }
             body.has-folders #desktop-folders-nav { display: flex !important; }
@@ -2758,11 +2789,24 @@
                 else document.body.classList.remove('compact-mode');
                 localStorage.setItem('y_compact', enabled);
             },
-            setFilter(type, el) {
-                State.chatFilter = type;
-                document.querySelectorAll('.folder-tab').forEach(t => t.classList.remove('active'));
-                el.classList.add('active');
-                this.sync(); // Force re-render instantly
+            setFilter(id) {
+                State.chatFilter = id;
+                this.renderFoldersNav();
+                
+                // Instantly toggle visibility using the DOM, zero network delay!
+                document.querySelectorAll('#chat-list .user-item').forEach(el => {
+                    const chatId = el.getAttribute('data-chat-id');
+                    if (!chatId) return;
+                    
+                    if (State.chatFilter === 'all') {
+                        el.style.display = 'flex';
+                    } else {
+                        const c = State.chats.get(chatId === 'ai' ? 'ai' : Number(chatId));
+                        const folder = State.folders.find(x => x.id === State.chatFilter);
+                        const match = folder && c && ((folder.types && folder.types.includes(c.type)) || (folder.chats && folder.chats.includes(c.id)));
+                        el.style.display = match ? 'flex' : 'none';
+                    }
+                });
             },
             // --- CHAT FOLDERS LOGIC ---
             initFolders() {
@@ -2907,16 +2951,48 @@
                 const grid = document.getElementById('sticker-grid');
                 grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 20px;"><div class="loader" style="margin:auto; border-top-color:var(--primary);"></div></div>';
                 try {
-                    // Tenor Public Beta API
                     const url = `https://g.tenor.com/v1/search?q=${q||'trending'}&key=LIVDSRZULELA&limit=30`;
                     const res = await fetch(url);
                     const data = await res.json();
                     let html = '';
                     data.results.forEach(g => {
-                        html += `<img class="sticker-item" src="${g.media[0].tinygif.url}" style="border-radius:8px;" onclick="App.sendSticker(this.src)">`;
+                        // We use sendGif instead of sendSticker!
+                        html += `<img class="sticker-item" src="${g.media[0].tinygif.url}" style="border-radius:8px; object-fit:cover;" onclick="App.sendGif('${g.media[0].tinygif.url}')">`;
                     });
                     grid.innerHTML = html;
                 } catch (e) { grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:var(--danger);">Failed to load GIFs</div>'; }
+            },
+        
+            async sendGif(url) {
+                this.toggleStickers();
+                const targetChat = State.chat; 
+                if(!targetChat) return;
+        
+                const tempId = 'temp-' + Date.now();
+                const msgsCont = document.getElementById('msgs');
+                
+                // Append Optimistic UI (Rendered as large photo)
+                msgsCont.insertAdjacentHTML('beforeend', `
+                    <div class="msg-row sent" id="${tempId}" style="opacity: 0.8;">
+                        <div class="msg-bubble" style="background: transparent; padding: 0;"><img src="${url}" class="msg-media" style="border-radius: 12px;"><div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Sending...</div></div>
+                    </div>`);
+                msgsCont.scrollTop = msgsCont.scrollHeight;
+                
+                try {
+                    const res = await req(`/api/messages/${targetChat}`, 'POST', { content: url, type: 'photo' });
+                    if (State.chat === targetChat) {
+                        const tempEl = document.getElementById(tempId);
+                        if (tempEl && res && res.id) {
+                            tempEl.id = `msg-${res.id}`;
+                            tempEl.style.opacity = '1';
+                            const loadingTxt = tempEl.querySelector('.msg-bubble > div:last-child');
+                            if(loadingTxt) loadingTxt.innerHTML = `${UI.formatTime(res.created_at)} <span class="msg-tick">✓</span>`;
+                        }
+                    }
+                } catch(e) {
+                    document.getElementById(tempId)?.remove();
+                    UI.toast('Failed to send GIF');
+                }
             },
             
             loadPremiumEmojis() {
@@ -4249,7 +4325,7 @@
                         const tickHtml = (isDM && c.dm_verified) || (!isDM && c.is_verified) || (c.id === 'ai') ? verifiedTick : '';
                         
                         // NEW: Added long press (oncontextmenu) and click handlers
-                        html += `<div class="user-item${aiItemClass}${pinClass}${selectClass}" onclick="App.handleChatClick(event, '${c.id}')" oncontextmenu="event.preventDefault(); App.toggleChatSelect('${c.id}')">
+                        html += `<div class="user-item${aiItemClass}${pinClass}${selectClass}" data-chat-id="${c.id}" onclick="App.handleChatClick(event, '${c.id}')" oncontextmenu="event.preventDefault(); App.toggleChatSelect('${c.id}')">
                                     <div class="avatar-wrap${c.id === 'ai' ? ' ai-wrap' : ''}" style="width:50px;height:50px;"><img src="${av}" class="avatar${c.id === 'ai' ? ' ai-avatar' : ''}" style="width:100%;height:100%;">${onlineDot}</div>
                                     <div class="user-info"><div class="user-name"><span>${n} ${tickHtml}</span> <div style="display:flex; align-items:center; gap:6px;">${pinIconHtml}${bage}</div></div><div class="user-last-msg">${prevH}</div></div>
                                     ${callBtn}
@@ -4444,7 +4520,7 @@
                 UI.toast('Opening chat...'); 
                 try {
                     const d = await req('/api/chats', 'POST', {type:'dm', target_user_id:id}); 
-                    this.sync(); // Force local update BEFORE trying to open
+                    await this.sync(); // WAIT for sync to populate State.chats
                     Router.pop(); 
                     this.openChat(d.chat_id); 
                 } catch(e) { UI.toast('Failed to open chat'); }
@@ -4454,7 +4530,7 @@
                 UI.toast('Joining...'); 
                 try {
                     const d = await req('/api/chats/join', 'POST', {handle}); 
-                    this.sync(); // Force local update BEFORE trying to open
+                    await this.sync(); // WAIT for sync
                     Router.pop(); 
                     this.openChat(d.chat_id); 
                 } catch(e) { UI.toast(e.message); }
@@ -4466,7 +4542,7 @@
                 UI.toast('Creating...');
                 try { 
                     const d = await req('/api/chats', 'POST', {type, name, handle}); 
-                    this.sync(); // Force local update BEFORE trying to open
+                    await this.sync(); // WAIT for sync
                     Router.pop(); 
                     this.openChat(d.chat_id); 
                 } catch(e) { UI.toast(e.message); }
@@ -4863,7 +4939,6 @@
             },
 
             async sendText() {
-                // Modified check to use the new array queue
                 if (State.capMediaQueue && State.capMediaQueue.length > 0) return this.sendMedia();
                 
                 const inp = document.getElementById('msg-input'); 
@@ -4872,17 +4947,32 @@
                 inp.value = '';
                 inp.style.height = '44px';
                 document.getElementById('input-ai-btn').style.display = 'none';
-
+        
                 const tempId = 'temp-' + Date.now();
                 const msgsCont = document.getElementById('msgs');
-                const safeTxt = txt.replace(/</g,'&lt;'); 
-                
-                msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}" style="opacity: 0.7;">
-                    <div class="msg-bubble">${safeTxt}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Sending...</div></div>
-                </div>`);
-                msgsCont.scrollTop = msgsCont.scrollHeight;
-                FX.check(txt, tempId);
                 const targetChat = State.chat; 
+                
+                // 1. USE buildMsgHTML FOR OPTIMISTIC UI SO LOTTIES ARE RENDERED!
+                const fakeMsg = { 
+                    id: tempId, content: txt, type: 'text', 
+                    created_at: new Date().toISOString(), is_read: 0, 
+                    sender_id: State.u.userId, reply_to_id: State.replyTo 
+                };
+                const bubbleHtml = this.buildMsgHTML(fakeMsg, true, State.chats.get(targetChat)?.type);
+                
+                msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}" style="opacity: 0.7;">${bubbleHtml}</div>`);
+                msgsCont.scrollTop = msgsCont.scrollHeight;
+                
+                // 2. INITIALIZE LOTTIE INSTANTLY FOR THE SENT MESSAGE
+                if (localStorage.getItem('y_anim_react') !== 'false' && window.lottie) {
+                    document.getElementById(tempId).querySelectorAll('[data-url]:not([data-loaded])').forEach(el => {
+                        el.setAttribute('data-loaded', 'true');
+                        lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
+                    });
+                }
+                
+                FX.check(txt, tempId);
+        
                 try { 
                     const res = await req(`/api/messages/${targetChat}`, 'POST', {
                         content: txt, 
@@ -4914,7 +5004,6 @@
                     UI.toast('Failed to send');
                 }
             },
-
             async msgAct(act, emoji=null, overrideMsgId=null) {
                 const msgId = overrideMsgId || State.targetId;
                 
