@@ -19,6 +19,9 @@
     <link rel="apple-touch-icon" href="/icon-192.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
@@ -1121,12 +1124,13 @@
         }
         
         /* Adjust layout padding to seamlessly fit the folders container */
-        #chat-list { 
-            padding-top: calc(165px + var(--safe-top)) !important; 
-        }
+                /* Dynamic Chat List Padding */
+        #chat-list { padding-top: calc(125px + var(--safe-top)); }
+        body.has-folders #chat-list { padding-top: calc(180px + var(--safe-top)) !important; }
         @media (min-width: 768px) {
             body.has-folders #desktop-folders-nav { display: none !important; }
-            body.has-folders #chat-list { padding-top: calc(165px + var(--safe-top)) !important; }
+            /* Find and replace this rule inside the @media (min-width: 768px) query: */
+            body.has-folders #chat-list { padding-top: calc(180px + var(--safe-top)) !important; }
         }
         /* --- MEDIA PANEL TABS (STICKERS/GIFS/EMOJIS) --- */
         .media-tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
@@ -1624,6 +1628,10 @@
                 <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
                     <span>Animated Reactions</span>
                     <input type="checkbox" id="set-anim-react" style="width:20px;height:20px;" onchange="localStorage.setItem('y_anim_react', this.checked)">
+                </div>
+                <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
+                    <span>Keyword Screen Effects</span>
+                    <input type="checkbox" id="set-msg-effects" style="width:20px;height:20px;" onchange="localStorage.setItem('y_msg_effects_enabled', this.checked)">
                 </div>
                 <!-- Insert this inside the "Appearance" settings-card -->
                 <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
@@ -2255,6 +2263,9 @@
                 this.domLayer.appendChild(el); setTimeout(() => el.remove(), time); return el;
             },
             check(text, msgId) {
+                const enabled = localStorage.getItem('y_msg_effects_enabled') === 'true';
+                if (!enabled) return; // Ignore if setting is off
+                
                 const lower = text.toLowerCase();
                 for (let key in this.triggers) {
                     if (lower.includes(key)) { this.play(this.triggers[key], msgId); break; }
@@ -2877,7 +2888,18 @@
                 
                 this.toggleFolders(State.foldersEnabled, true);
             },
-            
+            renderMath() {
+                const cont = document.getElementById('msgs');
+                if (cont && window.renderMathInElement) {
+                    window.renderMathInElement(cont, {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '$', right: '$', display: false}
+                        ],
+                        throwOnError: false
+                    });
+                }
+            },
             toggleFolders(enabled, init = false) {
                 State.foldersEnabled = enabled;
                 localStorage.setItem('y_folders_enabled', enabled);
@@ -3174,13 +3196,7 @@
                     // 1. Code Blocks
                     t = t.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;white-space:pre-wrap;">$1</pre>');
                     t = t.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
-                    
-                    // 2. Math Block $$...$$
-                    t = t.replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, '<div style="font-family: \'Cambria Math\', \'Times New Roman\', serif; font-size: 1.15em; background: color-mix(in srgb, var(--bg-input) 30%, transparent); padding: 10px; border-radius: 8px; margin: 8px 0; text-align: center; overflow-x: auto;">$1</div>');
-                    
-                    // 3. Math Inline $...$
-                    t = t.replace(/\$([^\$]+)\$/g, '<span style="font-family: \'Cambria Math\', \'Times New Roman\', serif; font-size: 1.1em; font-style: italic;">$1</span>');
-                    
+                
                     // 4. Tables Parser
                     const lines = t.split('\n');
                     let inTable = false;
@@ -3974,6 +3990,7 @@
                 document.getElementById('nav-av').src = State.u.avatar || getDefAv(State.u.username);
                 Router.updateNav();
                 this.initFolders();
+                
                 // --- NEW: Keyboard Shortcuts ---
                 document.addEventListener('keydown', (e) => {
                     const isInput = ['INPUT', 'TEXTAREA'].includes(e.target.tagName);
@@ -4016,7 +4033,9 @@
                         }
                     });
                 }
-                
+                const effectsEnabled = localStorage.getItem('y_msg_effects_enabled') === 'true';
+                const effectsCheckbox = document.getElementById('set-msg-effects');
+                if (effectsCheckbox) effectsCheckbox.checked = effectsEnabled;
                 // --- NEW: Drag & Drop Dropzone UI ---
                 const chatArea = document.getElementById('panel-chat');
                 const dropOverlay = document.getElementById('drop-zone-overlay');
@@ -4792,6 +4811,7 @@
                 
                 if (cachedHtml && cachedHtml.includes('msg-row')) {
                     cont.innerHTML = cachedHtml;
+                    App.renderMath();
                     hasCache = true;
                     
                     // Recover the last message ID from our cache to resume seamlessly
@@ -4895,6 +4915,9 @@
                     
                     // 1. Inject all 50 messages AT ONCE (Stops CSS thrashing)
                     if (htmlBatch) cont.insertAdjacentHTML('beforeend', htmlBatch);
+                    if (addedNew || forceFull) {
+                        App.renderMath();
+                    }
                     fxChecks.forEach(fx => FX.check(fx.content, fx.id));
                     
                     if (addedNew || forceFull) {
@@ -4930,6 +4953,7 @@
                 } finally {
                     State.isPolling = false;
                 }
+                
             },
             async handleMention(username) {
                 try {
@@ -5051,6 +5075,7 @@
                         msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}" style="opacity: 0.8;">
                             <div class="msg-bubble">${mediaHtml}${currentCap ? `<div class="msg-caption">${currentCap.replace(/</g,'&lt;')}</div>` : ''}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Sending...</div></div>
                         </div>`);
+                        App.renderMath();
                         msgsCont.scrollTop = msgsCont.scrollHeight;
                     }
                 
@@ -5111,6 +5136,7 @@
                 const bubbleHtml = this.buildMsgHTML(fakeMsg, true, State.chats.get(targetChat)?.type);
                 
                 msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}" style="opacity: 0.7;">${bubbleHtml}</div>`);
+                App.renderMath();
                 msgsCont.scrollTop = msgsCont.scrollHeight;
                 
                 // 2. INITIALIZE LOTTIE INSTANTLY FOR THE SENT MESSAGE
