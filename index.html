@@ -2853,12 +2853,7 @@
                 const dNav = document.getElementById('desktop-folders-nav');
                 if(dNav) dNav.innerHTML = dHtml;
             },
-            
-            setFilter(id) {
-                State.chatFilter = id;
-                this.renderFoldersNav();
-                this.sync(); 
-            },
+        
             
             openFolderSettings() {
                 Router.push('panel-folders');
@@ -3302,12 +3297,14 @@
                                 existingMsg.innerHTML = App.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
                                 return; 
                             }
-                            
                             const cont = document.getElementById('msgs');
                             const isAtBottom = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 150;
-                            const innerHTML = App.buildMsgHTML(m, false, State.chats.get(State.chat)?.type);
                             
-                            cont.insertAdjacentHTML('beforeend', `<div class="msg-row received" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, false)">${innerHTML}</div>`);
+                            // Correctly identify if the incoming WebSocket message belongs to you or your friend
+                            const isMine = m.sender_id === State.u.userId;
+                            const innerHTML = App.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
+                            
+                            cont.insertAdjacentHTML('beforeend', `<div class="msg-row ${isMine ? 'sent' : 'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`);
                             if (isAtBottom) cont.scrollTop = cont.scrollHeight;
                             
                             State.lastMsgId = m.id;
