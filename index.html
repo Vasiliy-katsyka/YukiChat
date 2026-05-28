@@ -1088,12 +1088,46 @@
             .bottom-nav .nav-item:hover { color: var(--text-main); transform: translateY(-2px); }
         }
         @keyframes bounce-spin { 0% { transform: scale(0.8) rotate(0deg); border-radius: 20px; } 50% { transform: scale(1.1) rotate(180deg); border-radius: 50%; } 100% { transform: scale(0.8) rotate(360deg); border-radius: 20px; } }
-        /* --- CHAT FOLDERS (TABS) --- */
-        .chat-folders { display: flex; gap: 8px; padding: 0 20px 10px; overflow-x: auto; border-bottom: 1px solid var(--border); }
-        .chat-folders::-webkit-scrollbar { display: none; }
-        .folder-tab { padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: 0.2s; white-space: nowrap; background: var(--bg-input); }
-        .folder-tab.active { background: var(--primary); color: var(--bg-base); }
+        /* --- UNIFIED SCROLLABLE FOLDERS --- */
+        .folders-container {
+            display: flex;
+            gap: 8px;
+            padding: 10px 20px;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+        }
+        .folders-container::-webkit-scrollbar { display: none; }
+        .folder-pill {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: color-mix(in srgb, var(--bg-input) 60%, transparent);
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid color-mix(in srgb, var(--text-main) 6%, transparent);
+        }
+        .folder-pill:active {
+            transform: scale(0.96);
+        }
+        .folder-pill.active {
+            background: var(--primary);
+            color: var(--bg-base);
+            border-color: var(--primary);
+        }
         
+        /* Adjust layout padding to seamlessly fit the folders container */
+        #chat-list { 
+            padding-top: calc(165px + var(--safe-top)) !important; 
+        }
+        @media (min-width: 768px) {
+            body.has-folders #desktop-folders-nav { display: none !important; }
+            body.has-folders #chat-list { padding-top: calc(165px + var(--safe-top)) !important; }
+        }
         /* --- MEDIA PANEL TABS (STICKERS/GIFS/EMOJIS) --- */
         .media-tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
         .media-tab { flex: 1; text-align: center; padding: 12px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; }
@@ -1117,7 +1151,12 @@
         #mobile-folders-nav::-webkit-scrollbar { display: none; }
         .folder-tab { padding: 12px 0 10px; border-radius: 0; font-size: 14px; font-weight: 600; color: var(--text-muted); background: transparent; cursor: pointer; transition: 0.2s; white-space: nowrap; border-bottom: 3px solid transparent; }
         .folder-tab.active { background: transparent; color: var(--primary); border-bottom: 3px solid var(--primary); }
-                
+
+        .badge.muted-badge {
+            background: var(--text-muted) !important;
+            opacity: 0.6;
+        }
+        
         /* Desktop Folders in Side Rail */
         #desktop-folders-nav { display: none; flex-direction: column; gap: 8px; width: 100%; align-items: center; margin-top: 8px; border-top: 1px solid var(--border); padding-top: 16px; flex: 1; overflow-y: auto; overflow-x: hidden; }
         #desktop-folders-nav::-webkit-scrollbar { display: none; }
@@ -1277,10 +1316,7 @@
             <div class="root-header" style="background: transparent;">
                 <h1 id="main-title" style="transition: color 0.3s, font-size 0.3s;">Messages</h1>
                 <div style="display:flex; gap: 8px; align-items: center;">
-                    
-                    <!-- ADD THIS: Weather Button -->
                     <button class="icon-btn" id="header-weather-btn" style="display:none;" onclick="Weather.togglePopup()">☀️</button>
-                    <!-- NEW Install Button (Hidden by default) -->
                     <button class="icon-btn" id="header-install-btn" style="display:none;" onclick="App.installPWA()">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -1288,11 +1324,9 @@
                             <line x1="12" y1="15" x2="12" y2="3"></line>
                         </svg>
                     </button>
-                    <!-- Existing Theme Button -->
                     <button class="icon-btn" onclick="App.toggleTheme()">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                     </button>
-                    <!-- NEW Settings Button (Visible mainly on PC) -->
                     <button class="icon-btn" onclick="Router.push('panel-settings')" id="desktop-settings-btn">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="3"></circle>
@@ -1301,7 +1335,7 @@
                     </button>
                 </div>
             </div>
-            <!-- THE SEARCH BAR IS BACK -->
+            
             <div class="search-wrap" style="background: transparent;">
                 <div class="search-bar" style="background: color-mix(in srgb, var(--text-main) 8%, transparent); position: relative;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -1310,8 +1344,8 @@
                 </div>
             </div>
             
-            <!-- MOBILE FOLDERS NAV -->
-            <div id="mobile-folders-nav"></div>
+            <!-- Unified Folder Pill Navigation -->
+            <div id="folders-nav" class="folders-container"></div>
         </div>
 
 
@@ -2813,6 +2847,21 @@
                     }
                 });
             },
+            updateTotalUnreadBadge() {
+                let totalUnread = 0;
+                State.chats.forEach(c => {
+                    if (c.id !== 'ai') totalUnread += (c.unread || 0);
+                });
+                const navBadge = document.getElementById('nav-badge');
+                if (navBadge) {
+                    navBadge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
+                    navBadge.textContent = totalUnread > 99 ? '99+' : totalUnread;
+                }
+                const titlePrefix = totalUnread > 0 ? `(${totalUnread}) ` : '';
+                const activeChatObj = State.chat ? State.chats.get(State.chat) : null;
+                const activeChatName = activeChatObj ? (activeChatObj.type === 'dm' ? activeChatObj.dm_username : activeChatObj.name) : '';
+                document.title = titlePrefix + (activeChatName ? `${activeChatName} - YukiChat` : 'YukiChat');
+            },
             // --- CHAT FOLDERS LOGIC ---
             initFolders() {
                 State.chatFilter = 'all';
@@ -2843,15 +2892,13 @@
             },
             
             renderFoldersNav() {
-                let mHtml = ''; let dHtml = '';
+                let html = '';
                 State.folders.forEach(f => {
                     const isActive = State.chatFilter === f.id ? 'active' : '';
-                    mHtml += `<div class="folder-tab ${isActive}" onclick="App.setFilter('${f.id}')">${f.name}</div>`;
-                    dHtml += `<div class="folder-icon-tab ${isActive}" onclick="App.setFilter('${f.id}')" title="${f.name}">${f.icon || '📁'}</div>`;
+                    html += `<div class="folder-pill ${isActive}" onclick="App.setFilter('${f.id}')">${f.icon || '📁'} ${f.name}</div>`;
                 });
-                document.getElementById('mobile-folders-nav').innerHTML = mHtml;
-                const dNav = document.getElementById('desktop-folders-nav');
-                if(dNav) dNav.innerHTML = dHtml;
+                const container = document.getElementById('folders-nav');
+                if (container) container.innerHTML = html;
             },
         
             
@@ -3123,15 +3170,88 @@
                 const formatText = (text) => {
                     if (!text) return '';
                     let t = String(text).replace(/</g,'&lt;');
-                    t = t.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;">$1</pre>');
+                    
+                    // 1. Code Blocks
+                    t = t.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;white-space:pre-wrap;">$1</pre>');
                     t = t.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
-                    // Используем [\s\S]*? чтобы маркдаун работал даже если внутри есть переносы строк
+                    
+                    // 2. Math Block $$...$$
+                    t = t.replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, '<div style="font-family: \'Cambria Math\', \'Times New Roman\', serif; font-size: 1.15em; background: color-mix(in srgb, var(--bg-input) 30%, transparent); padding: 10px; border-radius: 8px; margin: 8px 0; text-align: center; overflow-x: auto;">$1</div>');
+                    
+                    // 3. Math Inline $...$
+                    t = t.replace(/\$([^\$]+)\$/g, '<span style="font-family: \'Cambria Math\', \'Times New Roman\', serif; font-size: 1.1em; font-style: italic;">$1</span>');
+                    
+                    // 4. Tables Parser
+                    const lines = t.split('\n');
+                    let inTable = false;
+                    let tableHtml = '';
+                    for (let i = 0; i < lines.length; i++) {
+                        let line = lines[i].trim();
+                        if (line.startsWith('|') && line.endsWith('|')) {
+                            if (!inTable) {
+                                inTable = true;
+                                tableHtml = '<table style="border-collapse: collapse; margin: 10px 0; width: 100%; font-size: 13px; line-height: 1.4;">';
+                            }
+                            let cells = line.split('|').map(c => c.trim()).filter((c, idx, arr) => idx > 0 && idx < arr.length - 1);
+                            if (cells.every(c => /^:-*|-*:|:-*:|-+$/.test(c))) {
+                                lines[i] = ''; 
+                                continue; 
+                            }
+                            let isHeader = (tableHtml.match(/<tr>/g) || []).length === 0;
+                            tableHtml += '<tr style="border-bottom: 1px solid var(--border);">';
+                            cells.forEach(cell => {
+                                let tag = isHeader ? 'th' : 'td';
+                                let style = isHeader ? 'font-weight: 600; background: color-mix(in srgb, var(--bg-input) 40%, transparent);' : '';
+                                tableHtml += `<${tag} style="padding: 6px 10px; border: 1px solid var(--border); ${style}">${cell}</${tag}>`;
+                            });
+                            tableHtml += '</tr>';
+                            lines[i] = ''; 
+                        } else {
+                            if (inTable) {
+                                inTable = false;
+                                tableHtml += '</table>';
+                                lines[i] = tableHtml + '\n' + lines[i];
+                            }
+                        }
+                    }
+                    if (inTable) {
+                        tableHtml += '</table>';
+                        lines[lines.length - 1] += tableHtml;
+                    }
+                    t = lines.filter(l => l !== '').join('\n');
+                
+                    // 5. Images Parser
+                    t = t.replace(/!\[([^\]]*)\]\((https?:\/\/[^\s\)]+)\)/g, '<div style="margin: 8px 0; text-align: center;"><img src="$2" alt="$1" style="max-width: 100%; max-height: 250px; border-radius: 8px;" onclick="event.stopPropagation(); App.openMedia(\'$2\')"><span style="display:block; font-size:11px; color:var(--text-muted); margin-top:2px;">$1</span></div>');
+                
+                    // 6. Blockquotes and Lists
+                    t = t.split('\n').map(line => {
+                        let trimmed = line.trim();
+                        if (trimmed.startsWith('&gt;')) {
+                            return `<blockquote style="border-left: 3px solid var(--primary); padding-left: 10px; margin: 8px 0; color: var(--text-muted); font-style: italic;">${trimmed.substring(4).trim()}</blockquote>`;
+                        }
+                        if (trimmed.startsWith('* ')) {
+                            return `<li style="margin-left: 16px; list-style-type: disc; padding-left: 4px;">${trimmed.substring(2).trim()}</li>`;
+                        }
+                        if (/^\d+\.\s/.test(trimmed)) {
+                            let dotIdx = trimmed.indexOf('.');
+                            return `<li style="margin-left: 16px; list-style-type: decimal; padding-left: 4px;">${trimmed.substring(dotIdx + 1).trim()}</li>`;
+                        }
+                        return line;
+                    }).join('\n');
+                
+                    // 7. Core Markdown Formatting
                     t = t.replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>');
                     t = t.replace(/\*([\s\S]*?)\*/g, '<em>$1</em>');
-                    t = t.replace(/^### (.*$)/gim, '<h3 style="margin:16px 0 8px;font-size:16px;">$1</h3>');
-                    t = t.replace(/^## (.*$)/gim, '<h2 style="margin:18px 0 8px;font-size:18px;">$1</h2>');
-                    t = t.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">$1</a><div class="link-preview" data-url="$1"></div>');
+                    t = t.replace(/^### (.*$)/gim, '<h3 style="margin:12px 0 6px;font-size:15px;font-weight:600;">$1</h3>');
+                    t = t.replace(/^## (.*$)/gim, '<h2 style="margin:14px 0 6px;font-size:17px;font-weight:600;">$1</h2>');
+                    
                     t = t.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
+                    
+                    t = t.replace(/(https?:\/\/[^\s<]+)/g, (url) => {
+                        if (url.match(/\.(jpeg|jpg|gif|png|webp)/i)) return url; 
+                        return `<a href="${url}" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">${url}</a><div class="link-preview" data-url="${url}"></div>`;
+                    });
+                    
                     return t;
                 };
         
@@ -3743,7 +3863,34 @@
                 }
             },
             async toggleMute(id) {
-                try { await req(`/api/chats/${id}/mute`, 'POST'); this.sync(); } catch(e){}
+                const c = State.chats.get(id);
+                if (!c) return;
+                
+                // Optimistically toggle status
+                c.muted = c.muted ? 0 : 1;
+                
+                // Instantly update local UI
+                const channelBar = document.getElementById('channel-bar');
+                if (channelBar && State.chat === id) {
+                    channelBar.innerHTML = `<button class="btn btn-outline" style="border-radius:12px; padding:10px; width:100%" onclick="App.toggleMute(${c.id})">${c.muted ? '🔇 Unmute Channel' : '🔊 Mute Channel'}</button>`;
+                }
+                
+                const itemEl = document.querySelector(`.user-item[data-chat-id="${id}"]`);
+                if (itemEl) {
+                    const badge = itemEl.querySelector('.badge');
+                    if (badge) {
+                        if (c.muted) badge.className = 'badge muted-badge';
+                        else badge.className = 'badge';
+                    }
+                }
+                
+                try {
+                    await req(`/api/chats/${id}/mute`, 'POST');
+                } catch(e) {
+                    // Revert on request failure
+                    c.muted = c.muted ? 0 : 1;
+                    this.sync();
+                }
             },
             createChannelUI() {
                 document.getElementById('new-chan-name').value = '';
@@ -4278,9 +4425,11 @@
                             }
                             
                             // 2. Instant Browser Notifications for new messages
+                            // 2. Instant Browser Notifications for new messages
                             if (c.unread > 0 && !State.notifiedMsgs.has(c.last_msg_id)) {
                                 State.notifiedMsgs.add(c.last_msg_id);
-                                if (State.chat !== c.id || document.visibilityState !== 'visible') {
+                                // Added the !c.muted check here so you do not receive push notifications for muted chats
+                                if (!c.muted && (State.chat !== c.id || document.visibilityState !== 'visible')) {
                                     App.showPush(n, prevH.replace(/<[^>]*>?/gm, ''), av);
                                 }
                             }
@@ -4338,17 +4487,7 @@
                         }
                     });
         
-                    const navBadge = document.getElementById('nav-badge');
-                    if (navBadge) {
-                        navBadge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
-                        navBadge.textContent = totalUnread > 99 ? '99+' : totalUnread;
-                    }
-
-                    // --- NEW: Window Title Management ---
-                    const activeChatObj = State.chat ? State.chats.get(State.chat) || State.chats.get(Number(State.chat)) : null;
-                    const activeChatName = activeChatObj ? (activeChatObj.type === 'dm' ? activeChatObj.dm_username : activeChatObj.name) : '';
-                    const titlePrefix = totalUnread > 0 ? `(${totalUnread}) ` : '';
-                    document.title = titlePrefix + (activeChatName ? `${activeChatName} - YukiChat` : 'YukiChat');
+                    App.updateTotalUnreadBadge();
                     
                     if (!isSearching) {
                         document.getElementById('chat-list').innerHTML = html || `<div style="padding:40px;text-align:center;color:var(--text-muted)">${I18N.t('No chats found')}</div>`;
@@ -4554,16 +4693,25 @@
             openChat(id) {
                 if (id !== 'ai') id = Number(id);
                 
-                // CRITICAL BUG FIX: Unlock states so the chat doesn't get stuck on a blank screen!
                 State.isFetchingMsgs = false; 
                 State.isPolling = false;
-                
                 State.lastMsgId = 0;
                 State.chat = id; 
+                
                 const c = State.chats.get(id); 
                 if (!c) return; 
-                
+            
+                // Instant local unread clearing
+                c.unread = 0;
+                const itemEl = document.querySelector(`.user-item[data-chat-id="${id}"]`);
+                if (itemEl) {
+                    const badge = itemEl.querySelector('.badge');
+                    if (badge) badge.remove();
+                }
+                App.updateTotalUnreadBadge();
+            
                 Router.push('panel-chat');
+                // ... rest of App.openChat ...
                 
                 const isDM = c.type === 'dm'; 
                 const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
