@@ -4130,10 +4130,14 @@
                     const d = await req(`/api/${isLog ? 'login' : 'register'}`, 'POST', payload);
                     
                     // Save Session
+                    // Save Session
                     State.t = d.token; 
                     State.u = d; 
                     localStorage.setItem('y_t', d.token); 
                     localStorage.setItem('y_u', JSON.stringify(d));
+                    
+                    // Mirror to localforage so the Service Worker can authenticate background fetches [2]
+                    localforage.setItem('y_t', d.token).catch(err => console.error(err));
             
                     // 2. Clear UI & Start App
                     document.getElementById('panel-auth').classList.remove('active'); 
@@ -4324,7 +4328,13 @@
             },
 
             // --- INITIALIZATION ---
+            // --- INITIALIZATION ---
             start() {
+                // Mirror token to localforage so the Service Worker can authenticate background fetches [2]
+                if (State.t) {
+                    localforage.setItem('y_t', State.t).catch(err => console.error(err));
+                }
+
                 document.getElementById('set-av').src = State.u.avatar || getDefAv(State.u.username);
                 document.getElementById('nav-av').src = State.u.avatar || getDefAv(State.u.username);
                 Router.updateNav();
