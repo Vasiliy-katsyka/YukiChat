@@ -2505,6 +2505,8 @@
                 document.getElementById('remote-video').style.display = 'none';
                 document.getElementById('local-video').style.display = 'none';
                 document.getElementById('panel-call').style.transform = 'translateY(100%)';
+                // Add this line:
+                document.getElementById('panel-call').classList.remove('active');
             },
         
             startSigLoop() {
@@ -2588,23 +2590,24 @@
             },
         
             showUI(statusText) {
-                    const c = State.chats.get(State.chat); if(!c) return;
-                    const bg = c.type==='dm'?(c.dm_avatar||defAv):(c.avatar||defAv); 
-                    document.getElementById('call-bg').style.backgroundImage = `url(${bg})`;
-                    document.getElementById('call-bg').style.display = 'block';
-                    document.getElementById('call-av').src = bg; 
-                    document.getElementById('call-name').innerText = c.type==='dm'?c.dm_username:c.name;
-                    document.getElementById('call-status-txt').innerText = statusText;
-                    document.getElementById('call-time').innerText = '';
-                    
-                    // NEW: Hide the video toggle button if this is an audio-only call
-                    const isVidCall = this.isVideo || this.incomingIsVideo;
-                    document.getElementById('btn-video').style.display = isVidCall ? 'flex' : 'none';
-                    
-                    document.getElementById('call-view-incoming').style.display = 'none';
-                    document.getElementById('call-view-active').style.display = 'flex';
-                    document.getElementById('panel-call').style.transform = 'translateY(0)';
-                },
+                const c = State.chats.get(State.chat); if(!c) return;
+                const bg = c.type==='dm'?(c.dm_avatar||defAv):(c.avatar||defAv); 
+                document.getElementById('call-bg').style.backgroundImage = `url(${bg})`;
+                document.getElementById('call-bg').style.display = 'block';
+                document.getElementById('call-av').src = bg; 
+                document.getElementById('call-name').innerText = c.type==='dm'?c.dm_username:c.name;
+                document.getElementById('call-status-txt').innerText = statusText;
+                document.getElementById('call-time').innerText = '';
+                
+                const isVidCall = this.isVideo || this.incomingIsVideo;
+                document.getElementById('btn-video').style.display = isVidCall ? 'flex' : 'none';
+                
+                document.getElementById('call-view-incoming').style.display = 'none';
+                document.getElementById('call-view-active').style.display = 'flex';
+                document.getElementById('panel-call').style.transform = 'translateY(0)';
+                // Add this line:
+                document.getElementById('panel-call').classList.add('active');
+            },
         
             startTimer() {
                 if(this.timerInterval) return;
@@ -4183,7 +4186,7 @@
                     if (document.visibilityState === 'visible') {
                         App.sync(); 
                     }
-                }, 30000);
+                }, 8000);
             },
 
             showCtx(e, id, isMine, isMedia = false, mediaUrl = '') {
@@ -4468,7 +4471,9 @@
                             document.getElementById('call-view-active').style.display = 'none';
                             document.getElementById('call-view-incoming').style.display = 'flex';
                             document.getElementById('panel-call').style.transform = 'translateY(0)';
-        
+                            // Add this line:
+                            document.getElementById('panel-call').classList.add('active');
+                        
                             if (!State.notifiedCalls.has(hasCall.id)) {
                                 State.notifiedCalls.add(hasCall.id);
                                 App.showPush(isVid ? `📹 Video Call from ${n}` : `📞 Audio Call from ${n}`, "Tap to answer", av, true);
@@ -4478,7 +4483,11 @@
                         }
                         else if (!hasCall && RTC.incomingChat === c.id) {
                             if(RTC.ringtone) { RTC.ringtone.pause(); RTC.ringtone.currentTime = 0; }
-                            if(document.getElementById('call-view-incoming').style.display === 'flex') document.getElementById('panel-call').style.transform = 'translateY(100%)';
+                            if(document.getElementById('call-view-incoming').style.display === 'flex') {
+                                document.getElementById('panel-call').style.transform = 'translateY(100%)';
+                                // Add this line:
+                                document.getElementById('panel-call').classList.remove('active');
+                            }
                             RTC.incomingCallId = null; RTC.incomingChat = null;
                         }
         
