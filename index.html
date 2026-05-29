@@ -1092,13 +1092,17 @@
         }
         @keyframes bounce-spin { 0% { transform: scale(0.8) rotate(0deg); border-radius: 20px; } 50% { transform: scale(1.1) rotate(180deg); border-radius: 50%; } 100% { transform: scale(0.8) rotate(360deg); border-radius: 20px; } }
         /* --- UNIFIED SCROLLABLE FOLDERS --- */
+        /* --- UNIFIED SCROLLABLE FOLDERS --- */
         .folders-container {
-            display: flex;
+            display: none; /* Hide folders by default [1] */
             gap: 8px;
             padding: 10px 20px;
             overflow-x: auto;
             white-space: nowrap;
             -webkit-overflow-scrolling: touch;
+        }
+        body.has-folders .folders-container {
+            display: flex; /* Display only when folders are enabled [1] */
         }
         .folders-container::-webkit-scrollbar { display: none; }
         .folder-pill {
@@ -1124,9 +1128,22 @@
         }
         
         /* Adjust layout padding to seamlessly fit the folders container */
-                /* Dynamic Chat List Padding */
-        #chat-list { padding-top: calc(125px + var(--safe-top)); }
-        body.has-folders #chat-list { padding-top: calc(180px + var(--safe-top)) !important; }
+        /* Dynamic Chat List Padding - Automatically adapts to folder visibility [1] */
+        #chat-list { 
+            padding-top: calc(105px + var(--safe-top)) !important; 
+            transition: padding-top 0.2s ease;
+        }
+        body.has-folders #chat-list { 
+            padding-top: calc(155px + var(--safe-top)) !important; 
+        }
+
+        /* Enforce absolute hiding for mobile folders tab bar */
+        #mobile-folders-nav {
+            display: none;
+        }
+        body.has-folders #mobile-folders-nav {
+            display: flex;
+        }
         @media (min-width: 768px) {
             body.has-folders #desktop-folders-nav { display: none !important; }
             /* Find and replace this rule inside the @media (min-width: 768px) query: */
