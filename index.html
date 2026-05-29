@@ -2331,6 +2331,126 @@
             '🙉': 'https://raw.githubusercontent.com/Vasiliy-katsyka/yukimoji/refs/heads/main/ToyPrimate_emoji_by_stickerparsebot_AgADTYUAAqNx0Eg.json',
             '💮': 'https://raw.githubusercontent.com/Vasiliy-katsyka/yukimoji/refs/heads/main/gift_emoji_5167939598143193218_by_GiftChangesHelper1Bot_AgADxWcA.json'    
         };
+
+        const E2EE = {
+            myPrivateKey: null,
+            myPublicKeyJwk: null,
+            sharedKeys: {}, // Cache of derived symmetric keys by chatId
+
+            async init() {
+                if (!State.t || !State.u || !State.u.userId) return;
+                const keyName = `y_e2ee_keys_${State.u.userId}`;
+                let keys = await localforage.getItem(keyName);
+                
+                if (!keys) {
+                    // Generate P-256 Elliptic Curve Diffie-Hellman Keypair
+                    const keyPair = await window.crypto.subtle.generateKey(
+                        { name: "ECDH", namedCurve: "P-256" },
+                        true,
+                        ["deriveKey"]
+                    );
+                    
+                    // Export to portable JSON Web Key (JWK) structures
+                    const pubJwk = await window.crypto.subtle.exportKey("jwk", keyPair.publicKey);
+                    const privJwk = await window.crypto.subtle.exportKey("jwk", keyPair.privateKey);
+                    
+                    keys = { publicKey: pubJwk, privateKey: privJwk };
+                    await localforage.setItem(keyName, keys);
+                }
+                
+                // Load local Private Key as a CryptoKey
+                this.myPrivateKey = await window.crypto.subtle.importKey(
+                    "jwk", keys.privateKey,
+                    { name: "ECDH", namedCurve: "P-256" },
+                    true, ["deriveKey"]
+                );
+                this.myPublicKeyJwk = keys.publicKey;
+
+                // Register public key with the backend
+                try {
+                    await req('/api/e2ee/key', 'POST', { public_key: JSON.stringify(this.myPublicKeyJwk) });
+                } catch (e) {
+                    console.error("E2EE key registration error:", e);
+                }
+            },
+
+            async getSharedKey(chatId) {
+                if (this.sharedKeys[chatId]) return this.sharedKeys[chatId];
+                
+                try {
+                    const res = await req(`/api/e2ee/key/${chatId}`);
+                    if (!res || !res.public_key) return null; // Recipient not E2EE capable
+                    
+                    const otherPubJwk = JSON.parse(res.public_key);
+                    const otherPubKey = await window.crypto.subtle.importKey(
+                        "jwk", otherPubJwk,
+                        { name: "ECDH", namedCurve: "P-256" },
+                        true, []
+                    );
+                    
+                    // Generate symmetric AES-GCM key derived from Diffie-Hellman key exchange
+                    const sharedKey = await window.crypto.subtle.deriveKey(
+                        { name: "ECDH", public: otherPubKey },
+                        this.myPrivateKey,
+                        { name: "AES-GCM", length: 256 },
+                        true,
+                        ["encrypt", "decrypt"]
+                    );
+                    
+                    this.sharedKeys[chatId] = sharedKey;
+                    return sharedKey;
+                } catch (e) {
+                    return null;
+                }
+            },
+
+            async encrypt(chatId, plaintext) {
+                if (!plaintext) return plaintext;
+                const key = await this.getSharedKey(chatId);
+                if (!key) return plaintext; // Fallback to plaintext if peer cannot E2EE
+                
+                const iv = window.crypto.getRandomValues(new Uint8Array(12));
+                const encoded = new TextEncoder().encode(plaintext);
+                
+                const ciphertextBuffer = await window.crypto.subtle.encrypt(
+                    { name: "AES-GCM", iv: iv },
+                    key,
+                    encoded
+                );
+                
+                const ivB64 = btoa(String.fromCharCode(...iv));
+                const cipherB64 = btoa(String.fromCharCode(...new Uint8Array(ciphertextBuffer)));
+                
+                return `__E2EE__:${ivB64}:${cipherB64}`;
+            },
+
+            async decrypt(chatId, messageContent) {
+                if (!messageContent || !messageContent.startsWith("__E2EE__:")) return messageContent;
+                
+                const key = await this.getSharedKey(chatId);
+                if (!key) return "🔒 [Encrypted Message - Key Exchange Unavailable]";
+                
+                try {
+                    const parts = messageContent.split(":");
+                    const ivB64 = parts[1];
+                    const cipherB64 = parts[2];
+                    
+                    const iv = new Uint8Array(atob(ivB64).split("").map(c => c.charCodeAt(0)));
+                    const ciphertext = new Uint8Array(atob(cipherB64).split("").map(c => c.charCodeAt(0)));
+                    
+                    const decryptedBuffer = await window.crypto.subtle.decrypt(
+                        { name: "AES-GCM", iv: iv },
+                        key,
+                        ciphertext
+                    );
+                    
+                    return new TextDecoder().decode(decryptedBuffer);
+                } catch (e) {
+                    return "🔒 [Encrypted Message - Decryption Failed]";
+                }
+            }
+        };
+        
         const State = { 
             t: localStorage.getItem('y_t'), u: JSON.parse(localStorage.getItem('y_u')||'{}'), 
             chats: new Map(), chat: null, syncLoop: null, lastMsgId: 0,
@@ -3422,12 +3542,21 @@
                     }
                 }, 25000);
                 
-                State.ws.onmessage = (e) => {
+                State.ws.onmessage = async (e) => {
                     const data = JSON.parse(e.data);
                     
                     if (data.type === 'new_message') {
                         const m = data.message;
                         if (State.chat == m.chat_id) {
+                            
+                            // Decrypt real-time WebSocket incoming messages
+                            if (m.content && m.content.startsWith("__E2EE__:")) {
+                                m.content = await E2EE.decrypt(m.chat_id, m.content);
+                                m.is_encrypted = true;
+                            }
+                            if (m.caption && m.caption.startsWith("__E2EE__:")) {
+                                m.caption = await E2EE.decrypt(m.chat_id, m.caption);
+                            }
                             
                             // 1. If this is the sender's optimistic bubble, update it to the server's placeholder!
                             const existingMsg = document.getElementById(`msg-${m.id}`);
@@ -3463,9 +3592,15 @@
                     }
                 
                     if (data.type === 'message_action' && State.chat == data.chat_id) {
-                        // 2. Silently fetch and patch ONLY the bubbles that changed (AI Image, Reactions, Edits)
-                        req(`/api/messages/${data.chat_id}?after=0`).then(msgs => {
-                            msgs.forEach(m => {
+                        req(`/api/messages/${data.chat_id}?after=0`).then(async msgs => {
+                            for (let m of msgs) {
+                                if (m.content && m.content.startsWith("__E2EE__:")) {
+                                    m.content = await E2EE.decrypt(data.chat_id, m.content);
+                                    m.is_encrypted = true;
+                                }
+                                if (m.caption && m.caption.startsWith("__E2EE__:")) {
+                                    m.caption = await E2EE.decrypt(data.chat_id, m.caption);
+                                }
                                 const existingMsg = document.getElementById(`msg-${m.id}`);
                                 if (existingMsg) {
                                     const isMine = m.sender_id === State.u.userId;
@@ -3993,6 +4128,9 @@
                 document.getElementById('nav-av').src = State.u.avatar || getDefAv(State.u.username);
                 Router.updateNav();
                 this.initFolders();
+
+                // Initialize End-to-End Encryption
+                E2EE.init().catch(console.error);
                 
                 // --- NEW: Keyboard Shortcuts ---
                 document.addEventListener('keydown', (e) => {
@@ -4772,6 +4910,7 @@
                 this.loadMsgs(id);
                 // Add inside App.openChat(id) right after this.loadMsgs(id);
                 // Inside openChat(id), replace the scroll listener with this:
+                // --- UPDATED CODE (With E2EE Decryption) ---
                 const msgsCont = document.getElementById('msgs');
                 msgsCont.onscroll = async () => {
                     if (msgsCont.scrollTop === 0 && !State.isFetchingOlder) {
@@ -4785,12 +4924,20 @@
                             const olderMsgs = await req(`/api/messages/${State.chat}?before=${oldestId}`);
                             const oldHeight = msgsCont.scrollHeight;
                             
-                            olderMsgs.reverse().forEach(m => {
+                            // Decrypt older messages in a sequence
+                            for (let m of olderMsgs.reverse()) {
+                                if (m.content && m.content.startsWith("__E2EE__:")) {
+                                    m.content = await E2EE.decrypt(State.chat, m.content);
+                                    m.is_encrypted = true;
+                                }
+                                if (m.caption && m.caption.startsWith("__E2EE__:")) {
+                                    m.caption = await E2EE.decrypt(State.chat, m.caption);
+                                }
                                 const isMine = m.sender_id === State.u.userId;
                                 const innerHTML = this.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
                                 const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}">${innerHTML}</div>`;
                                 msgsCont.insertAdjacentHTML('afterbegin', rowHtml);
-                            });
+                            }
                             
                             // Maintain scroll position after prepending DOM nodes
                             msgsCont.scrollTop = msgsCont.scrollHeight - oldHeight;
@@ -4901,9 +5048,20 @@
                     let addedNew = false;
                     let pinned = null;
                     
-                    if (forceFull) cont.innerHTML = ''; // Clear loaders if doing a fresh load
+                    if (forceFull) cont.innerHTML = ''; 
                     
                     const isAtBottom = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 150;
+
+                    // Decrypt matching payloads asynchronously
+                    for (let m of msgs) {
+                        if (m.content && m.content.startsWith("__E2EE__:")) {
+                            m.content = await E2EE.decrypt(targetChat, m.content);
+                            m.is_encrypted = true;
+                        }
+                        if (m.caption && m.caption.startsWith("__E2EE__:")) {
+                            m.caption = await E2EE.decrypt(targetChat, m.caption);
+                        }
+                    }
 
                     let htmlBatch = '';
                     let fxChecks =[];
@@ -5089,10 +5247,21 @@
                     }
                 
                     // 2. Fire the network request
+                    // 2. Fire the network request
                     try { 
+                        let finalContent = mediaData;
+                        let finalCap = currentCap;
+                        
+                        if (targetChat !== 'ai') {
+                            finalContent = await E2EE.encrypt(targetChat, mediaData);
+                            if (currentCap) {
+                                finalCap = await E2EE.encrypt(targetChat, currentCap);
+                            }
+                        }
+                        
                         const res = await req(`/api/messages/${targetChat}`, 'POST', {
-                            content: mediaData, caption: currentCap, type: mediaType, reply_to_id: (i === 0 ? State.replyTo : null)
-                        }); 
+                            content: finalContent, caption: finalCap, type: mediaType, reply_to_id: (i === 0 ? State.replyTo : null)
+                        });
                         
                         if (State.chat === targetChat) {
                             const tempEl = document.getElementById(tempId);
@@ -5136,17 +5305,30 @@
                 const msgsCont = document.getElementById('msgs');
                 const targetChat = State.chat; 
                 
-                // 1. USE buildMsgHTML FOR OPTIMISTIC UI SO LOTTIES ARE RENDERED!
+                // Encrypt payload if in a direct message
+                let finalContent = txt;
+                let isEncrypted = false;
+                if (targetChat !== 'ai') {
+                    const encrypted = await E2EE.encrypt(targetChat, txt);
+                    if (encrypted !== txt) {
+                        finalContent = encrypted;
+                        isEncrypted = true;
+                    }
+                }
+        
                 const fakeMsg = { 
                     id: tempId, content: txt, type: 'text', 
                     created_at: new Date().toISOString(), is_read: 0, 
-                    sender_id: State.u.userId, reply_to_id: State.replyTo 
+                    sender_id: State.u.userId, reply_to_id: State.replyTo,
+                    is_encrypted: isEncrypted
                 };
                 const bubbleHtml = this.buildMsgHTML(fakeMsg, true, State.chats.get(targetChat)?.type);
                 
                 msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}" style="opacity: 0.7;">${bubbleHtml}</div>`);
                 App.renderMath();
                 msgsCont.scrollTop = msgsCont.scrollHeight;
+                
+                // ... REST OF App.sendText() ...
                 
                 // 2. INITIALIZE LOTTIE INSTANTLY FOR THE SENT MESSAGE
                 if (localStorage.getItem('y_anim_react') !== 'false' && window.lottie) {
@@ -5160,10 +5342,10 @@
         
                 try { 
                     const res = await req(`/api/messages/${targetChat}`, 'POST', {
-                        content: txt, 
+                        content: finalContent, // Sends the ciphertext over the network
                         type: 'text', 
                         reply_to_id: State.replyTo
-                    }); 
+                    });
                     
                     this.cancelReply();
                     
