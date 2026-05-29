@@ -1258,11 +1258,14 @@
             background: #000;
         }
         .video-note-player {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
             pointer-events: none;
-            border-radius: 50%;
+            border-radius: 50% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: block !important;
         }
         .video-note-overlay {
             position: absolute;
@@ -3533,8 +3536,8 @@
                     return t;
                 };
         
-                // Применяем маркдаун к контенту
-                let cleanTxt = formatText(safeContent);
+                // Prevents link preview engine from parsing the raw S3 audio/video URLs [1]
+                let cleanTxt = (m.type === 'text') ? formatText(safeContent) : '';
                 // --- Premium Animated Emojis parsing ---
                 const useAnim = localStorage.getItem('y_anim_react') !== 'false';
                 if (useAnim && window.REACTION_LOTTIES && m.type === 'text') {
@@ -3551,11 +3554,30 @@
                         let parsed = JSON.parse(m.caption || '{}');
                         peaks = parsed.peaks || [];
                     } catch(e) {
-                        peaks = Array(35).fill(15);
+                        peaks = [];
                     }
+                    
+                    // Downsample raw recording arrays to exactly 35 aesthetic bars [1]
+                    const targetBars = 35;
+                    let displayPeaks = [];
+                    if (peaks.length === 0) {
+                        displayPeaks = Array(targetBars).fill(5);
+                    } else if (peaks.length <= targetBars) {
+                        displayPeaks = [...peaks];
+                        while (displayPeaks.length < targetBars) displayPeaks.push(3);
+                    } else {
+                        const step = peaks.length / targetBars;
+                        for (let i = 0; i < targetBars; i++) {
+                            const start = Math.floor(i * step);
+                            const end = Math.floor((i + 1) * step);
+                            let sum = 0;
+                            for (let j = start; j < end; j++) sum += peaks[j];
+                            displayPeaks.push(Math.round(sum / (end - start)));
+                        }
+                    }
+                    
                     let waveformHtml = '';
-                    const renderedPeaks = peaks.slice(-45);
-                    renderedPeaks.forEach(p => {
+                    displayPeaks.forEach(p => {
                         const height = Math.max(3, Math.min(32, p / 2));
                         waveformHtml += `<div class="wave-bar" style="height:${height}px;"></div>`;
                     });
@@ -5978,7 +6000,8 @@
                 
                 const constraints = { audio: true };
                 if (this.mode === 'video') {
-                    constraints.video = { width: 300, height: 300, facingMode: "user" };
+                    // Requests ideal 1:1 constraints to help stabilize hardware crops [1]
+                    constraints.video = { width: { ideal: 400 }, height: { ideal: 400 }, facingMode: "user" };
                     document.getElementById('recording-video-circle').style.display = 'block';
                 } else {
                     document.getElementById('recording-video-circle').style.display = 'none';
@@ -6026,7 +6049,15 @@
                         }
                     }, 1000);
                     
-                    const options = { mimeType: this.mode === 'voice' ? 'audio/webm' : 'video/webm' };
+                    // Check local support to choose the safest cross-platform containers [1]
+                    let options = {};
+                    if (this.mode === 'voice') {
+                        if (MediaRecorder.isTypeSupported('audio/webm')) options.mimeType = 'audio/webm';
+                        else if (MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
+                    } else {
+                        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) options.mimeType = 'video/webm;codecs=vp8';
+                        else if (MediaRecorder.isTypeSupported('video/mp4')) options.mimeType = 'video/mp4';
+                    }
                     this.mediaRecorder = new MediaRecorder(this.stream, options);
                     this.mediaRecorder.ondataavailable = (ev) => {
                         if (ev.data.size > 0) this.chunks.push(ev.data);
