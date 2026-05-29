@@ -1217,6 +1217,7 @@
             gap: 12px;
             padding: 6px 0;
             user-select: none;
+            -webkit-user-select: none;
         }
         .waveform-bars {
             display: flex;
@@ -1230,13 +1231,26 @@
             border-radius: 1px;
             transition: background 0.15s, height 0.15s;
         }
+        .msg-row.sent .wave-bar {
+            background: color-mix(in srgb, var(--msg-sent-txt) 25%, transparent);
+        }
+        .wave-bar.active {
+            background: var(--primary) !important;
+        }
+        .msg-row.sent .wave-bar.active {
+            background: var(--msg-sent-txt) !important;
+        }
+        .msg-row.sent .play-voice-btn {
+            background: var(--msg-sent-txt) !important;
+            color: var(--msg-sent) !important;
+        }
         
         /* --- ROUND VIDEO NOTE STYLING --- */
         .video-note-container {
             position: relative;
             width: 200px;
             height: 200px;
-            border-radius: 50%;
+            border-radius: 50% !important;
             overflow: hidden;
             border: 2px solid var(--primary);
             box-shadow: var(--shadow);
@@ -1248,6 +1262,7 @@
             height: 100%;
             object-fit: cover;
             pointer-events: none;
+            border-radius: 50%;
         }
         .video-note-overlay {
             position: absolute;
@@ -1257,6 +1272,7 @@
             justify-content: center;
             background: rgba(0, 0, 0, 0.35);
             transition: opacity 0.2s;
+            border-radius: 50%;
         }
         
         /* --- ATTACHMENT POPOVER STYLING --- */
@@ -1283,6 +1299,13 @@
         }
         #attach-popover .ctx-item:active {
             background: var(--bg-hover);
+        }
+
+        /* --- ACCESSIBILITY AND DRAG LOCK PREVENTS --- */
+        #recording-hud, #record-btn {
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            touch-action: none !important;
         }
     </style>
 </head>
@@ -1989,12 +2012,19 @@
     <audio id="rtc-audio" autoplay playsinline style="display:none;"></audio>
 
     <!-- Recording Overlay HUD -->
-    <div id="recording-hud" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); align-items: center; justify-content: center; flex-direction: column;">
+    <!-- Recording Overlay HUD -->
+    <div id="recording-hud" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); align-items: center; justify-content: center; flex-direction: column;">
         <div id="recording-video-circle" style="width: 200px; height: 200px; border-radius: 50%; overflow: hidden; border: 4px solid var(--primary); background: #000; display: none; margin-bottom: 16px; box-shadow: var(--shadow);">
             <video id="recording-preview-feed" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
         </div>
         <div id="recording-hud-timer" style="color: #fff; font-size: 20px; font-weight: 700; margin-bottom: 8px; font-variant-numeric: tabular-nums;">Recording... 00:00</div>
-        <div style="color: rgba(255,255,255,0.7); font-size: 13px;">Hold to Record • Release to Send • Drag off button to Cancel</div>
+        <div style="color: rgba(255,255,255,0.7); font-size: 13px; margin-bottom: 24px;">Hold to Record • Release to Send</div>
+        
+        <!-- Physical fallbacks for Android Touch locks -->
+        <div style="display: flex; gap: 16px;">
+            <button class="btn btn-outline" style="width: auto; padding: 10px 20px; border-color: var(--danger); color: var(--danger); border-radius: 12px;" onpointerdown="event.stopPropagation(); AVRecorder.stop(true)">Cancel</button>
+            <button class="btn" style="width: auto; padding: 10px 24px; background: var(--success); color: white; border-radius: 12px;" onpointerdown="event.stopPropagation(); AVRecorder.stop(false)">Send</button>
+        </div>
     </div>
     
     <div id="panel-call" class="panel" style="transform:translateY(100%); transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); background: #000;">
@@ -3569,8 +3599,8 @@
                     } catch(e) {}
                 }
         
-                // Применяем маркдаун к подписи (caption)
-                if(m.caption) inner += `<div class="msg-caption">${formatText(m.caption)}</div>`;
+                // 2. Prevent peak wave metadata JSON from printing as text under the voice player [1]
+                if(m.caption && m.type !== 'voice') inner += `<div class="msg-caption">${formatText(m.caption)}</div>`;
         
                 let rxs = JSON.parse(m.reactions||'{}');
                 let rxCounts = {};
@@ -3592,7 +3622,8 @@
                 let viewsH = (chatType === 'channel' && m.views) ? `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>` : '';
                 const tickHtml = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
                 const senderName = (!isMine && chatType !== 'dm') ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
-                const bubbleStyle = m.type === 'sticker' ? 'background: transparent; padding: 0; box-shadow: none;' : '';
+                // 1. Force the video note container to be a transparent circle without background cards [1]
+                const bubbleStyle = (m.type === 'sticker' || m.type === 'video_note') ? 'background: transparent !important; padding: 0 !important; box-shadow: none !important; border: none !important;' : '';
         
                 const ctxCall = `event, ${m.id}, ${isMine}, ${m.type === 'photo'}, '${m.type === 'photo' ? m.content : ''}'`;
         
@@ -5861,7 +5892,7 @@
                         const bars = bubble.querySelectorAll('.wave-bar');
                         const indexThreshold = Math.floor(bars.length * progress);
                         bars.forEach((b, i) => {
-                            b.style.background = (i <= indexThreshold) ? 'var(--primary)' : '';
+                            b.classList.toggle('active', i <= indexThreshold);
                         });
                     }
                 };
@@ -5922,7 +5953,7 @@
                 UI.toast(`Switched to ${this.mode === 'voice' ? 'Voice' : 'Video Circle'} mode`);
             },
             async handlePointerDown(e) {
-                e.preventDefault();
+                e.preventDefault(); // Prevents selection drag highlights on Android [1]
                 this.startX = e.clientX;
                 this.startY = e.clientY;
                 this.hasCanceled = false;
@@ -5960,7 +5991,6 @@
                         document.getElementById('recording-preview-feed').srcObject = this.stream;
                     }
                     
-                    // Voice envelope visualizer engine
                     if (this.mode === 'voice') {
                         this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                         const src = this.audioCtx.createMediaStreamSource(this.stream);
@@ -5986,17 +6016,13 @@
                         const s = String(seconds % 60).padStart(2, '0');
                         document.getElementById('recording-hud-timer').innerText = `Recording... ${m}:${s}`;
                         
-                        // Security cancellation boundary check
                         if (this.isRecording && !this.hasCanceled) {
-                            const inputBar = document.getElementById('input-bar');
-                            if (inputBar) {
-                                document.onpointermove = (pe) => {
-                                    const dragDist = Math.hypot(pe.clientX - this.startX, pe.clientY - this.startY);
-                                    if (dragDist > 100) {
-                                        this.stop(true);
-                                    }
-                                };
-                            }
+                            document.onpointermove = (pe) => {
+                                const dragDist = Math.hypot(pe.clientX - this.startX, pe.clientY - this.startY);
+                                if (dragDist > 120) { // Sliding past threshold triggers graceful cancel
+                                    this.stop(true);
+                                }
+                            };
                         }
                     }, 1000);
                     
@@ -6011,17 +6037,55 @@
                         if (this.hasCanceled) return;
                         
                         const blob = new Blob(this.chunks, { type: this.mode === 'voice' ? 'audio/webm' : 'video/webm' });
-                        UI.toast("Sending...");
+                        
+                        // --- OPTIMISTIC SENDING PLACEHOLDER (Opacity: 0.6) ---
+                        const tempId = 'temp-rec-' + Date.now();
+                        const msgsCont = document.getElementById('msgs');
+                        if (msgsCont) {
+                            let tempHtml = '';
+                            if (this.mode === 'voice') {
+                                tempHtml = `<div class="voice-player" style="opacity:0.6;"><div class="loader" style="width:20px;height:20px;border-color:var(--text-muted);border-top-color:var(--primary);"></div> <span style="font-size:12px;color:var(--text-muted);margin-left:8px;">Sending Voice...</span></div>`;
+                            } else {
+                                tempHtml = `<div class="video-note-container" style="opacity:0.6; display:flex; align-items:center; justify-content:center; border:2px dashed var(--primary);"><div class="loader" style="width:30px;height:30px;border-color:var(--text-muted);border-top-color:var(--primary);"></div></div>`;
+                            }
+                            
+                            const bStyle = (this.mode === 'video') ? 'background: transparent !important; padding: 0 !important; box-shadow: none !important; border: none !important;' : '';
+                            msgsCont.insertAdjacentHTML('beforeend', `
+                                <div class="msg-row sent" id="${tempId}" style="opacity:0.6;">
+                                    <div class="msg-bubble" style="${bStyle}">${tempHtml}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Sending...</div></div>
+                                </div>
+                            `);
+                            msgsCont.scrollTop = msgsCont.scrollHeight;
+                        }
                         
                         try {
-                            const fileUrl = await App.uploadToS3(blob, this.mode === 'voice' ? 'webm' : 'webm', blob.type);
+                            const fileUrl = await App.uploadToS3(blob, 'webm', blob.type);
                             const payload = { content: fileUrl, type: this.mode === 'voice' ? 'voice' : 'video_note' };
                             if (this.mode === 'voice') {
                                 payload.caption = JSON.stringify({ peaks: this.peaks });
                             }
-                            await req(`/api/messages/${State.chat}`, 'POST', payload);
+                            const res = await req(`/api/messages/${State.chat}`, 'POST', payload);
+                            
+                            // Swap placeholder out for the finalized message
+                            const tempEl = document.getElementById(tempId);
+                            if (tempEl) {
+                                tempEl.id = `msg-${res.id}`;
+                                tempEl.style.opacity = '1';
+                                
+                                const fakeMsg = {
+                                    id: res.id,
+                                    content: fileUrl,
+                                    caption: payload.caption,
+                                    type: payload.type,
+                                    created_at: new Date().toISOString(),
+                                    is_read: 0,
+                                    sender_id: State.u.userId
+                                };
+                                tempEl.innerHTML = App.buildMsgHTML(fakeMsg, true, State.chats.get(State.chat)?.type);
+                            }
                             App.fastPoll();
                         } catch(err) {
+                            document.getElementById(tempId)?.remove();
                             UI.toast("Failed to deliver message");
                         }
                     };
@@ -6029,11 +6093,12 @@
                     this.mediaRecorder.start();
                 } catch(err) {
                     console.error("Recording initialization failed:", err);
-                    UI.toast("Mic/Camera permissions denied");
+                    UI.toast("Microphone/Camera permissions denied");
                     this.isRecording = false;
                 }
             },
             async stop(canceled = false) {
+                if (!this.isRecording) return;
                 this.isRecording = false;
                 this.hasCanceled = canceled;
                 
@@ -6044,7 +6109,7 @@
                 document.getElementById('recording-hud-timer').innerText = "Recording... 00:00";
                 
                 if (this.audioCtx) {
-                    this.audioCtx.close();
+                    try { this.audioCtx.close(); } catch(e){}
                 }
                 if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
                     this.mediaRecorder.stop();
