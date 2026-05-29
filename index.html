@@ -5212,7 +5212,7 @@
             },
             async sendMedia() {
                 const cap = document.getElementById('msg-input').value.trim();
-                const queue = State.capMediaQueue ||[];
+                const queue = State.capMediaQueue || [];
                 if (queue.length === 0) return;
                 
                 this.cancelMedia();
@@ -5221,11 +5221,10 @@
                 document.getElementById('input-ai-btn').style.display = 'none';
                 
                 const msgsCont = document.getElementById('msgs');
-                const targetChat = State.chat; // Fix: Lock the active chat
+                const targetChat = State.chat;
                 if (!targetChat) return;
                 
-                // Process the queue sequentially so images arrive in order!
-                // 1. Inject all placeholder UI bubbles instantly
+                // Process the queue sequentially so images arrive in order
                 const uploadTasks = queue.map(async (item, i) => {
                     const mediaData = item.data;
                     const mediaType = item.type;
@@ -5246,14 +5245,19 @@
                         msgsCont.scrollTop = msgsCont.scrollHeight;
                     }
                 
-                    // 2. Fire the network request
-                    // 2. Fire the network request
                     try { 
                         let finalContent = mediaData;
                         let finalCap = currentCap;
                         
                         if (targetChat !== 'ai') {
-                            finalContent = await E2EE.encrypt(targetChat, mediaData);
+                            // --- NEW S3 UPLOAD FLOW ---
+                            // Upload Base64 to your s3.buckets.ru proxy first
+                            console.log("[S3] Uploading file to S3...");
+                            const s3Url = await App.uploadToCatbox(mediaData);
+                            console.log("[S3] Successfully uploaded! URL:", s3Url);
+                            
+                            // Encrypt the secure S3 URL instead of the giant Base64 payload
+                            finalContent = await E2EE.encrypt(targetChat, s3Url);
                             if (currentCap) {
                                 finalCap = await E2EE.encrypt(targetChat, currentCap);
                             }
@@ -5279,14 +5283,15 @@
                             }
                         }
                     } catch(e) {
+                        console.error("[S3] Upload/Send failed:", e);
                         if (State.chat === targetChat) {
-                            document.getElementById(tempId)?.remove();
+                            const tempEl = document.getElementById(tempId);
+                            if (tempEl) tempEl.remove();
                             UI.toast('Failed to send a file');
                         }
                     }
                 });
                 
-                // 3. Process them all in parallel
                 await Promise.all(uploadTasks);
                 this.cancelReply();
             },
