@@ -70,6 +70,7 @@ function showIndividualNotification(chatId, sender, text, icon, msgId) {
     const options = {
         body: text,
         icon: icon,
+        badge: `${APP_URL}/badge.png`
         tag: tag,
         data: { 
             url: `${APP_URL}/?chat=${chatId}`
