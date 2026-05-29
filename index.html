@@ -1129,12 +1129,13 @@
         
         /* Adjust layout padding to seamlessly fit the folders container */
         /* Dynamic Chat List Padding - Automatically adapts to folder visibility [1] */
+        /* Dynamic Chat List Padding - Restored heights to prevent overlaps [1] */
         #chat-list { 
-            padding-top: calc(105px + var(--safe-top)) !important; 
+            padding-top: calc(130px + var(--safe-top)) !important; 
             transition: padding-top 0.2s ease;
         }
         body.has-folders #chat-list { 
-            padding-top: calc(155px + var(--safe-top)) !important; 
+            padding-top: calc(185px + var(--safe-top)) !important; 
         }
 
         /* Enforce absolute hiding for mobile folders tab bar */
