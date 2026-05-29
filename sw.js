@@ -2,6 +2,8 @@
 importScripts('https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js');
 
 const CACHE_NAME = 'yukichat-v1';
+const API_URL = 'https://vps.yukichat.lol:8443'; // ABSOLUTE VPS API PORT [2]
+const APP_URL = 'https://yukichat.lol';          // MAIN FRONTEND DOMAIN [2]
 
 self.addEventListener('install', event => {
     self.skipWaiting();
@@ -21,9 +23,9 @@ self.addEventListener('fetch', event => {
 self.addEventListener('push', function(event) {
     event.waitUntil(
         localforage.getItem('y_t').then(function(token) {
-            // If the user is logged in, perform a background fetch to get the most accurate unread data
             if (token) {
-                return fetch('/api/sync', {
+                // Fetch from absolute API path to prevent relative 404 failures [2]
+                return fetch(`${API_URL}/api/sync`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -34,15 +36,19 @@ self.addEventListener('push', function(event) {
                 .then(res => res.json())
                 .then(syncData => {
                     if (syncData && syncData.chats) {
-                        // Find the chat with unread messages to display
-                        const unreadChat = syncData.chats.find(c => c.unread > 0 && c.id !== 'ai');
-                        if (unreadChat) {
-                            const isDM = unreadChat.type === 'dm';
-                            const senderName = isDM ? unreadChat.dm_username : unreadChat.name;
-                            const bodyText = unreadChat.last_msg || "New message received";
-                            const avatar = isDM ? (unreadChat.dm_avatar || "/icon-192.png") : (unreadChat.avatar || "/icon-192.png");
-                            
-                            return showAggregatedNotification(unreadChat.id, senderName, bodyText, avatar, unreadChat.unread);
+                        // Gather all chats that have unread items [2]
+                        const unreadChats = syncData.chats.filter(c => c.unread > 0 && c.id !== 'ai');
+                        
+                        if (unreadChats.length > 0) {
+                            const promises = unreadChats.map(unreadChat => {
+                                const isDM = unreadChat.type === 'dm';
+                                const senderName = isDM ? unreadChat.dm_username : unreadChat.name;
+                                const bodyText = unreadChat.last_msg || "New message received";
+                                const avatar = isDM ? (unreadChat.dm_avatar || `${APP_URL}/icon-192.png`) : (unreadChat.avatar || `${APP_URL}/icon-192.png`);
+                                
+                                return showIndividualNotification(unreadChat.id, senderName, bodyText, avatar, unreadChat.last_msg_id);
+                            });
+                            return Promise.all(promises);
                         }
                     }
                     return showDefaultNotification();
@@ -55,48 +61,31 @@ self.addEventListener('push', function(event) {
     );
 });
 
-// HELPER: Generates consolidated, Telegram-style notifications by conversation [2]
-function showAggregatedNotification(chatId, sender, text, icon, serverUnreadCount) {
-    const tag = `chat_${chatId}`;
+// Displays each message separately as requested [2]
+function showIndividualNotification(chatId, sender, text, icon, msgId) {
+    // Unique tags prevent notifications from replacing each other on screen [2]
+    const tag = `msg_${msgId || Date.now()}`;
     
-    return self.registration.getNotifications({ tag: tag }).then(notifications => {
-        const currentNotification = notifications[0];
-        let title = sender;
-        let body = text;
-        let count = serverUnreadCount || 1;
+    // We omit the monochrome 'badge' property so Android defaults to your beautiful colored icon [2]
+    const options = {
+        body: text,
+        icon: icon,
+        tag: tag,
+        data: { 
+            url: `${APP_URL}/?chat=${chatId}`
+        },
+        vibrate: [200, 100, 200]
+    };
 
-        if (currentNotification) {
-            // Read previous count and update dynamically
-            const oldData = currentNotification.data || {};
-            count = Math.max(count, (oldData.count || 1) + 1);
-            title = `${sender} (${count} messages)`;
-        }
-
-        const options = {
-            body: body,
-            icon: icon,
-            badge: '/icon-192.png',
-            tag: tag,
-            data: { 
-                url: `/?chat=${chatId}`,
-                count: count,
-                chatId: chatId
-            },
-            vibrate: [200, 100, 200],
-            renotify: true // Vibrates/buzzes the phone again even though we are updating an existing card! [2]
-        };
-
-        return self.registration.showNotification(title, options);
-    });
+    return self.registration.showNotification(sender, options);
 }
 
 function showDefaultNotification() {
     return self.registration.showNotification("YukiChat", {
         body: "You have new messages waiting!",
-        icon: "/icon-192.png",
-        badge: '/icon-192.png',
+        icon: `${APP_URL}/icon-192.png`,
         tag: 'default-alert',
-        data: { url: "/" },
+        data: { url: `${APP_URL}/` },
         vibrate: [200, 100, 200]
     });
 }
@@ -105,7 +94,7 @@ function showDefaultNotification() {
 self.addEventListener('notificationclick', function(event) {
     event.notification.close();
     
-    const urlToOpen = event.notification.data ? event.notification.data.url : "/";
+    const urlToOpen = event.notification.data ? event.notification.data.url : `${APP_URL}/`;
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
