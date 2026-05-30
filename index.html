@@ -5286,6 +5286,7 @@
                     
                     // Mirror to localforage so the Service Worker can authenticate background fetches [2]
                     localforage.setItem('y_t', d.token).catch(err => console.error(err));
+                    localforage.setItem('y_u', JSON.stringify(d)).catch(err => console.error(err));
             
                     // 2. Clear UI & Start App
                     document.getElementById('panel-auth').classList.remove('active'); 
@@ -5487,6 +5488,7 @@
                 // Mirror token to localforage so the Service Worker can authenticate background fetches [2]
                 if (State.t) {
                     localforage.setItem('y_t', State.t).catch(err => console.error(err));
+                    localforage.setItem('y_u', JSON.stringify(State.u)).catch(err => console.error(err));
                 }
 
                 document.getElementById('set-av').src = State.u.avatar || getDefAv(State.u.username);
