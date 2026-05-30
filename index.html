@@ -71,139 +71,88 @@
         [data-theme="deep-purple"] { --bg-base: #1e1b4b; --bg-panel: #312e81; --bg-input: #3730a3; --border: #4f46e5; --primary: #c7d2fe; --text-main: #eef2ff; --text-muted: #a5b4fc; --msg-sent: #6366f1; --msg-sent-txt: #ffffff; --msg-recv: #312e81; --msg-recv-txt: #e0e7ff; --chat-bg: #1e1b4b; --glass-glow: #1e1b4b; }
         [data-theme="crimson-dark"] { --bg-base: #450a0a; --bg-panel: #7f1d1d; --bg-input: #991b1b; --border: #b91c1c; --primary: #fecaca; --text-main: #fef2f2; --text-muted: #fca5a5; --msg-sent: #dc2626; --msg-sent-txt: #ffffff; --msg-recv: #7f1d1d; --msg-recv-txt: #fee2e2; --chat-bg: #450a0a; --glass-glow: #450a0a; }
 
-        /* --- PRIDE MONTH THEMES --- */
-        [data-theme="pride-night"] { 
-            --bg-base: #0d0d12; 
-            --bg-panel: #15151e; 
-            --bg-input: #21212e; 
-            --border: #2e2e42; 
-            --primary: #ff4a9a; 
-            --text-main: #f8fafc; 
-            --text-muted: #94a3b8; 
-            --msg-sent: linear-gradient(135deg, #ff007f 0%, #7f00ff 100%); 
-            --msg-sent-txt: #ffffff; 
-            --msg-recv: #21212e; 
-            --msg-recv-txt: #f8fafc; 
-            --chat-bg: #0d0d12; 
-            --glass-glow: #7f00ff; 
-        }
-        [data-theme="trans-pride"] { 
-            --bg-base: #f0f9ff; 
-            --bg-panel: #ffffff; 
-            --bg-input: #e0f2fe; 
-            --border: #bae6fd; 
-            --primary: #f472b6; 
-            --text-main: #0369a1; 
-            --text-muted: #38bdf8; 
-            --msg-sent: #f472b6; 
-            --msg-sent-txt: #ffffff; 
-            --msg-recv: #e0f2fe; 
-            --msg-recv-txt: #0c4a6e; 
-            --chat-bg: #f0f9ff; 
-            --glass-glow: #bae6fd; 
-        }
         /* ==========================================
-       PRIDE MONTH THEMES & HEADER FLAG STRIPS
-       ========================================== */
+           ENHANCED PRIDE THEMES (8PX HEADER FLAGS)
+           ========================================== */
         
-        /* --- 1. Rainbow Pride Theme --- */
-        [data-theme="pride-lgbt"] {
-            --bg-base: #120a18;
-            --bg-panel: #1a0f24;
-            --bg-input: #291a36;
-            --border: #3d2750;
-            --primary: #ff55b6;
-            --text-main: #f3e8ff;
-            --text-muted: #a78bfa;
-            --msg-sent: #7c3aed;
+        /* Thicker 8px flag rules for all pride themes */
+        [data-theme^="pride-"] .n-glass-header {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+        }
+        
+        /* --- 1. Pride Night Theme (Classic LGBT Flag) --- */
+        [data-theme="pride-night"] {
+            --bg-base: #0d0d12;
+            --bg-panel: #15151e;
+            --bg-input: #21212e;
+            --border: #2e2e42;
+            --primary: #ff4a9a;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --msg-sent: linear-gradient(135deg, #ff007f 0%, #7f00ff 100%);
             --msg-sent-txt: #ffffff;
-            --msg-recv: #291a36;
-            --msg-recv-txt: #f3e8ff;
-            --chat-bg: #120a18;
-            --glass-glow: #3d2750;
+            --msg-recv: #21212e;
+            --msg-recv-txt: #f8fafc;
+            --chat-bg: #0d0d12;
+            --glass-glow: #7f00ff;
         }
-        [data-theme="pride-lgbt"] .n-glass-header {
-            background: linear-gradient(to right, #E40303 0%, #E40303 16.6%, #FF8C00 16.6%, #FF8C00 33.3%, #FFED00 33.3%, #FFED00 50%, #008026 50%, #008026 66.6%, #004CFF 66.6%, #004CFF 83.3%, #732982 83.3%) top / 100% 4px no-repeat !important;
+        [data-theme="pride-night"] .n-glass-header {
+            background: linear-gradient(to right, #E40303 0%, #E40303 16.6%, #FF8C00 16.6%, #FF8C00 33.3%, #FFED00 33.3%, #FFED00 50%, #008026 50%, #008026 66.6%, #004CFF 66.6%, #004CFF 83.3%, #732982 83.3%) top / 100% 8px no-repeat !important;
         }
         
-        /* --- 2. Transgender Pride Theme --- */
-        [data-theme="pride-trans"] {
-            --bg-base: #0f1c24;
-            --bg-panel: #172a36;
-            --bg-input: #223c4d;
-            --border: #325870;
-            --primary: #5bcffa;
-            --text-main: #f0f9ff;
-            --text-muted: #38bdf8;
-            --msg-sent: #f5abb9;
-            --msg-sent-txt: #172a36;
-            --msg-recv: #223c4d;
-            --msg-recv-txt: #f0f9ff;
-            --chat-bg: #0f1c24;
-            --glass-glow: #325870;
+        /* --- 2. Gay Pride Theme (MLM Flag) --- */
+        [data-theme="pride-gay"] {
+            --bg-base: #0a141a;
+            --bg-panel: #0f222d;
+            --bg-input: #173242;
+            --border: #224a61;
+            --primary: #26e49e;
+            --text-main: #e6f9ff;
+            --text-muted: #7bade2;
+            --msg-sent: #078970;
+            --msg-sent-txt: #ffffff;
+            --msg-recv: #173242;
+            --msg-recv-txt: #e6f9ff;
+            --chat-bg: #0a141a;
+            --glass-glow: #26e49e;
+        }
+        [data-theme="pride-gay"] .n-glass-header {
+            background: linear-gradient(to right, #078970 0%, #078970 14.2%, #26E49E 14.2%, #26E49E 28.4%, #98FFE8 28.4%, #98FFE8 42.6%, #FFFFFF 42.6%, #FFFFFF 56.8%, #7BADE2 56.8%, #7BADE2 71%, #5060D0 71%, #5060D0 85.2%, #3C1053 85.2%) top / 100% 8px no-repeat !important;
+        }
+        
+        /* --- Keep existing Pride themes updated to 8px --- */
+        [data-theme="pride-lgbt"] .n-glass-header {
+            background: linear-gradient(to right, #E40303 0%, #E40303 16.6%, #FF8C00 16.6%, #FF8C00 33.3%, #FFED00 33.3%, #FFED00 50%, #008026 50%, #008026 66.6%, #004CFF 66.6%, #004CFF 83.3%, #732982 83.3%) top / 100% 8px no-repeat !important;
         }
         [data-theme="pride-trans"] .n-glass-header {
-            background: linear-gradient(to right, #5BCFFA 0%, #5BCFFA 20%, #F5ABB9 20%, #F5ABB9 40%, #FFFFFF 40%, #FFFFFF 60%, #F5ABB9 60%, #F5ABB9 80%, #5BCFFA 80%) top / 100% 4px no-repeat !important;
-        }
-        
-        /* --- 3. Lesbian Pride Theme --- */
-        [data-theme="pride-lesbian"] {
-            --bg-base: #1c0e15;
-            --bg-panel: #2a1520;
-            --bg-input: #3e2130;
-            --border: #5a3147;
-            --primary: #ff8e3c;
-            --text-main: #fff0f5;
-            --text-muted: #f472b6;
-            --msg-sent: #d162a4;
-            --msg-sent-txt: #ffffff;
-            --msg-recv: #3e2130;
-            --msg-recv-txt: #fff0f5;
-            --chat-bg: #1c0e15;
-            --glass-glow: #5a3147;
+            background: linear-gradient(to right, #5BCFFA 0%, #5BCFFA 20%, #F5ABB9 20%, #F5ABB9 40%, #FFFFFF 40%, #FFFFFF 60%, #F5ABB9 60%, #F5ABB9 80%, #5BCFFA 80%) top / 100% 8px no-repeat !important;
         }
         [data-theme="pride-lesbian"] .n-glass-header {
-            background: linear-gradient(to right, #D52B00 0%, #D52B00 20%, #FF8E3C 20%, #FF8E3C 40%, #FFFFFF 40%, #FFFFFF 60%, #D162A4 60%, #D162A4 80%, #810052 80%) top / 100% 4px no-repeat !important;
-        }
-        
-        /* --- 4. Bisexual Pride Theme --- */
-        [data-theme="pride-bi"] {
-            --bg-base: #0c0816;
-            --bg-panel: #161026;
-            --bg-input: #231a3a;
-            --border: #372a59;
-            --primary: #d60270;
-            --text-main: #f5f3ff;
-            --text-muted: #c084fc;
-            --msg-sent: #9b4f96;
-            --msg-sent-txt: #ffffff;
-            --msg-recv: #231a3a;
-            --msg-recv-txt: #f5f3ff;
-            --chat-bg: #0c0816;
-            --glass-glow: #372a59;
+            background: linear-gradient(to right, #D52B00 0%, #D52B00 20%, #FF8E3C 20%, #FF8E3C 40%, #FFFFFF 40%, #FFFFFF 60%, #D162A4 60%, #D162A4 80%, #810052 80%) top / 100% 8px no-repeat !important;
         }
         [data-theme="pride-bi"] .n-glass-header {
-            background: linear-gradient(to right, #D60270 0%, #D60270 40%, #9B4F96 40%, #9B4F96 60%, #0038A8 60%) top / 100% 4px no-repeat !important;
-        }
-        
-        /* --- 5. Non-Binary Pride Theme --- */
-        [data-theme="pride-nb"] {
-            --bg-base: #121212;
-            --bg-panel: #1e1e1e;
-            --bg-input: #2d2d2d;
-            --border: #444444;
-            --primary: #fcf434;
-            --text-main: #ffffff;
-            --text-muted: #a855f7;
-            --msg-sent: #9c59d1;
-            --msg-sent-txt: #ffffff;
-            --msg-recv: #2d2d2d;
-            --msg-recv-txt: #ffffff;
-            --chat-bg: #121212;
-            --glass-glow: #444444;
+            background: linear-gradient(to right, #D60270 0%, #D60270 40%, #9B4F96 40%, #9B4F96 60%, #0038A8 60%) top / 100% 8px no-repeat !important;
         }
         [data-theme="pride-nb"] .n-glass-header {
-            background: linear-gradient(to right, #FCF434 0%, #FCF434 25%, #FFFFFF 25%, #FFFFFF 50%, #9C59D1 50%, #9C59D1 75%, #2C2C2C 75%) top / 100% 4px no-repeat !important;
+            background: linear-gradient(to right, #FCF434 0%, #FCF434 25%, #FFFFFF 25%, #FFFFFF 50%, #9C59D1 50%, #9C59D1 75%, #2C2C2C 75%) top / 100% 8px no-repeat !important;
+        }
+        
+        
+        /* ==========================================
+           DYNAMIC RAINBOW STARTUP LOADING SCREEN
+           ========================================== */
+        @keyframes rainbow-loader-bg {
+            0% { background: #e70000; }
+            17% { background: #ff8c00; }
+            33% { background: #ffeb00; }
+            50% { background: #00811f; }
+            67% { background: #004cff; }
+            83% { background: #732982; }
+            100% { background: #e70000; }
+        }
+        
+        #app-loader div:first-child {
+            animation: bounce-spin 1.5s infinite cubic-bezier(0.68, -0.55, 0.265, 1.55), rainbow-loader-bg 5s infinite linear !important;
         }
         
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; }
@@ -2081,22 +2030,23 @@
                         <div class="theme-preview" data-theme-val="dark" onclick="App.setTheme('dark')"><div class="theme-preview-inner" style="background:#1e293b;"><div class="mini-bubble right" style="background:#ffffff"></div><div class="mini-bubble left" style="background:#334155"></div></div><span class="theme-label">Dark</span></div>
                         <div class="theme-preview" data-theme-val="oled" onclick="App.setTheme('oled')"><div class="theme-preview-inner" style="background:#000000; border:1px solid #222222;"><div class="mini-bubble right" style="background:#ffffff"></div><div class="mini-bubble left" style="background:#111111"></div></div><span class="theme-label">OLED</span></div>
                         <div class="theme-preview" data-theme-val="dracula" onclick="App.setTheme('dracula')"><div class="theme-preview-inner" style="background:#282a36;"><div class="mini-bubble right" style="background:#ff79c6"></div><div class="mini-bubble left" style="background:#44475a"></div></div><span class="theme-label">Dracula</span></div>
-                        <!-- 
+                        <!-- Pride Night (Classic LGBT flag back for everyone) -->
                         <div class="theme-preview" data-theme-val="pride-night" onclick="App.setTheme('pride-night')">
-                            <div class="theme-preview-inner" style="background:#15151e;">
+                            <div class="theme-preview-inner" style="background:#15151e; border-top: 8px solid #E40303;">
                                 <div class="mini-bubble right" style="background:linear-gradient(135deg, #ff007f, #7f00ff)"></div>
                                 <div class="mini-bubble left" style="background:#21212e"></div>
                             </div>
                             <span class="theme-label">Pride Night</span>
                         </div>
-                        <div class="theme-preview" data-theme-val="trans-pride" onclick="App.setTheme('trans-pride')">
-                            <div class="theme-preview-inner" style="background:#f0f9ff; border:1px solid #bae6fd;">
-                                <div class="mini-bubble right" style="background:#f472b6"></div>
-                                <div class="mini-bubble left" style="background:#e0f2fe"></div>
+                        
+                        <!-- Gay Pride (MLM flag theme) -->
+                        <div class="theme-preview" data-theme-val="pride-gay" onclick="App.setTheme('pride-gay')">
+                            <div class="theme-preview-inner" style="background:#0f222d; border-top: 8px solid #078970;">
+                                <div class="mini-bubble right" style="background:#26e49e"></div>
+                                <div class="mini-bubble left" style="background:#173242"></div>
                             </div>
-                            <span class="theme-label">Trans Pride</span>
+                            <span class="theme-label">Gay Pride</span>
                         </div>
-                        PRIDE THEMES -->
                         <div class="theme-preview" data-theme-val="pride-lgbt" onclick="App.setTheme('pride-lgbt')">
                             <div class="theme-preview-inner" style="background:#1a0f24; border-top: 4px solid #E40303;">
                                 <div class="mini-bubble right" style="background:#ff55b6"></div>
