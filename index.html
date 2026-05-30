@@ -4526,11 +4526,11 @@
                     if (!text) return '';
                     let t = String(text).replace(/</g,'&lt;');
 
-                    // --- GRAPH BUILDER PARSER (Placed first to preserve LaTeX syntax) ---
+                    // --- GRAPH BUILDER PARSER (Updated to prevent flex collapse) ---
                     t = t.replace(/\[graph\]([\s\S]*?)\[\/graph\]/g, (match, p1) => {
                         const uniqueId = 'graph_' + Math.random().toString(36).substring(2, 9);
                         const escapedLatex = p1.replace(/"/g, '&quot;').trim();
-                        return `<div class="desmos-graph-container" id="${uniqueId}" data-latex="${escapedLatex}" style="width: 100%; max-width: 480px; height: 280px; border-radius: 16px; border: 1px solid var(--border); overflow: hidden; margin: 8px 0; background: #fff; display: block;" onclick="event.stopPropagation();"></div>`;
+                        return `<div class="desmos-graph-container" id="${uniqueId}" data-latex="${escapedLatex}" style="width: 320px; max-width: 100%; height: 250px; border-radius: 16px; border: 1px solid var(--border); overflow: hidden; margin: 8px 0; background: #fff; display: block;" onclick="event.stopPropagation();"></div>`;
                     });
         
                     // 1. Code Blocks
