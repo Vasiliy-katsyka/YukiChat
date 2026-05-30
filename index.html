@@ -5898,6 +5898,18 @@
                         return new Date(b.last_msg_time || 0) - new Date(a.last_msg_time || 0);
                     });
         
+                    // --- DECRYPT LAST MESSAGE PREVIEWS ---
+                    for (let c of d.chats) {
+                        if (c.last_msg && c.last_msg.startsWith("__E2EE__:")) {
+                            try {
+                                c.last_msg = await E2EE.decrypt(c.id, c.last_msg);
+                            } catch (err) {
+                                c.last_msg = "🔒 [Encrypted Message]";
+                            }
+                        }
+                    }
+                    // -------------------------------------
+        
                     const searchInput = document.querySelector('.search-bar input');
                     const isSearching = searchInput && searchInput.value.trim().length > 0 && Router.stack[Router.stack.length-1] === 'panel-root';
                     
