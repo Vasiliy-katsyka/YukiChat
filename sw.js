@@ -44,7 +44,7 @@ self.addEventListener('push', function(event) {
                                 const isDM = unreadChat.type === 'dm';
                                 const senderName = isDM ? unreadChat.dm_username : unreadChat.name;
                                 const bodyText = unreadChat.last_msg || "New message received";
-                                const avatar = isDM ? (unreadChat.dm_avatar || `${APP_URL}/icon-192.png`) : (unreadChat.avatar || `${APP_URL}/icon-192.png`);
+                                const avatar = isDM ? (unreadChat.dm_avatar || `${APP_URL}/icon-192-lgbt.png`) : (unreadChat.avatar || `${APP_URL}/icon-192-lgbt.png`);
                                 
                                 return showIndividualNotification(unreadChat.id, senderName, bodyText, avatar, unreadChat.last_msg_id);
                             });
@@ -84,7 +84,7 @@ function showIndividualNotification(chatId, sender, text, icon, msgId) {
 function showDefaultNotification() {
     return self.registration.showNotification("YukiChat", {
         body: "You have new messages waiting!",
-        icon: `${APP_URL}/icon-192.png`,
+        icon: `${APP_URL}/icon-192-lgbt.png`,
         tag: 'default-alert',
         data: { url: `${APP_URL}/` },
         vibrate: [200, 100, 200]
