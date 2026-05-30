@@ -5,6 +5,8 @@ const CACHE_NAME = 'yukichat-v1';
 const API_URL = 'https://vps.yukichat.lol:8443'; // ABSOLUTE VPS API PORT [2]
 const APP_URL = 'https://yukichat.lol';          // MAIN FRONTEND DOMAIN [2]
 
+const sharedKeysCache = {};
+
 self.addEventListener('install', event => {
     self.skipWaiting();
 });
@@ -18,6 +20,61 @@ self.addEventListener('fetch', event => {
         return new Response("Offline Mode");
     }));
 });
+
+// Decrypts incoming encrypted content directly in the background
+async function decryptMessage(chatId, content, token, privateKey) {
+    if (!content || !content.startsWith("__E2EE__:")) return content;
+    if (!self.crypto || !self.crypto.subtle || !privateKey) return "🔒 [Encrypted]";
+
+    try {
+        let sharedKey = sharedKeysCache[chatId];
+        if (!sharedKey) {
+            // Retrieve recipient's public key from the VPS database
+            const keyRes = await fetch(`${API_URL}/api/e2ee/key/${chatId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!keyRes.ok) return "🔒 [Encrypted]";
+            const keyData = await keyRes.json();
+            if (!keyData || !keyData.public_key) return "🔒 [Encrypted]";
+
+            const otherPubJwk = JSON.parse(keyData.public_key);
+            const otherPubKey = await self.crypto.subtle.importKey(
+                "jwk", otherPubJwk,
+                { name: "ECDH", namedCurve: "P-256" },
+                true, []
+            );
+
+            // Derive the symmetric shared AES-GCM key
+            sharedKey = await self.crypto.subtle.deriveKey(
+                { name: "ECDH", public: otherPubKey },
+                privateKey,
+                { name: "AES-GCM", length: 256 },
+                true,
+                ["decrypt"]
+            );
+            sharedKeysCache[chatId] = sharedKey;
+        }
+
+        const parts = content.split(":");
+        const ivB64 = parts[1];
+        const cipherB64 = parts[2];
+
+        // Decode Base64 variables
+        const iv = new Uint8Array(atob(ivB64).split("").map(c => c.charCodeAt(0)));
+        const ciphertext = new Uint8Array(atob(cipherB64).split("").map(c => c.charCodeAt(0)));
+
+        const decryptedBuffer = await self.crypto.subtle.decrypt(
+            { name: "AES-GCM", iv: iv },
+            sharedKey,
+            ciphertext
+        );
+
+        return new TextDecoder().decode(decryptedBuffer);
+    } catch (e) {
+        console.error("SW Decryption failed:", e);
+        return "🔒 [Encrypted Message]";
+    }
+}
 
 // WAKES UP THE PHONE WHEN APP IS CLOSED
 self.addEventListener('push', function(event) {
@@ -40,15 +97,55 @@ self.addEventListener('push', function(event) {
                         const unreadChats = syncData.chats.filter(c => c.unread > 0 && c.id !== 'ai');
                         
                         if (unreadChats.length > 0) {
-                            const promises = unreadChats.map(unreadChat => {
-                                const isDM = unreadChat.type === 'dm';
-                                const senderName = isDM ? unreadChat.dm_username : unreadChat.name;
-                                const bodyText = unreadChat.last_msg || "New message received";
-                                const avatar = isDM ? (unreadChat.dm_avatar || `${APP_URL}/icon-192-lgbt.png`) : (unreadChat.avatar || `${APP_URL}/icon-192-lgbt.png`);
+                            // Extract keys dynamically from IndexedDB
+                            return localforage.keys().then(async keys => {
+                                const keyName = keys.find(k => k.startsWith('y_e2ee_keys_'));
+                                let privateKey = null;
                                 
-                                return showIndividualNotification(unreadChat.id, senderName, bodyText, avatar, unreadChat.last_msg_id);
+                                if (keyName) {
+                                    const keysObj = await localforage.getItem(keyName);
+                                    if (keysObj && keysObj.privateKey) {
+                                        try {
+                                            privateKey = await self.crypto.subtle.importKey(
+                                                "jwk", keysObj.privateKey,
+                                                { name: "ECDH", namedCurve: "P-256" },
+                                                true, ["deriveKey"]
+                                            );
+                                        } catch (err) {
+                                            console.error("SW Key import failed:", err);
+                                        }
+                                    }
+                                }
+
+                                const promises = unreadChats.map(async unreadChat => {
+                                    const isDM = unreadChat.type === 'dm';
+                                    const senderName = isDM ? unreadChat.dm_username : unreadChat.name;
+                                    
+                                    // Process display formatting or decrypt plain-text E2EE strings
+                                    let bodyText = unreadChat.last_msg || "New message received";
+                                    
+                                    if (unreadChat.last_msg_type === 'photo') {
+                                        bodyText = '🖼️ Photo';
+                                    } else if (unreadChat.last_msg_type === 'file') {
+                                        bodyText = '📁 File';
+                                    } else if (unreadChat.last_msg_type === 'video') {
+                                        bodyText = '📹 Video';
+                                    } else if (unreadChat.last_msg_type === 'audio') {
+                                        bodyText = '🎵 Audio';
+                                    } else if (unreadChat.last_msg_type === 'voice') {
+                                        bodyText = '🎤 Voice Message';
+                                    } else if (unreadChat.last_msg_type === 'sticker') {
+                                        bodyText = '👾 Sticker';
+                                    } else if (bodyText.startsWith("__E2EE__:") && privateKey) {
+                                        bodyText = await decryptMessage(unreadChat.id, bodyText, token, privateKey);
+                                    }
+
+                                    const avatar = isDM ? (unreadChat.dm_avatar || `${APP_URL}/icon-192-lgbt.png`) : (unreadChat.avatar || `${APP_URL}/icon-192-lgbt.png`);
+                                    
+                                    return showIndividualNotification(unreadChat.id, senderName, bodyText, avatar, unreadChat.last_msg_id);
+                                });
+                                return Promise.all(promises);
                             });
-                            return Promise.all(promises);
                         }
                     }
                     return showDefaultNotification();
