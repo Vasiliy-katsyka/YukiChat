@@ -3500,14 +3500,11 @@
                 if (!this.activeTrack) return;
                 UI.toast("Setting as profile status...");
                 try {
-                    await req('/api/user/profile', {
-                        method: 'PUT',
-                        body: JSON.stringify({
-                            bio: document.getElementById('set-bio').value,
-                            status_music_url: this.activeTrack,
-                            status_music_title: this.activeTitle,
-                            status_music_art: 'https://via.placeholder.com/150/333333/FFFFFF?text=Status'
-                        })
+                    await req('/api/user/profile', 'PUT', {
+                        bio: document.getElementById('set-bio').value,
+                        status_music_url: this.activeTrack,
+                        status_music_title: this.activeTitle,
+                        status_music_art: 'https://via.placeholder.com/150/333333/FFFFFF?text=Status'
                     });
                     this.statusMusicUrl = this.activeTrack;
                     this.statusMusicTitle = this.activeTitle;
@@ -6085,14 +6082,11 @@
                             finalCap = await E2EE.encrypt(targetChat, currentCap);
                         }
                         
-                        const res = await req(`/api/messages/${targetChat}`, {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                content: finalContent,
-                                caption: finalCap,
-                                type: item.type,
-                                reply_to_id: (i === 0 ? State.replyTo : null)
-                            })
+                        const res = await req(`/api/messages/${targetChat}`, 'POST', {
+                            content: finalContent,
+                            caption: finalCap,
+                            type: item.type,
+                            reply_to_id: (i === 0 ? State.replyTo : null)
                         });
                         
                         if (State.chat === targetChat) {
