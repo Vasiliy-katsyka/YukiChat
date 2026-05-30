@@ -3377,7 +3377,7 @@
 
             init() {
                 this.audioObj = new Audio();
-                // this.audioObj.crossOrigin = "anonymous";
+                this.audioObj.crossOrigin = "anonymous";
                 
                 // Keep the mini-player matching current audio events
                 this.audioObj.ontimeupdate = () => {
