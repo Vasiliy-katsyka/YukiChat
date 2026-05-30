@@ -1328,6 +1328,194 @@
             -webkit-user-select: none !important;
             touch-action: none !important;
         }
+
+        /* --- DYNAMIC MUSIC STATUS PROFILE BACKGROUND --- */
+        .profile-status-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            z-index: 1;
+            pointer-events: none;
+            transition: background-image 0.5s ease;
+        }
+        .profile-status-fade {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, transparent 0%, var(--bg-base) 65%);
+            z-index: 2;
+            pointer-events: none;
+        }
+        .profile-content-wrap {
+            position: relative;
+            z-index: 3;
+        }
+
+        /* --- RADIAL FREQUENCY VISUALIZER --- */
+        .visualizer-canvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            pointer-events: none;
+            width: 130px;
+            height: 130px;
+        }
+
+        /* --- APP-WIDE TOP MINI MUSIC PLAYER --- */
+        .mini-player-top {
+            position: absolute;
+            top: calc(60px + var(--safe-top));
+            left: 0;
+            right: 0;
+            height: 48px;
+            z-index: 49;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+        .mini-player-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+        .mini-player-thumb {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            object-fit: cover;
+            background: var(--bg-input);
+        }
+        .mini-player-text {
+            flex: 1;
+            min-width: 0;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* --- EXPANDED MUSIC PLAYER DIALOG/MODAL --- */
+        #panel-music-dashboard {
+            z-index: 9005;
+        }
+        .dashboard-player-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+        }
+        .dashboard-album-art {
+            width: 180px;
+            height: 180px;
+            border-radius: 16px;
+            object-fit: cover;
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+            background: var(--bg-input);
+        }
+        .dashboard-slider {
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            position: relative;
+            margin: 16px 0;
+            cursor: pointer;
+        }
+        .dashboard-progress {
+            height: 100%;
+            background: var(--primary);
+            border-radius: inherit;
+            width: 0%;
+        }
+
+        /* --- INTERACTIVE CUSTOM VIDEO PLAYER --- */
+        .custom-video-player {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            margin-top: 4px;
+        }
+        .custom-video-element {
+            width: 100%;
+            display: block;
+        }
+        .video-controls-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.85));
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 3;
+        }
+        .custom-video-player:hover .video-controls-overlay {
+            opacity: 1;
+        }
+        .video-seek-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+        }
+        .video-seek-progress {
+            height: 100%;
+            background: var(--primary);
+            border-radius: inherit;
+            width: 0%;
+        }
+
+        /* --- STYLISH AUDIO AND DOCUMENT CARD ATTACHMENTS --- */
+        .audio-msg-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-input);
+            padding: 12px;
+            border-radius: 16px;
+            min-width: 240px;
+            max-width: 320px;
+            margin-top: 4px;
+        }
+        .audio-card-details {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .doc-attachment-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-input);
+            padding: 12px;
+            border-radius: 16px;
+            min-width: 240px;
+            max-width: 320px;
+            margin-top: 4px;
+            text-decoration: none !important;
+            color: inherit !important;
+        }
     </style>
 </head>
 <body>
@@ -1533,7 +1721,20 @@
                 </button>
             </div>
         </div>
-        
+        <!-- Persistent Top Mini Music Player -->
+        <div class="mini-player-top liquid-glass n-liquid" id="music-mini-player" onclick="MusicPlayer.openDashboard()">
+            <div class="mini-player-info">
+                <img src="" class="mini-player-thumb" id="mini-player-thumb-img">
+                <div class="mini-player-text" id="mini-player-title-artist">Track Title</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <button class="icon-btn" style="width:32px; height:32px;" onclick="event.stopPropagation(); MusicPlayer.togglePlay()">
+                    <svg id="mini-player-play-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <svg id="mini-player-pause-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                </button>
+                <button class="icon-btn" style="width:32px; height:32px;" onclick="event.stopPropagation(); MusicPlayer.dismiss()">✕</button>
+            </div>
+        </div>
         <!-- Added n-chat-area-relative -->
         <div class="chat-area n-chat-area-relative" id="chat-area-bg">
             <canvas id="bg-canvas" style="position:absolute; inset:0; z-index:1; pointer-events:none; width:100%; height:100%;"></canvas>
@@ -1858,27 +2059,41 @@
     </div>
 
     <!-- PROFILE PANEL -->
+    <!-- PROFILE PANEL (REPLACEMENT) -->
     <div id="panel-profile" class="panel">
-        <div class="panel-header">
+        <div class="profile-status-bg" id="profile-status-bg-img"></div>
+        <div class="profile-status-fade"></div>
+        
+        <!-- Modified headers dynamically matching liquid glass styling -->
+        <div class="panel-header liquid-glass n-liquid profile-content-wrap" style="background: transparent; border-bottom: none;">
             <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
             <div class="panel-title">Contact Info</div>
             <div style="width:40px"></div>
         </div>
-        <div class="panel-body" style="padding: 32px 20px; text-align:center;">
-            <img id="prof-av" class="avatar" style="width:120px;height:120px; margin-bottom:16px;">
+        
+        <div class="panel-body profile-content-wrap" style="padding: 32px 20px; text-align:center;">
+            <div class="profile-av-wrap" style="width:130px; height:130px; margin:20px auto; position:relative; overflow:visible; background:transparent;">
+                <canvas class="visualizer-canvas" id="pfp-soundwave-canvas"></canvas>
+                <img id="prof-av" class="avatar" style="width:110px; height:110px; margin: 10px; position: relative; z-index: 6;">
+            </div>
             <h2 id="prof-name" style="font-size:24px; margin-bottom:4px;">Name</h2>
             <div id="prof-handle" style="color:var(--text-muted); font-size:15px; margin-bottom:16px;"></div>
-            <p id="prof-bio" style="font-size:15px; background:var(--bg-input); padding:16px; border-radius:16px; margin-bottom:24px; line-height:1.5;"></p>
+            <p id="prof-bio" style="font-size:15px; background:var(--bg-input); padding:16px; border-radius:16px; margin-bottom:16px; line-height:1.5;"></p>
+            
+            <!-- Music Pill Status block -->
+            <div id="profile-music-pill" style="display:none; justify-content:center; align-items:center; gap:8px; background:var(--bg-input); padding:10px 16px; border-radius:24px; margin: 0 auto 24px; max-width: 280px; cursor:pointer;" onclick="MusicPlayer.playStatusTrack()">
+                <span>🎵</span>
+                <span id="profile-status-song-title" style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Starboy</span>
+            </div>
+
             <div id="prof-actions" style="display:flex; flex-direction:column; gap:12px;"></div>
             
             <div id="prof-media-gallery" style="display:none; margin-top: 24px;">
                 <div style="text-align:left; font-size:14px; font-weight:600; margin-bottom: 12px;">Shared Media</div>
-                <div id="prof-media-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-                    <!-- Photos populate here -->
-                </div>
+                <div id="prof-media-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"></div>
             </div>
-        </div> <!-- Closes panel-body -->
-    </div> <!-- Closes panel-profile -->
+        </div>
+    </div>
 
     <!-- SESSIONS PANEL -->
     <div id="panel-sessions" class="panel">
@@ -2173,6 +2388,43 @@
         
         <!-- DESKTOP FOLDERS RAIL -->
         <div id="desktop-folders-nav"></div>
+    </div>
+
+    <!-- MUSIC DASHBOARD PANEL MODAL -->
+    <div id="panel-music-dashboard" class="panel">
+        <div class="panel-header">
+            <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+            <div class="panel-title">Music Player</div>
+            <div style="width:40px"></div>
+        </div>
+        <div class="panel-body dashboard-player-container">
+            <img src="" class="dashboard-album-art" id="dash-album-art">
+            <h3 id="dash-track-title" style="font-size:18px; font-weight:700; margin-bottom:4px;">Song Title</h3>
+            <p id="dash-track-artist" style="font-size:14px; color:var(--text-muted); margin-bottom:16px;">Artist</p>
+            
+            <div class="dashboard-slider" id="dash-slider" onclick="MusicPlayer.seek(event)">
+                <div class="dashboard-progress" id="dash-progress"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; width:100%; font-size:11px; color:var(--text-muted); margin-top:-8px; margin-bottom:16px;">
+                <span id="dash-time-current">0:00</span>
+                <span id="dash-time-total">0:00</span>
+            </div>
+            
+            <!-- Controls Grid -->
+            <div style="display:flex; align-items:center; gap:20px; margin-bottom:24px;">
+                <button class="icon-btn" onclick="MusicPlayer.prev()"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="5" x2="5" y2="19" stroke="currentColor" stroke-width="2"/></svg></button>
+                <button class="btn" style="width:60px; height:60px; border-radius:50%; background:var(--primary); color:var(--bg-base); display:flex; align-items:center; justify-content:center;" onclick="MusicPlayer.togglePlay()">
+                    <svg id="dash-play-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <svg id="dash-pause-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                </button>
+                <button class="icon-btn" onclick="MusicPlayer.next()"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/></svg></button>
+            </div>
+            
+            <!-- Action Strip -->
+            <button class="btn btn-outline" style="width:100%; max-width:280px;" onclick="MusicPlayer.addCurrentToStatus()">
+                ✨ Set as Profile Music Status
+            </button>
+        </div>
     </div>
     <script>
         // --- YUKICHAT MEET SSO BRIDGE ---
@@ -3107,6 +3359,299 @@
                 }
             }
         };
+
+        const MusicPlayer = {
+            activeTrack: null,
+            activeTitle: "Status Music",
+            audioObj: null,
+            queue: [],
+            queueIndex: -1,
+            audioCtx: null,
+            analyser: null,
+            source: null,
+            canvasCtx: null,
+            visualizerLoop: null,
+            statusMusicUrl: null,
+            statusMusicTitle: null,
+            accentColors: ["#000000", "#ffffff"],
+
+            init() {
+                this.audioObj = new Audio();
+                this.audioObj.crossOrigin = "anonymous";
+                
+                // Keep the mini-player matching current audio events
+                this.audioObj.ontimeupdate = () => {
+                    if (Router.stack[Router.stack.length-1] === 'panel-music-dashboard') {
+                        const cur = this.audioObj.currentTime;
+                        const dur = this.audioObj.duration || 1;
+                        document.getElementById('dash-progress').style.width = `${(cur / dur) * 100}%`;
+                        document.getElementById('dash-time-current').innerText = this.formatTime(cur);
+                        document.getElementById('dash-time-total').innerText = this.formatTime(dur);
+                    }
+                };
+
+                this.audioObj.onended = () => {
+                    this.next();
+                };
+            },
+
+            formatTime(secs) {
+                const m = Math.floor(secs / 60);
+                const s = Math.floor(secs % 60);
+                return `${m}:${s.toString().padStart(2, '0')}`;
+            },
+
+            buildQueue() {
+                // Scan the active conversation pane for all audio files [1]
+                const audioElements = Array.from(document.querySelectorAll('.audio-msg-card'));
+                this.queue = audioElements.map(el => {
+                    const playBtn = el.querySelector('button');
+                    // Reverse-engineer variables from string handler
+                    const match = playBtn.getAttribute('onclick').match(/'([^']+)'/g);
+                    return {
+                        url: match[0].replace(/'/g, ''),
+                        title: match[1].replace(/'/g, '')
+                    };
+                });
+            },
+
+            initTrack(url, title) {
+                this.buildQueue();
+                this.queueIndex = this.queue.findIndex(item => item.url === url);
+                this.play(url, title);
+            },
+
+            play(url, title) {
+                this.activeTrack = url;
+                this.activeTitle = title;
+                this.audioObj.src = url;
+                this.audioObj.play().catch(err => console.log("Audio play blocked: require interaction", err));
+
+                // Display active top play bars
+                document.getElementById('music-mini-player').style.display = 'flex';
+                document.getElementById('mini-player-thumb-img').src = 'https://via.placeholder.com/150/333333/FFFFFF?text=Music';
+                document.getElementById('mini-player-title-artist').innerText = title;
+                
+                document.getElementById('mini-player-play-icon').style.display = 'none';
+                document.getElementById('mini-player-pause-icon').style.display = 'block';
+
+                this.setupVisualizer();
+            },
+
+            togglePlay() {
+                if (this.audioObj.paused) {
+                    this.audioObj.play();
+                    this.setPlayingState(true);
+                } else {
+                    this.audioObj.pause();
+                    this.setPlayingState(false);
+                }
+            },
+
+            setPlayingState(playing) {
+                const playMini = document.getElementById('mini-player-play-icon');
+                const pauseMini = document.getElementById('mini-player-pause-icon');
+                const playDash = document.getElementById('dash-play-icon');
+                const pauseDash = document.getElementById('dash-pause-icon');
+
+                if (playMini) playMini.style.display = playing ? 'none' : 'block';
+                if (pauseMini) pauseMini.style.display = playing ? 'block' : 'none';
+                if (playDash) playDash.style.display = playing ? 'none' : 'block';
+                if (pauseDash) pauseDash.style.display = playing ? 'block' : 'none';
+            },
+
+            next() {
+                if (this.queue.length === 0 || this.queueIndex === -1) return;
+                this.queueIndex = (this.queueIndex + 1) % this.queue.length;
+                const nextTrack = this.queue[this.queueIndex];
+                this.play(nextTrack.url, nextTrack.title);
+            },
+
+            prev() {
+                if (this.queue.length === 0 || this.queueIndex === -1) return;
+                this.queueIndex = (this.queueIndex - 1 + this.queue.length) % this.queue.length;
+                const prevTrack = this.queue[this.queueIndex];
+                this.play(prevTrack.url, prevTrack.title);
+            },
+
+            seek(e) {
+                const slider = document.getElementById('dash-slider');
+                const rect = slider.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                this.audioObj.currentTime = pos * this.audioObj.duration;
+            },
+
+            openDashboard() {
+                document.getElementById('dash-album-art').src = 'https://via.placeholder.com/150/333333/FFFFFF?text=Music';
+                document.getElementById('dash-track-title').innerText = this.activeTitle;
+                document.getElementById('dash-track-artist').innerText = "YukiChat Track";
+                
+                this.setPlayingState(!this.audioObj.paused);
+                Router.push('panel-music-dashboard');
+            },
+
+            dismiss() {
+                this.audioObj.pause();
+                document.getElementById('music-mini-player').style.display = 'none';
+            },
+
+            /* --- CHAT STATUS INJECTION PIPELINE --- */
+            async addCurrentToStatus() {
+                if (!this.activeTrack) return;
+                UI.toast("Setting as profile status...");
+                try {
+                    await req('/api/user/profile', {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                            bio: document.getElementById('set-bio').value,
+                            status_music_url: this.activeTrack,
+                            status_music_title: this.activeTitle,
+                            status_music_art: 'https://via.placeholder.com/150/333333/FFFFFF?text=Status'
+                        })
+                    });
+                    this.statusMusicUrl = this.activeTrack;
+                    this.statusMusicTitle = this.activeTitle;
+                    UI.toast("Music status applied successfully!");
+                } catch(err) {
+                    UI.toast("Failed to configure status");
+                }
+            },
+
+            playStatusTrack() {
+                if (this.statusMusicUrl) {
+                    this.play(this.statusMusicUrl, this.statusMusicTitle);
+                }
+            },
+
+            setupVisualizer() {
+                // Initialize the Audio Context and Analyser Nodes [1]
+                if (!this.audioCtx) {
+                    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    this.analyser = this.audioCtx.createAnalyser();
+                    this.source = this.audioCtx.createMediaElementSource(this.audioObj);
+                    
+                    this.source.connect(this.analyser);
+                    this.analyser.connect(this.audioCtx.destination);
+                    this.analyser.fftSize = 64;
+                }
+
+                const canvas = document.getElementById('pfp-soundwave-canvas');
+                this.canvasCtx = canvas.getContext('2d');
+                canvas.width = 130;
+                canvas.height = 130;
+
+                const bufferLength = this.analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                const draw = () => {
+                    this.visualizerLoop = requestAnimationFrame(draw);
+                    this.analyser.getByteFrequencyData(dataArray);
+
+                    this.canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    const cx = canvas.width / 2;
+                    const cy = canvas.height / 2;
+                    const baseRadius = 55; // Sits just outside the 110px profile image (55px radius)
+
+                    this.canvasCtx.beginPath();
+                    for (let i = 0; i < bufferLength; i++) {
+                        const angle = (i / bufferLength) * Math.PI * 2;
+                        const amplitude = (dataArray[i] / 255.0) * 16; // Limit wave amplitude to 16px
+                        const r = baseRadius + amplitude;
+                        const x = cx + Math.cos(angle) * r;
+                        const y = cy + Math.sin(angle) * r;
+
+                        if (i === 0) this.canvasCtx.moveTo(x, y);
+                        else this.canvasCtx.lineTo(x, y);
+                    }
+                    this.canvasCtx.closePath();
+                    
+                    // Draw outer radial soundwave using accent colors
+                    this.canvasCtx.strokeStyle = this.accentColors[0];
+                    this.canvasCtx.lineWidth = 3;
+                    this.canvasCtx.shadowBlur = 10;
+                    this.canvasCtx.shadowColor = this.accentColors[1];
+                    this.canvasCtx.stroke();
+                };
+
+                if (this.visualizerLoop) cancelAnimationFrame(this.visualizerLoop);
+                draw();
+            },
+
+            extractAccentColors(imgUrl) {
+                // Native lightweight canvas extraction
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 10;
+                    canvas.height = 10;
+                    ctx.drawImage(img, 0, 0, 10, 10);
+                    
+                    const data = ctx.getImageData(0, 0, 10, 10).data;
+                    let rSum = 0, gSum = 0, bSum = 0;
+                    for (let i = 0; i < data.length; i += 4) {
+                        rSum += data[i];
+                        gSum += data[i+1];
+                        bSum += data[i+2];
+                    }
+                    const count = data.length / 4;
+                    const r = Math.round(rSum / count);
+                    const g = Math.round(gSum / count);
+                    const b = Math.round(bSum / count);
+                    
+                    this.accentColors = [
+                        `rgb(${r}, ${g}, ${b})`,
+                        `rgba(${r}, ${g}, ${b}, 0.5)`
+                    ];
+                };
+                img.src = imgUrl;
+            }
+        };
+
+        // Attach initialization logic to start
+        window.addEventListener('DOMContentLoaded', () => {
+            MusicPlayer.init();
+        });
+        
+        const VideoPlayer = {
+            togglePlay(btn) {
+                const player = btn.closest('.custom-video-player');
+                const video = player.querySelector('video');
+                const path = btn.querySelector('polygon');
+                
+                if (video.paused) {
+                    video.play();
+                    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
+                    video.ontimeupdate = () => {
+                        const progress = (video.currentTime / video.duration) * 100;
+                        player.querySelector('.video-seek-progress').style.width = `${progress}%`;
+                    };
+                } else {
+                    video.pause();
+                    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+                }
+            },
+            seek(e, bar) {
+                const player = bar.closest('.custom-video-player');
+                const video = player.querySelector('video');
+                const rect = bar.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                video.currentTime = pos * video.duration;
+                player.querySelector('.video-seek-progress').style.width = `${pos * 100}%`;
+            },
+            toggleVolume(btn) {
+                const video = btn.closest('.custom-video-player').querySelector('video');
+                video.muted = !video.muted;
+                btn.style.opacity = video.muted ? '0.5' : '1';
+            },
+            fullscreen(btn) {
+                const video = btn.closest('.custom-video-player').querySelector('video');
+                if (video.requestFullscreen) video.requestFullscreen();
+                else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+            }
+        };
         
         const App = {
             // --- AUTHENTICATION ---
@@ -3402,16 +3947,17 @@
                     this.sendText().then(() => { State.chat = origChat; UI.toast('Forwarded!'); });
                 }
             },
-            authAv(e) {
-                const f = e.target.files[0]; if(!f) return; const r = new FileReader();
-                r.onload = ev => { 
-                    State.regAv = ev.target.result; 
-                    document.getElementById('auth-av-preview').src = State.regAv; 
+            async authAv(e) {
+                const f = e.target.files[0]; if(!f) return;
+                UI.toast("Uploading avatar...");
+                try {
+                    const s3Url = await this.uploadToS3(f);
+                    State.regAv = s3Url;
+                    document.getElementById('auth-av-preview').src = s3Url;
                     document.getElementById('auth-av-preview').style.display = 'block';
-                    const svg = document.getElementById('auth-av-svg');
-                    if(svg) svg.style.display = 'none';
-                };
-                r.readAsDataURL(f);
+                    document.getElementById('auth-av-svg').style.display = 'none';
+                    UI.toast("Avatar uploaded!");
+                } catch(err) { UI.toast("Image upload failed"); }
             },
             createGroupUI() {
                 document.getElementById('new-group-name').value = '';
@@ -3422,9 +3968,15 @@
                 State.tmpGroupAv = null; document.getElementById('new-group-av').src = defAv;
                 Router.push('panel-create-group');
             },
-            prepGroupAv(e) {
-                const f = e.target.files[0]; if(!f) return; const r = new FileReader();
-                r.onload = ev => { State.tmpGroupAv = ev.target.result; document.getElementById('new-group-av').src = State.tmpGroupAv; }; r.readAsDataURL(f);
+            async prepGroupAv(e) {
+                const f = e.target.files[0]; if(!f) return;
+                UI.toast("Uploading avatar...");
+                try {
+                    const s3Url = await this.uploadToS3(f);
+                    State.tmpGroupAv = s3Url;
+                    document.getElementById('new-group-av').src = s3Url;
+                    UI.toast("Avatar uploaded!");
+                } catch(err) { UI.toast("Group avatar upload failed"); }
             },
             setBlur(val) {
                 document.documentElement.style.setProperty('--glass-blur', `${val}px`);
@@ -3467,10 +4019,10 @@
                     }
                     inner += `<div class="reply-block" onclick="document.getElementById('msg-${m.reply_to_id}')?.scrollIntoView({behavior:'smooth', block:'center'})">${repTxt.substring(0, 40)}</div>`;
                 }
-        
+
                 let safeContent = m.content || '';
                 const rawAttr = m.type === 'text' ? `data-raw="${safeContent.replace(/"/g, '&quot;')}"` : '';
-        
+
                 // Универсальная функция парсинга маркдауна (пуленепробиваемая)
                 const formatText = (text) => {
                     if (!text) return '';
@@ -3553,7 +4105,7 @@
                     
                     return t;
                 };
-        
+
                 // Prevents link preview engine from parsing the raw S3 audio/video URLs [1]
                 let cleanTxt = (m.type === 'text') ? formatText(safeContent) : '';
                 // --- Premium Animated Emojis parsing ---
@@ -3564,8 +4116,59 @@
                         cleanTxt = cleanTxt.replace(new RegExp(safeEm, 'g'), `<span class="inline-lottie" data-url="${window.REACTION_LOTTIES[em]}"></span>`);
                     });
                 }
-                if (m.type === 'photo') inner += `<img src="${m.content}" class="msg-media" onclick="event.stopPropagation(); App.openMedia('${m.content}')">`;
-                else if (m.type === 'sticker') inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
+
+                if (m.type === 'photo') {
+                    inner += `<img src="${m.content}" class="msg-media" onclick="event.stopPropagation(); App.openMedia('${m.content}')">`;
+                } 
+                else if (m.type === 'sticker') {
+                    inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
+                } 
+                else if (m.type === 'video') {
+                    inner += `
+                    <div class="custom-video-player" onclick="event.stopPropagation();">
+                        <video class="custom-video-element" src="${m.content}" preload="metadata"></video>
+                        <div class="video-controls-overlay">
+                            <button class="icon-btn" style="color:#fff;" onclick="VideoPlayer.togglePlay(this)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            </button>
+                            <div class="video-seek-bar" onclick="VideoPlayer.seek(event, this)">
+                                <div class="video-seek-progress"></div>
+                            </div>
+                            <button class="icon-btn" style="color:#fff;" onclick="VideoPlayer.toggleVolume(this)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon></svg>
+                            </button>
+                            <button class="icon-btn" style="color:#fff;" onclick="VideoPlayer.fullscreen(this)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                            </button>
+                        </div>
+                    </div>`;
+                } 
+                else if (m.type === 'audio') {
+                    const title = m.caption || "Status Music";
+                    inner += `
+                    <div class="audio-msg-card" onclick="event.stopPropagation();">
+                        <button class="btn" style="width:36px; height:36px; border-radius:50%; background:var(--primary); color:var(--bg-base); display:flex; align-items:center; justify-content:center; flex-shrink:0;" onclick="MusicPlayer.initTrack('${m.content}', '${title.replace(/'/g, "\\'")}')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        </button>
+                        <div class="audio-card-details">
+                            <span style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${title}</span>
+                            <span style="font-size:11px; color:var(--text-muted);">Audio File</span>
+                        </div>
+                    </div>`;
+                } 
+                else if (m.type === 'file') {
+                    const title = m.caption || "Attachment Document";
+                    inner += `
+                    <a href="${m.content}" class="doc-attachment-card" target="_blank" onclick="event.stopPropagation();">
+                        <div style="width:36px; height:36px; border-radius:10px; background:var(--bg-hover); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            📄
+                        </div>
+                        <div class="audio-card-details">
+                            <span style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${title}</span>
+                            <span style="font-size:11px; color:var(--text-muted);">Open / Download File</span>
+                        </div>
+                    </a>`;
+                } 
                 else if (m.type === 'voice') {
                     let peaks = [];
                     try {
@@ -3575,7 +4178,6 @@
                         peaks = [];
                     }
                     
-                    // Downsample raw recording arrays to exactly 35 aesthetic bars [1]
                     const targetBars = 35;
                     let displayPeaks = [];
                     if (peaks.length === 0) {
@@ -3622,8 +4224,10 @@
                         </div>
                     </div>`;
                 }
-                else inner += cleanTxt;
-        
+                else {
+                    inner += cleanTxt;
+                }
+
                 if (m.reply_markup && m.reply_markup !== 'null') {
                     try {
                         const rm = JSON.parse(m.reply_markup);
@@ -3638,10 +4242,11 @@
                         }
                     } catch(e) {}
                 }
-        
-                // 2. Prevent peak wave metadata JSON from printing as text under the voice player [1]
-                if(m.caption && m.type !== 'voice') inner += `<div class="msg-caption">${formatText(m.caption)}</div>`;
-        
+
+                if(m.caption && m.type !== 'voice') {
+                    inner += `<div class="msg-caption">${formatText(m.caption)}</div>`;
+                }
+
                 let rxs = JSON.parse(m.reactions||'{}');
                 let rxCounts = {};
                 for(let k in rxs) { rxCounts[rxs[k]] = (rxCounts[rxs[k]] || 0) + 1; }
@@ -3662,25 +4267,25 @@
                 let viewsH = (chatType === 'channel' && m.views) ? `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>` : '';
                 const tickHtml = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
                 const senderName = (!isMine && chatType !== 'dm') ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
-                // 1. Force the video note container to be a transparent circle without background cards [1]
                 const bubbleStyle = (m.type === 'sticker' || m.type === 'video_note') ? 'background: transparent !important; padding: 0 !important; box-shadow: none !important; border: none !important;' : '';
-        
-                const ctxCall = `event, ${m.id}, ${isMine}, ${m.type === 'photo'}, '${m.type === 'photo' ? m.content : ''}'`;
-        
+
                 return `<div class="msg-bubble" style="${bubbleStyle}" ${rawAttr}>${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tickHtml}${viewsH}</div></div>`;
             },
             async uploadToS3(fileOrData, ext = 'bin', mimeType = 'application/octet-stream') {
-                console.log("[Upload] Starting direct S3 proxy upload...");
+                console.log("[Upload] Starting binary FormData proxy upload to S3...");
                 try {
                     let blob;
-                    if (typeof fileOrData === 'string' && fileOrData.startsWith('data:')) {
+                    if (fileOrData instanceof File || fileOrData instanceof Blob) {
+                        blob = fileOrData;
+                        ext = fileOrData.name ? fileOrData.name.split('.').pop() : (blob.type.split('/')[1] || ext);
+                        mimeType = blob.type || mimeType;
+                    } else if (typeof fileOrData === 'string' && fileOrData.startsWith('data:')) {
                         const response = await fetch(fileOrData);
                         blob = await response.blob();
                         ext = blob.type.split('/')[1] || ext;
-                    } else if (fileOrData instanceof Blob) {
-                        blob = fileOrData;
+                        mimeType = blob.type;
                     } else {
-                        throw new Error("Invalid file upload type");
+                        throw new Error("Unsupported file upload type format");
                     }
                     
                     const fd = new FormData();
@@ -3693,14 +4298,14 @@
                         body: fd 
                     });
                     
-                    if (!uploadRes.ok) throw new Error("S3 Upload Proxy failed");
+                    if (!uploadRes.ok) throw new Error("S3 multipart uploading failed");
                     const data = await uploadRes.json();
-                    if (!data.success || !data.url) throw new Error(data.error || "Invalid response structure");
+                    if (!data.success || !data.url) throw new Error(data.error || "No URL returned");
                     
                     return data.url;
                 } catch (err) {
-                    console.error("[Upload] S3 upload exception:", err);
-                    UI.toast("Upload to S3 failed");
+                    console.error("[Upload] S3 multipart uploading exception:", err);
+                    UI.toast("Direct S3 upload failed");
                     throw err;
                 }
             },
@@ -4275,9 +4880,15 @@
                 State.tmpChanAv = null; document.getElementById('new-chan-av').src = defAv;
                 Router.push('panel-create-channel');
             },
-            prepChanAv(e) {
-                const f = e.target.files[0]; if(!f) return; const r = new FileReader();
-                r.onload = ev => { State.tmpChanAv = ev.target.result; document.getElementById('new-chan-av').src = State.tmpChanAv; }; r.readAsDataURL(f);
+            async prepChanAv(e) {
+                const f = e.target.files[0]; if(!f) return;
+                UI.toast("Uploading avatar...");
+                try {
+                    const s3Url = await this.uploadToS3(f);
+                    State.tmpChanAv = s3Url;
+                    document.getElementById('new-chan-av').src = s3Url;
+                    UI.toast("Channel avatar uploaded!");
+                } catch(err) { UI.toast("Channel avatar upload failed"); }
             },
             async submitChannel() {
                 const name = document.getElementById('new-chan-name').value.trim();
@@ -5380,33 +5991,29 @@
             prepMedia(e) {
                 const files = Array.from(e.target.files);
                 if (files.length === 0) return;
-                e.target.value = ''; // Reset input
+                e.target.value = '';
                 
-                State.capMediaQueue =[];
+                State.capMediaQueue = [];
                 let loadedCount = 0;
                 
-                // Read multiple files safely
                 files.forEach(f => {
-                    const r = new FileReader();
-                    r.onload = ev => {
-                        const type = f.type.startsWith('image/') ? 'photo' : 'file';
-                        State.capMediaQueue.push({ data: ev.target.result, type: type });
-                        loadedCount++;
-                        
-                        if (loadedCount === files.length) {
-                            // Update the Preview Panel
-                            document.getElementById('media-preview-img').src = State.capMediaQueue[0].type === 'photo' ? State.capMediaQueue[0].data : 'https://via.placeholder.com/150/333333/FFFFFF?text=File';
-                            document.getElementById('media-preview-title').innerText = files.length > 1 ? `${files.length} Files Attached` : 'Attached Media';
-                            
-                            // Only allow cropping if exactly ONE image is selected
-                            const showCrop = (files.length === 1 && State.capMediaQueue[0].type === 'photo');
-                            document.getElementById('media-crop-btn').style.display = showCrop ? 'flex' : 'none';
-                            
-                            document.getElementById('media-preview').style.display = 'flex';
-                            document.getElementById('msg-input').focus();
-                        }
-                    };
-                    r.readAsDataURL(f);
+                    let inferredType = 'file';
+                    if (f.type.startsWith('image/')) inferredType = 'photo';
+                    else if (f.type.startsWith('video/')) inferredType = 'video';
+                    else if (f.type.startsWith('audio/')) inferredType = 'audio';
+                    
+                    State.capMediaQueue.push({ rawFile: f, type: inferredType, filename: f.name });
+                    loadedCount++;
+                    
+                    if (loadedCount === files.length) {
+                        document.getElementById('media-preview-img').src = inferredType === 'photo' 
+                            ? URL.createObjectURL(f) 
+                            : 'https://via.placeholder.com/150/333333/FFFFFF?text=Media';
+                        document.getElementById('media-preview-title').innerText = files.length > 1 ? `${files.length} Files Ready` : f.name;
+                        document.getElementById('media-crop-btn').style.display = (files.length === 1 && inferredType === 'photo') ? 'flex' : 'none';
+                        document.getElementById('media-preview').style.display = 'flex';
+                        document.getElementById('msg-input').focus();
+                    }
                 });
             },
             openCrop() {
@@ -5447,77 +6054,69 @@
                 this.cancelMedia();
                 document.getElementById('msg-input').value = '';
                 document.getElementById('msg-input').style.height = '44px';
-                document.getElementById('input-ai-btn').style.display = 'none';
                 
                 const msgsCont = document.getElementById('msgs');
                 const targetChat = State.chat;
                 if (!targetChat) return;
                 
-                // Process the queue sequentially so images arrive in order
                 const uploadTasks = queue.map(async (item, i) => {
-                    const mediaData = item.data;
-                    const mediaType = item.type;
                     const currentCap = (i === 0) ? cap : '';
+                    const tempId = 'temp-rec-' + Date.now() + '-' + i;
                     
-                    if (targetChat === 'ai') return this.sendToAI(currentCap, mediaType, mediaData);
-                
-                    const tempId = 'temp-' + Date.now() + '-' + i;
-                    const mediaHtml = mediaType === 'photo' 
-                        ? `<div style="position:relative; display:inline-block;"><img src="${mediaData}" class="msg-media" style="opacity:0.6;"><div class="media-loading"><div class="media-loading-circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div></div></div>` 
-                        : `📁 File`;
-                        
                     if (State.chat === targetChat) {
-                        msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}" style="opacity: 0.8;">
-                            <div class="msg-bubble">${mediaHtml}${currentCap ? `<div class="msg-caption">${currentCap.replace(/</g,'&lt;')}</div>` : ''}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Sending...</div></div>
-                        </div>`);
-                        App.renderMath();
+                        msgsCont.insertAdjacentHTML('beforeend', `
+                            <div class="msg-row sent" id="${tempId}" style="opacity: 0.6;">
+                                <div class="msg-bubble">
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <div class="loader" style="width:20px;height:20px;border-color:var(--text-muted);border-top-color:var(--primary);"></div>
+                                        <span style="font-size:12px;color:var(--text-muted);">Uploading ${item.filename || 'media'}...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `);
                         msgsCont.scrollTop = msgsCont.scrollHeight;
                     }
-                
-                    try { 
-                        let finalContent = mediaData;
+                    
+                    try {
+                        const s3Url = await this.uploadToS3(item.rawFile);
+                        const finalContent = await E2EE.encrypt(targetChat, s3Url);
                         let finalCap = currentCap;
-                        
-                        if (targetChat !== 'ai') {
-                            // --- NEW S3 UPLOAD FLOW ---
-                            // Upload Base64 to your s3.buckets.ru proxy first
-                            console.log("[S3] Uploading file to S3...");
-                            const s3Url = await App.uploadToS3(mediaData);
-                            console.log("[S3] Successfully uploaded! URL:", s3Url);
-                            
-                            // Encrypt the secure S3 URL instead of the giant Base64 payload
-                            finalContent = await E2EE.encrypt(targetChat, s3Url);
-                            if (currentCap) {
-                                finalCap = await E2EE.encrypt(targetChat, currentCap);
-                            }
+                        if (currentCap) {
+                            finalCap = await E2EE.encrypt(targetChat, currentCap);
                         }
                         
-                        const res = await req(`/api/messages/${targetChat}`, 'POST', {
-                            content: finalContent, caption: finalCap, type: mediaType, reply_to_id: (i === 0 ? State.replyTo : null)
+                        const res = await req(`/api/messages/${targetChat}`, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                content: finalContent,
+                                caption: finalCap,
+                                type: item.type,
+                                reply_to_id: (i === 0 ? State.replyTo : null)
+                            })
                         });
                         
                         if (State.chat === targetChat) {
                             const tempEl = document.getElementById(tempId);
-                            const alreadyAdded = document.getElementById(`msg-${res.id}`);
-                            
-                            if (alreadyAdded) tempEl?.remove();
-                            else if (tempEl && res && res.id) {
+                            if (tempEl) {
                                 tempEl.id = `msg-${res.id}`;
                                 tempEl.style.opacity = '1';
-                                const loadingTxt = tempEl.querySelector('.msg-bubble > div:last-child');
-                                if (loadingTxt) loadingTxt.innerHTML = `${UI.formatTime(res.created_at)} <span class="msg-tick">✓</span>`;
-                                tempEl.querySelector('.media-loading')?.remove();
-                                const img = tempEl.querySelector('img.msg-media');
-                                if (img) img.style.opacity = '1';
+                                
+                                const fakeMsg = {
+                                    id: res.id,
+                                    content: s3Url,
+                                    caption: currentCap,
+                                    type: item.type,
+                                    created_at: new Date().toISOString(),
+                                    is_read: 0,
+                                    sender_id: State.u.userId
+                                };
+                                tempEl.innerHTML = this.buildMsgHTML(fakeMsg, true, State.chats.get(State.chat)?.type);
                             }
+                            App.fastPoll();
                         }
-                    } catch(e) {
-                        console.error("[S3] Upload/Send failed:", e);
-                        if (State.chat === targetChat) {
-                            const tempEl = document.getElementById(tempId);
-                            if (tempEl) tempEl.remove();
-                            UI.toast('Failed to send a file');
-                        }
+                    } catch(err) {
+                        document.getElementById(tempId)?.remove();
+                        UI.toast("Failed to deliver attachment");
                     }
                 });
                 
@@ -5674,54 +6273,44 @@
             // --- PROFILE & SETTINGS ---
             viewProfile(chatId) {
                 const c = State.chats.get(chatId); if(!c) return;
-                const isDM = c.type==='dm'; const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
-                const av = canSeePfp ? (isDM?(c.dm_avatar||defAv):(c.avatar||defAv)) : defAv;
+                const isDM = c.type === 'dm';
+                const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
+                const av = canSeePfp ? (isDM ? (c.dm_avatar || defAv) : (c.avatar || defAv)) : defAv;
                 const name = isDM ? c.dm_username : c.name;
                 const handleText = c.username ? `@${c.username}` : (isDM ? `@${c.dm_username}` : '');
                 
                 document.getElementById('prof-av').src = av;
                 document.getElementById('prof-name').innerText = name;
                 document.getElementById('prof-handle').innerText = handleText;
-                const profAvEl = document.getElementById('prof-av');
-                profAvEl.style.cursor = 'pointer';
-                profAvEl.onclick = () => App.openMedia(av);
-                document.getElementById('prof-bio').innerText = isDM ? (c.dm_bio||'No bio') : (c.description||'No description');
+                document.getElementById('prof-bio').innerText = isDM ? (c.dm_bio || 'No bio') : (c.description || 'No description');
                 
+                const bgImg = document.getElementById('profile-status-bg-img');
+                const musicPill = document.getElementById('profile-music-pill');
+                
+                if (isDM && c.dm_status_music_url) {
+                    bgImg.style.backgroundImage = `url(${c.dm_status_music_art || av})`;
+                    document.getElementById('profile-status-song-title').innerText = c.dm_status_music_title || "Starboy";
+                    musicPill.style.display = 'flex';
+                    
+                    MusicPlayer.statusMusicUrl = c.dm_status_music_url;
+                    MusicPlayer.statusMusicTitle = c.dm_status_music_title;
+                    MusicPlayer.extractAccentColors(c.dm_status_music_art || av);
+                } else {
+                    bgImg.style.backgroundImage = 'none';
+                    musicPill.style.display = 'none';
+                    MusicPlayer.statusMusicUrl = null;
+                }
+
                 let acts = '';
-                
                 if (c.type === 'channel' || c.type === 'group') {
                     const link = c.is_private ? `${window.location.origin}${window.location.pathname}?channel=${c.invite_hash}` : `${window.location.origin}${window.location.pathname}?channel=${c.username}`;
                     acts += `<button class="btn btn-outline" onclick="navigator.clipboard.writeText('${link}'); UI.toast('Link Copied!')">🔗 Copy Link</button>`;
-                    
-                    if (c.my_role === 'admin') {
-                        acts += `<div class="settings-card" style="padding:16px; text-align:left; margin-top:16px;">
-                            <div style="font-size:14px; font-weight:600; margin-bottom:12px;">Admin Tools</div>
-                            
-                            <label style="display:block; margin-bottom:16px; cursor:pointer; text-align:center;">
-                                <img id="edit-chan-av-preview" src="${av}" class="avatar" style="width:60px;height:60px;margin:0 auto 8px;">
-                                <div style="font-size:12px; color:var(--primary); font-weight:600;">Change Photo</div>
-                                <input type="file" hidden accept="image/*" onchange="App.prepEditChanAv(event)">
-                            </label>
-                    
-                            <input type="text" id="edit-chan-name" class="settings-input" value="${name}" placeholder="Name">
-                            <input type="text" id="edit-chan-handle" class="settings-input" value="${c.username||''}" placeholder="Handle" ${c.is_private?'disabled':''}>
-                            <textarea id="edit-chan-desc" class="settings-input" rows="2" placeholder="Description">${c.description||''}</textarea>
-                            <button class="btn" onclick="App.updateChanProfile(${chatId})">Save Changes</button>
-                        </div>
-                        <div style="text-align:left; font-size:14px; font-weight:600; margin:16px 0 8px;">Subscribers</div>
-                        <div id="prof-subs-list" style="text-align:left; max-height:200px; overflow-y:auto;">Loading...</div>`;
-                        this.loadChatMembers(chatId);
-                    } 
-                    if (c.type === 'group' && (c.my_role === 'admin' || c.my_role === 'owner')) {
-                        acts += `<button class="btn" style="margin-top: 12px;" onclick="App.addMember(${chatId})">➕ Add Member</button>`;
-                    }
-                } else if(c.type === 'group') {
-                    acts += `<button class="btn" onclick="App.addMember(${chatId})">➕ Add Member</button>`;
                 }
+                
+                document.getElementById('prof-actions').innerHTML = acts;
                 document.getElementById('prof-media-gallery').style.display = 'block';
                 this.loadGroupMedia(chatId);
                 
-                document.getElementById('prof-actions').innerHTML = acts;
                 Router.push('panel-profile');
             },
             async loadGroupMedia(chatId) {
@@ -5782,35 +6371,37 @@
 
             async updateProfile(e, field) {
                 const body = {};
-                if(field==='avatar') {
+                if(field === 'avatar') {
                     const f = e.target.files[0]; if(!f) return;
-                    const r = new FileReader(); 
-                    r.onload = async ev => { 
-                        try {
-                            body.avatar = ev.target.result; 
-                            await req('/api/user/profile','PUT',body); 
-                            
-                            document.getElementById('set-av').src = body.avatar; 
-                            document.getElementById('nav-av').src = body.avatar; 
-                            UI.toast('Updated'); 
-                        } catch (err) {
-                            UI.toast('Avatar Upload Failed');
-                        }
-                    };
-                    r.readAsDataURL(f); 
+                    UI.toast("Uploading avatar...");
+                    try {
+                        const s3Url = await this.uploadToS3(f);
+                        body.avatar = s3Url;
+                        await req('/api/user/profile', 'PUT', body);
+                        State.u.avatar = s3Url;
+                        localStorage.setItem('y_u', JSON.stringify(State.u));
+                        document.getElementById('set-av').src = s3Url;
+                        document.getElementById('nav-av').src = s3Url;
+                        UI.toast('Profile updated');
+                    } catch(err) { UI.toast('Profile avatar update failed'); }
                     return;
                 }
-                // Inside App.updateProfile(e, field)
-                if(field==='bio') {
+                if(field === 'bio') {
                     body.bio = document.getElementById('set-bio').value;
                     State.u.bio = body.bio;
                     localStorage.setItem('y_u', JSON.stringify(State.u));
                 }
-                if(field==='username') { body.username = document.getElementById('set-name').value; State.u.username = body.username; localStorage.setItem('y_u', JSON.stringify(State.u)); }
-                if(field==='privacy') { body.call_privacy = document.getElementById('set-call').value; body.pfp_privacy = document.getElementById('set-pfp').value; }
-                try { await req('/api/user/profile','PUT',body); UI.toast('Updated'); } catch(e){ UI.toast(e.message); }
+                if(field === 'username') {
+                    body.username = document.getElementById('set-name').value;
+                    State.u.username = body.username;
+                    localStorage.setItem('y_u', JSON.stringify(State.u));
+                }
+                if(field === 'privacy') {
+                    body.call_privacy = document.getElementById('set-call').value;
+                    body.pfp_privacy = document.getElementById('set-pfp').value;
+                }
+                try { await req('/api/user/profile', 'PUT', body); UI.toast('Updated'); } catch(e){ UI.toast(e.message); }
             },
-
             // --- SESSIONS & SECURITY ---
             async loadSessions() {
                 Router.push('panel-sessions');
