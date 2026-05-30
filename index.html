@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
@@ -4105,7 +4106,48 @@
                 document.getElementById('blur-val-disp').innerText = `${val}px`;
                 localStorage.setItem('y_glass_blur', val);
             },
-            
+            loadAudioMetadata(msgId, url) {
+                if (!window.jsmediatags) return;
+                
+                jsmediatags.read(url, {
+                    onSuccess: (tag) => {
+                        const title = tag.tags.title || "";
+                        const artist = tag.tags.artist || "";
+                        let coverUrl = "";
+                        
+                        if (tag.tags.picture) {
+                            const { data, format } = tag.tags.picture;
+                            let base64String = "";
+                            for (let i = 0; i < data.length; i++) {
+                                base64String += String.fromCharCode(data[i]);
+                            }
+                            coverUrl = `data:${format};base64,${btoa(base64String)}`;
+                        }
+                        
+                        // Dynamically update the specific audio card DOM element on success
+                        const card = document.getElementById(`audio-card-${msgId}`);
+                        if (card) {
+                            if (title) {
+                                const titleEl = card.querySelector('.audio-title');
+                                if (titleEl) titleEl.innerText = title;
+                            }
+                            if (artist) {
+                                const artistEl = card.querySelector('.audio-artist');
+                                if (artistEl) artistEl.innerText = artist;
+                            }
+                            if (coverUrl) {
+                                const imgContainer = card.querySelector('.audio-cover-container');
+                                if (imgContainer) {
+                                    imgContainer.innerHTML = `<img src="${coverUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+                                }
+                            }
+                        }
+                    },
+                    onError: (error) => {
+                        console.warn("jsmediatags failed to parse remote metadata:", error);
+                    }
+                });
+            },
             setMainTitle(txt) {
                 const el = document.getElementById('main-title');
                 if (el && el.innerText !== txt) {
@@ -4248,28 +4290,13 @@
                 else if (m.type === 'audio') {
                     let audioTitle = "Audio File";
                     let audioArtist = "Unknown Artist";
-                    let coverSrc = "";
-                    let userCaptionText = "";
 
-                    // Decrypt caption structure and parse JSON payload
-                    if (m.caption) {
-                        try {
-                            const meta = JSON.parse(m.caption);
-                            if (meta.title) audioTitle = meta.title;
-                            if (meta.artist) audioArtist = meta.artist;
-                            if (meta.cover) coverSrc = meta.cover;
-                            if (meta.userCaption) userCaptionText = meta.userCaption;
-                        } catch(e) {
-                            // Support legacy text-only titles
-                            audioTitle = m.caption;
-                        }
-                    }
-
-                    if (audioTitle === "Audio File" && m.content) {
+                    // Fallback parsing from the S3 filename
+                    if (m.content) {
                         try {
                             const urlObj = new URL(m.content);
                             let decoded = decodeURIComponent(urlObj.pathname.split('/').pop());
-                            decoded = decoded.replace(/^yuki_\d+[\._]/, '');
+                            decoded = decoded.replace(/^yuki_\d+[\._]/, ''); // Strip timestamp prefixes
                             if (decoded) {
                                 const parts = decoded.split(" - ");
                                 if (parts.length > 1) {
@@ -4282,27 +4309,28 @@
                         } catch(e) {}
                     }
 
-                    const thumbHtml = coverSrc 
-                        ? `<img src="${coverSrc}" style="width:100%; height:100%; object-fit:cover;">` 
-                        : `<span style="font-size: 18px;">🎵</span>`;
-
-                    const captionHtml = userCaptionText 
-                        ? `<div class="msg-caption" style="margin-top: 8px;">${formatText(userCaptionText)}</div>` 
-                        : ``;
+                    // Trigger metadata parsing in the background asynchronously
+                    if (m.content && !m.content.startsWith("__E2EE__") && !m.content.startsWith("🔒")) {
+                        setTimeout(() => {
+                            App.loadAudioMetadata(m.id, m.content);
+                        }, 50);
+                    }
 
                     inner += `
-                    <div class="audio-msg-card" onclick="event.stopPropagation();" style="display: flex; align-items: center; gap: 12px; background: var(--bg-input); padding: 12px; border-radius: 16px; min-width: 240px; max-width: 320px; margin-top: 4px;">
+                    <div class="audio-msg-card" id="audio-card-${m.id}" onclick="event.stopPropagation();" style="display: flex; align-items: center; gap: 12px; background: var(--bg-input); padding: 12px; border-radius: 16px; min-width: 240px; max-width: 320px; margin-top: 4px;">
                         <div style="position: relative; width: 44px; height: 44px; flex-shrink: 0; background: #333; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border);">
-                            ${thumbHtml}
-                            <button class="btn" style="position: absolute; inset: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); color: white; display: flex; align-items: center; justify-content: center; border-radius: 10px;" onclick="MusicPlayer.initTrack('${m.content}', '${audioTitle.replace(/'/g, "\\'")}')">
+                            <div class="audio-cover-container" style="position: absolute; inset: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                                <span style="font-size: 18px;">🎵</span>
+                            </div>
+                            <button class="btn" style="position: absolute; inset: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); color: white; display: flex; align-items: center; justify-content: center; border-radius: 10px; z-index: 2;" onclick="MusicPlayer.initTrack('${m.content}', '${audioTitle.replace(/'/g, "\\'")}')">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 1px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                             </button>
                         </div>
                         <div class="audio-card-details" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left;">
-                            <span style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${audioTitle}</span>
-                            <span style="font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${audioArtist}</span>
+                            <span class="audio-title" style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${audioTitle}</span>
+                            <span class="audio-artist" style="font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${audioArtist}</span>
                         </div>
-                    </div>${captionHtml}`.replace(/\s+/g, ' ');
+                    </div>`.replace(/\s+/g, ' ');
                 }
                 else if (m.type === 'video') {
                     inner += `
@@ -6152,7 +6180,7 @@
             cancelReply() { State.replyTo = null; document.getElementById('reply-preview').style.display='none'; },
             scrollToPin() { const c = document.getElementById('msgs'); if(c) c.scrollTop = 0; },
 
-            async prepMedia(e, typeOverride = null) {
+            prepMedia(e, typeOverride = null) {
                 const files = Array.from(e.target.files);
                 if (files.length === 0) return;
                 e.target.value = '';
@@ -6160,7 +6188,7 @@
                 State.capMediaQueue = [];
                 let loadedCount = 0;
                 
-                for (const f of files) {
+                files.forEach(f => {
                     let inferredType = typeOverride || 'file';
                     if (!typeOverride) {
                         if (f.type.startsWith('image/')) inferredType = 'photo';
@@ -6169,13 +6197,6 @@
                     }
                     
                     const queueItem = { rawFile: f, type: inferredType, filename: f.name };
-                    
-                    // Asynchronously parse embedded ID3 audio details if type is audio
-                    if (inferredType === 'audio') {
-                        const meta = await parseAudioMetadata(f);
-                        queueItem.audioMeta = meta;
-                    }
-                    
                     State.capMediaQueue.push(queueItem);
                     loadedCount++;
                     
@@ -6183,8 +6204,24 @@
                         let previewSrc = 'https://via.placeholder.com/150/333333/FFFFFF?text=Media';
                         if (inferredType === 'photo') {
                             previewSrc = URL.createObjectURL(f);
-                        } else if (inferredType === 'audio' && queueItem.audioMeta && queueItem.audioMeta.cover) {
-                            previewSrc = queueItem.audioMeta.cover;
+                            document.getElementById('media-preview-img').src = previewSrc;
+                        } else if (inferredType === 'audio') {
+                            // Extract preview cover art from local file
+                            if (window.jsmediatags) {
+                                jsmediatags.read(f, {
+                                    onSuccess: (tag) => {
+                                        if (tag.tags.picture) {
+                                            const { data, format } = tag.tags.picture;
+                                            let base64String = "";
+                                            for (let i = 0; i < data.length; i++) {
+                                                base64String += String.fromCharCode(data[i]);
+                                            }
+                                            previewSrc = `data:${format};base64,${btoa(base64String)}`;
+                                            document.getElementById('media-preview-img').src = previewSrc;
+                                        }
+                                    }
+                                });
+                            }
                         }
                         
                         document.getElementById('media-preview-img').src = previewSrc;
@@ -6193,7 +6230,7 @@
                         document.getElementById('media-preview').style.display = 'flex';
                         document.getElementById('msg-input').focus();
                     }
-                }
+                });
             },
             openCrop() {
                 if (!State.capMediaQueue || State.capMediaQueue.length !== 1) return;
@@ -6259,28 +6296,9 @@
                     try {
                         const s3Url = await this.uploadToS3(item.rawFile);
                         const finalContent = await E2EE.encrypt(targetChat, s3Url);
-                        
-                        let metadataString = currentCap;
-                        if (item.type === 'audio' && item.audioMeta) {
-                            let coverUrl = "";
-                            if (item.audioMeta.cover) {
-                                try {
-                                    coverUrl = await this.uploadToS3(item.audioMeta.cover, 'jpg', 'image/jpeg');
-                                } catch(err) {
-                                    console.warn("Cover image upload failed:", err);
-                                }
-                            }
-                            metadataString = JSON.stringify({
-                                title: item.audioMeta.title,
-                                artist: item.audioMeta.artist,
-                                cover: coverUrl,
-                                userCaption: currentCap
-                            });
-                        }
-
-                        let finalCap = metadataString;
-                        if (metadataString) {
-                            finalCap = await E2EE.encrypt(targetChat, metadataString);
+                        let finalCap = currentCap;
+                        if (currentCap) {
+                            finalCap = await E2EE.encrypt(targetChat, currentCap);
                         }
                         
                         const res = await req(`/api/messages/${targetChat}`, 'POST', {
@@ -6299,7 +6317,7 @@
                                 const fakeMsg = {
                                     id: res.id,
                                     content: s3Url,
-                                    caption: metadataString,
+                                    caption: currentCap,
                                     type: item.type,
                                     created_at: new Date().toISOString(),
                                     is_read: 0,
@@ -6808,6 +6826,7 @@
                 clearTimeout(this.gestureTimeout);
             },
             // --- INITIALIZATION ---
+            // --- INITIALIZATION ---
             async start() {
                 // Mirror token to localforage so the Service Worker can authenticate background fetches [2]
                 if (State.t) {
@@ -6819,11 +6838,11 @@
                 Router.updateNav();
                 this.initFolders();
 
-                // Initialize End-to-End Encryption properly to prevent race conditions on reload
+                // Initialize End-to-End Encryption
                 try {
                     await E2EE.init();
                 } catch (e) {
-                    console.error("E2EE Encryption Initialization Failed:", e);
+                    console.error("E2EE Initialization Failed:", e);
                 }
                 
                 // --- NEW: Keyboard Shortcuts ---
