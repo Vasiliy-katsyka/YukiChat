@@ -1761,7 +1761,8 @@
 </head>
 <body>
     <!-- 1. PASTE RIGHT AFTER <body> -->
-    <svg style="display: none;">
+    <!-- Fixed Safari rendering bug by using absolute zero-dimensions instead of display:none -->
+    <svg style="width:0; height:0; position:absolute; pointer-events:none;" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <!-- Static 6-Color Pride Gradient Definition -->
             <linearGradient id="pride-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -3195,18 +3196,23 @@
 
             async init() {
                 if (!State.t || !State.u || !State.u.userId) return;
+                
+                // SAFEGUARD FOR NON-HTTPS SECURE CONTEXTS
+                if (!window.crypto || !window.crypto.subtle) {
+                    console.warn("E2EE disabled: SubtleCrypto is only available in Secure Contexts (HTTPS/Localhost).");
+                    return;
+                }
+                
                 const keyName = `y_e2ee_keys_${State.u.userId}`;
                 let keys = await localforage.getItem(keyName);
                 
                 if (!keys) {
-                    // Generate P-256 Elliptic Curve Diffie-Hellman Keypair
                     const keyPair = await window.crypto.subtle.generateKey(
                         { name: "ECDH", namedCurve: "P-256" },
                         true,
                         ["deriveKey"]
                     );
                     
-                    // Export to portable JSON Web Key (JWK) structures
                     const pubJwk = await window.crypto.subtle.exportKey("jwk", keyPair.publicKey);
                     const privJwk = await window.crypto.subtle.exportKey("jwk", keyPair.privateKey);
                     
@@ -3214,7 +3220,6 @@
                     await localforage.setItem(keyName, keys);
                 }
                 
-                // Load local Private Key as a CryptoKey
                 this.myPrivateKey = await window.crypto.subtle.importKey(
                     "jwk", keys.privateKey,
                     { name: "ECDH", namedCurve: "P-256" },
@@ -3222,7 +3227,6 @@
                 );
                 this.myPublicKeyJwk = keys.publicKey;
 
-                // Register public key with the backend
                 try {
                     await req('/api/e2ee/key', 'POST', { public_key: JSON.stringify(this.myPublicKeyJwk) });
                 } catch (e) {
@@ -3232,10 +3236,11 @@
 
             async getSharedKey(chatId) {
                 if (this.sharedKeys[chatId]) return this.sharedKeys[chatId];
+                if (!window.crypto || !window.crypto.subtle || !this.myPrivateKey) return null;
                 
                 try {
                     const res = await req(`/api/e2ee/key/${chatId}`);
-                    if (!res || !res.public_key) return null; // Recipient not E2EE capable
+                    if (!res || !res.public_key) return null;
                     
                     const otherPubJwk = JSON.parse(res.public_key);
                     const otherPubKey = await window.crypto.subtle.importKey(
@@ -3244,7 +3249,6 @@
                         true, []
                     );
                     
-                    // Generate symmetric AES-GCM key derived from Diffie-Hellman key exchange
                     const sharedKey = await window.crypto.subtle.deriveKey(
                         { name: "ECDH", public: otherPubKey },
                         this.myPrivateKey,
@@ -3262,8 +3266,10 @@
 
             async encrypt(chatId, plaintext) {
                 if (!plaintext) return plaintext;
+                if (!window.crypto || !window.crypto.subtle) return plaintext;
+                
                 const key = await this.getSharedKey(chatId);
-                if (!key) return plaintext; // Fallback to plaintext if peer cannot E2EE
+                if (!key) return plaintext;
                 
                 const iv = window.crypto.getRandomValues(new Uint8Array(12));
                 const encoded = new TextEncoder().encode(plaintext);
@@ -3282,11 +3288,14 @@
 
             async decrypt(chatId, messageContent) {
                 if (!messageContent || !messageContent.startsWith("__E2EE__:")) return messageContent;
-                
-                const key = await this.getSharedKey(chatId);
-                if (!key) return "🔒 [Encrypted Message - Key Exchange Unavailable]";
+                if (!window.crypto || !window.crypto.subtle || !this.myPrivateKey) {
+                    return "🔒 [Encrypted - HTTPS Required]";
+                }
                 
                 try {
+                    const key = await this.getSharedKey(chatId);
+                    if (!key) return "🔒 [Encrypted - Key Unavailable]";
+                    
                     const parts = messageContent.split(":");
                     const ivB64 = parts[1];
                     const cipherB64 = parts[2];
@@ -5898,8 +5907,8 @@
                         return new Date(b.last_msg_time || 0) - new Date(a.last_msg_time || 0);
                     });
         
-                    // --- DECRYPT LAST MESSAGE PREVIEWS ---
-                    for (let c of d.chats) {
+                    // --- DECRYPT LAST MESSAGE PREVIEWS IN PARALLEL ---
+                    await Promise.all(d.chats.map(async (c) => {
                         if (c.last_msg && c.last_msg.startsWith("__E2EE__:")) {
                             try {
                                 c.last_msg = await E2EE.decrypt(c.id, c.last_msg);
@@ -5907,8 +5916,8 @@
                                 c.last_msg = "🔒 [Encrypted Message]";
                             }
                         }
-                    }
-                    // -------------------------------------
+                    }));
+                    // -------------------------------------------------
         
                     const searchInput = document.querySelector('.search-bar input');
                     const isSearching = searchInput && searchInput.value.trim().length > 0 && Router.stack[Router.stack.length-1] === 'panel-root';
