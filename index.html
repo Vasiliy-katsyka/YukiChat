@@ -3377,7 +3377,7 @@
 
             init() {
                 this.audioObj = new Audio();
-                this.audioObj.crossOrigin = "anonymous";
+                // this.audioObj.crossOrigin = "anonymous";
                 
                 // Keep the mini-player matching current audio events
                 this.audioObj.ontimeupdate = () => {
@@ -3520,59 +3520,63 @@
                 }
             },
 
+            // FIND AND REPLACE:
             setupVisualizer() {
-                // Initialize the Audio Context and Analyser Nodes [1]
-                if (!this.audioCtx) {
-                    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    this.analyser = this.audioCtx.createAnalyser();
-                    this.source = this.audioCtx.createMediaElementSource(this.audioObj);
-                    
-                    this.source.connect(this.analyser);
-                    this.analyser.connect(this.audioCtx.destination);
-                    this.analyser.fftSize = 64;
-                }
-
-                const canvas = document.getElementById('pfp-soundwave-canvas');
-                this.canvasCtx = canvas.getContext('2d');
-                canvas.width = 130;
-                canvas.height = 130;
-
-                const bufferLength = this.analyser.frequencyBinCount;
-                const dataArray = new Uint8Array(bufferLength);
-
-                const draw = () => {
-                    this.visualizerLoop = requestAnimationFrame(draw);
-                    this.analyser.getByteFrequencyData(dataArray);
-
-                    this.canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-                    
-                    const cx = canvas.width / 2;
-                    const cy = canvas.height / 2;
-                    const baseRadius = 55; // Sits just outside the 110px profile image (55px radius)
-
-                    this.canvasCtx.beginPath();
-                    for (let i = 0; i < bufferLength; i++) {
-                        const angle = (i / bufferLength) * Math.PI * 2;
-                        const amplitude = (dataArray[i] / 255.0) * 16; // Limit wave amplitude to 16px
-                        const r = baseRadius + amplitude;
-                        const x = cx + Math.cos(angle) * r;
-                        const y = cy + Math.sin(angle) * r;
-
-                        if (i === 0) this.canvasCtx.moveTo(x, y);
-                        else this.canvasCtx.lineTo(x, y);
+                try {
+                    if (!this.audioCtx) {
+                        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        this.analyser = this.audioCtx.createAnalyser();
+                        this.source = this.audioCtx.createMediaElementSource(this.audioObj);
+                        
+                        this.source.connect(this.analyser);
+                        this.analyser.connect(this.audioCtx.destination);
+                        this.analyser.fftSize = 64;
                     }
-                    this.canvasCtx.closePath();
-                    
-                    // Draw outer radial soundwave using accent colors
-                    this.canvasCtx.strokeStyle = this.accentColors[0];
-                    this.canvasCtx.lineWidth = 3;
-                    this.canvasCtx.shadowBlur = 10;
-                    this.canvasCtx.shadowColor = this.accentColors[1];
-                    this.canvasCtx.stroke();
-                };
-
-                if (this.visualizerLoop) cancelAnimationFrame(this.visualizerLoop);
-                draw();
+            
+                    const canvas = document.getElementById('pfp-soundwave-canvas');
+                    this.canvasCtx = canvas.getContext('2d');
+                    canvas.width = 130;
+                    canvas.height = 130;
+            
+                    const bufferLength = this.analyser.frequencyBinCount;
+                    const dataArray = new Uint8Array(bufferLength);
+            
+                    const draw = () => {
+                        this.visualizerLoop = requestAnimationFrame(draw);
+                        this.analyser.getByteFrequencyData(dataArray);
+            
+                        this.canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+                        
+                        const cx = canvas.width / 2;
+                        const cy = canvas.height / 2;
+                        const baseRadius = 55;
+            
+                        this.canvasCtx.beginPath();
+                        for (let i = 0; i < bufferLength; i++) {
+                            const angle = (i / bufferLength) * Math.PI * 2;
+                            const amplitude = (dataArray[i] / 255.0) * 16;
+                            const r = baseRadius + amplitude;
+                            const x = cx + Math.cos(angle) * r;
+                            const y = cy + Math.sin(angle) * r;
+            
+                            if (i === 0) this.canvasCtx.moveTo(x, y);
+                            else this.canvasCtx.lineTo(x, y);
+                        }
+                        this.canvasCtx.closePath();
+                        
+                        this.canvasCtx.strokeStyle = this.accentColors[0];
+                        this.canvasCtx.lineWidth = 3;
+                        this.canvasCtx.shadowBlur = 10;
+                        this.canvasCtx.shadowColor = this.accentColors[1];
+                        this.canvasCtx.stroke();
+                    };
+            
+                    if (this.visualizerLoop) cancelAnimationFrame(this.visualizerLoop);
+                    draw();
+                } catch (e) {
+                    console.warn("Visualizer offline due to CORS. Playing audio file normally.", e);
+                    if (this.visualizerLoop) cancelAnimationFrame(this.visualizerLoop);
+                }
             },
 
             extractAccentColors(imgUrl) {
@@ -4120,6 +4124,30 @@
                 else if (m.type === 'sticker') {
                     inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
                 } 
+                else if (m.type === 'audio') {
+                    let audioTitle = "Audio File";
+                    if (m.content) {
+                        try {
+                            const urlObj = new URL(m.content);
+                            let decoded = decodeURIComponent(urlObj.pathname.split('/').pop());
+                            decoded = decoded.replace(/^yuki_\d+[\._]/, ''); // Strip timestamp prefixes
+                            if (decoded) audioTitle = decoded;
+                        } catch(e) {}
+                    }
+                    inner += `
+                    <div class="audio-msg-card" onclick="event.stopPropagation();" style="display: flex; align-items: center; gap: 12px; background: var(--bg-input); padding: 12px; border-radius: 16px; min-width: 240px; max-width: 320px; margin-top: 4px;">
+                        <div style="position: relative; width: 44px; height: 44px; flex-shrink: 0; background: #333; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border);">
+                            <span style="font-size: 18px;">🎵</span>
+                            <button class="btn" style="position: absolute; inset: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); color: white; display: flex; align-items: center; justify-content: center; border-radius: 10px;" onclick="MusicPlayer.initTrack('${m.content}', '${audioTitle.replace(/'/g, "\\'")}')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 1px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            </button>
+                        </div>
+                        <div class="audio-card-details" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${audioTitle}</span>
+                            <span style="font-size:11px; color:var(--text-muted);">Audio File</span>
+                        </div>
+                    </div>`.replace(/\s+/g, ' '); // Prevents line breaks from producing empty space!
+                }
                 else if (m.type === 'video') {
                     inner += `
                     <div class="custom-video-player" onclick="event.stopPropagation();">
@@ -4138,33 +4166,18 @@
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
                             </button>
                         </div>
-                    </div>`;
-                } 
-                else if (m.type === 'audio') {
-                    const title = m.caption || "Status Music";
-                    inner += `
-                    <div class="audio-msg-card" onclick="event.stopPropagation();">
-                        <button class="btn" style="width:36px; height:36px; border-radius:50%; background:var(--primary); color:var(--bg-base); display:flex; align-items:center; justify-content:center; flex-shrink:0;" onclick="MusicPlayer.initTrack('${m.content}', '${title.replace(/'/g, "\\'")}')">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                        </button>
-                        <div class="audio-card-details">
-                            <span style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${title}</span>
-                            <span style="font-size:11px; color:var(--text-muted);">Audio File</span>
-                        </div>
-                    </div>`;
+                    </div>`.replace(/\s+/g, ' ');
                 } 
                 else if (m.type === 'file') {
                     const title = m.caption || "Attachment Document";
                     inner += `
                     <a href="${m.content}" class="doc-attachment-card" target="_blank" onclick="event.stopPropagation();">
-                        <div style="width:36px; height:36px; border-radius:10px; background:var(--bg-hover); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                            📄
-                        </div>
+                        <div style="width:36px; height:36px; border-radius:10px; background:var(--bg-hover); display:flex; align-items:center; justify-content:center; flex-shrink:0;">📄</div>
                         <div class="audio-card-details">
                             <span style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${title}</span>
                             <span style="font-size:11px; color:var(--text-muted);">Open / Download File</span>
                         </div>
-                    </a>`;
+                    </a>`.replace(/\s+/g, ' ');
                 } 
                 else if (m.type === 'voice') {
                     let peaks = [];
@@ -4204,10 +4217,8 @@
                             <svg class="play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-left:2px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                             <svg class="pause-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
                         </button>
-                        <div class="waveform-bars">
-                            ${waveformHtml}
-                        </div>
-                    </div>`;
+                        <div class="waveform-bars">${waveformHtml}</div>
+                    </div>`.replace(/\s+/g, ' ');
                 }
                 else if (m.type === 'video_note') {
                     inner += `
@@ -4219,7 +4230,7 @@
                         <div class="video-note-overlay">
                             <svg class="play-icon" width="28" height="28" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                         </div>
-                    </div>`;
+                    </div>`.replace(/\s+/g, ' ');
                 }
                 else {
                     inner += cleanTxt;
@@ -5939,7 +5950,7 @@
                     }
                     // Activate Lotties in message badges
                     if (localStorage.getItem('y_anim_react') !== 'false' && window.lottie) {
-                        cont.querySelectorAll('[data-url]:not([data-loaded])').forEach(el => {
+                        cont.querySelectorAll('.rx-pill [data-url]:not([data-loaded]), .inline-lottie[data-url]:not([data-loaded])').forEach(el => {
                             el.setAttribute('data-loaded', 'true');
                             lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
                         });
