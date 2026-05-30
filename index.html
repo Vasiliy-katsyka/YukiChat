@@ -102,6 +102,109 @@
             --chat-bg: #f0f9ff; 
             --glass-glow: #bae6fd; 
         }
+        /* ==========================================
+       PRIDE MONTH THEMES & HEADER FLAG STRIPS
+       ========================================== */
+        
+        /* --- 1. Rainbow Pride Theme --- */
+        [data-theme="pride-lgbt"] {
+            --bg-base: #120a18;
+            --bg-panel: #1a0f24;
+            --bg-input: #291a36;
+            --border: #3d2750;
+            --primary: #ff55b6;
+            --text-main: #f3e8ff;
+            --text-muted: #a78bfa;
+            --msg-sent: #7c3aed;
+            --msg-sent-txt: #ffffff;
+            --msg-recv: #291a36;
+            --msg-recv-txt: #f3e8ff;
+            --chat-bg: #120a18;
+            --glass-glow: #3d2750;
+        }
+        [data-theme="pride-lgbt"] .n-glass-header {
+            background: linear-gradient(to right, #E40303 0%, #E40303 16.6%, #FF8C00 16.6%, #FF8C00 33.3%, #FFED00 33.3%, #FFED00 50%, #008026 50%, #008026 66.6%, #004CFF 66.6%, #004CFF 83.3%, #732982 83.3%) top / 100% 4px no-repeat !important;
+        }
+        
+        /* --- 2. Transgender Pride Theme --- */
+        [data-theme="pride-trans"] {
+            --bg-base: #0f1c24;
+            --bg-panel: #172a36;
+            --bg-input: #223c4d;
+            --border: #325870;
+            --primary: #5bcffa;
+            --text-main: #f0f9ff;
+            --text-muted: #38bdf8;
+            --msg-sent: #f5abb9;
+            --msg-sent-txt: #172a36;
+            --msg-recv: #223c4d;
+            --msg-recv-txt: #f0f9ff;
+            --chat-bg: #0f1c24;
+            --glass-glow: #325870;
+        }
+        [data-theme="pride-trans"] .n-glass-header {
+            background: linear-gradient(to right, #5BCFFA 0%, #5BCFFA 20%, #F5ABB9 20%, #F5ABB9 40%, #FFFFFF 40%, #FFFFFF 60%, #F5ABB9 60%, #F5ABB9 80%, #5BCFFA 80%) top / 100% 4px no-repeat !important;
+        }
+        
+        /* --- 3. Lesbian Pride Theme --- */
+        [data-theme="pride-lesbian"] {
+            --bg-base: #1c0e15;
+            --bg-panel: #2a1520;
+            --bg-input: #3e2130;
+            --border: #5a3147;
+            --primary: #ff8e3c;
+            --text-main: #fff0f5;
+            --text-muted: #f472b6;
+            --msg-sent: #d162a4;
+            --msg-sent-txt: #ffffff;
+            --msg-recv: #3e2130;
+            --msg-recv-txt: #fff0f5;
+            --chat-bg: #1c0e15;
+            --glass-glow: #5a3147;
+        }
+        [data-theme="pride-lesbian"] .n-glass-header {
+            background: linear-gradient(to right, #D52B00 0%, #D52B00 20%, #FF8E3C 20%, #FF8E3C 40%, #FFFFFF 40%, #FFFFFF 60%, #D162A4 60%, #D162A4 80%, #810052 80%) top / 100% 4px no-repeat !important;
+        }
+        
+        /* --- 4. Bisexual Pride Theme --- */
+        [data-theme="pride-bi"] {
+            --bg-base: #0c0816;
+            --bg-panel: #161026;
+            --bg-input: #231a3a;
+            --border: #372a59;
+            --primary: #d60270;
+            --text-main: #f5f3ff;
+            --text-muted: #c084fc;
+            --msg-sent: #9b4f96;
+            --msg-sent-txt: #ffffff;
+            --msg-recv: #231a3a;
+            --msg-recv-txt: #f5f3ff;
+            --chat-bg: #0c0816;
+            --glass-glow: #372a59;
+        }
+        [data-theme="pride-bi"] .n-glass-header {
+            background: linear-gradient(to right, #D60270 0%, #D60270 40%, #9B4F96 40%, #9B4F96 60%, #0038A8 60%) top / 100% 4px no-repeat !important;
+        }
+        
+        /* --- 5. Non-Binary Pride Theme --- */
+        [data-theme="pride-nb"] {
+            --bg-base: #121212;
+            --bg-panel: #1e1e1e;
+            --bg-input: #2d2d2d;
+            --border: #444444;
+            --primary: #fcf434;
+            --text-main: #ffffff;
+            --text-muted: #a855f7;
+            --msg-sent: #9c59d1;
+            --msg-sent-txt: #ffffff;
+            --msg-recv: #2d2d2d;
+            --msg-recv-txt: #ffffff;
+            --chat-bg: #121212;
+            --glass-glow: #444444;
+        }
+        [data-theme="pride-nb"] .n-glass-header {
+            background: linear-gradient(to right, #FCF434 0%, #FCF434 25%, #FFFFFF 25%, #FFFFFF 50%, #9C59D1 50%, #9C59D1 75%, #2C2C2C 75%) top / 100% 4px no-repeat !important;
+        }
         
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; }
         body { 
@@ -1978,7 +2081,7 @@
                         <div class="theme-preview" data-theme-val="dark" onclick="App.setTheme('dark')"><div class="theme-preview-inner" style="background:#1e293b;"><div class="mini-bubble right" style="background:#ffffff"></div><div class="mini-bubble left" style="background:#334155"></div></div><span class="theme-label">Dark</span></div>
                         <div class="theme-preview" data-theme-val="oled" onclick="App.setTheme('oled')"><div class="theme-preview-inner" style="background:#000000; border:1px solid #222222;"><div class="mini-bubble right" style="background:#ffffff"></div><div class="mini-bubble left" style="background:#111111"></div></div><span class="theme-label">OLED</span></div>
                         <div class="theme-preview" data-theme-val="dracula" onclick="App.setTheme('dracula')"><div class="theme-preview-inner" style="background:#282a36;"><div class="mini-bubble right" style="background:#ff79c6"></div><div class="mini-bubble left" style="background:#44475a"></div></div><span class="theme-label">Dracula</span></div>
-
+                        <!-- 
                         <div class="theme-preview" data-theme-val="pride-night" onclick="App.setTheme('pride-night')">
                             <div class="theme-preview-inner" style="background:#15151e;">
                                 <div class="mini-bubble right" style="background:linear-gradient(135deg, #ff007f, #7f00ff)"></div>
@@ -1993,7 +2096,46 @@
                             </div>
                             <span class="theme-label">Trans Pride</span>
                         </div>
+                        PRIDE THEMES -->
+                        <div class="theme-preview" data-theme-val="pride-lgbt" onclick="App.setTheme('pride-lgbt')">
+                            <div class="theme-preview-inner" style="background:#1a0f24; border-top: 4px solid #E40303;">
+                                <div class="mini-bubble right" style="background:#ff55b6"></div>
+                                <div class="mini-bubble left" style="background:#291a36"></div>
+                            </div>
+                            <span class="theme-label">Rainbow</span>
+                        </div>
                         
+                        <div class="theme-preview" data-theme-val="pride-trans" onclick="App.setTheme('pride-trans')">
+                            <div class="theme-preview-inner" style="background:#172a36; border-top: 4px solid #5BCFFA;">
+                                <div class="mini-bubble right" style="background:#f5abb9"></div>
+                                <div class="mini-bubble left" style="background:#223c4d"></div>
+                            </div>
+                            <span class="theme-label">Trans</span>
+                        </div>
+                        
+                        <div class="theme-preview" data-theme-val="pride-lesbian" onclick="App.setTheme('pride-lesbian')">
+                            <div class="theme-preview-inner" style="background:#2a1520; border-top: 4px solid #D52B00;">
+                                <div class="mini-bubble right" style="background:#ff8e3c"></div>
+                                <div class="mini-bubble left" style="background:#3e2130"></div>
+                            </div>
+                            <span class="theme-label">Lesbian</span>
+                        </div>
+                        
+                        <div class="theme-preview" data-theme-val="pride-bi" onclick="App.setTheme('pride-bi')">
+                            <div class="theme-preview-inner" style="background:#161026; border-top: 4px solid #D60270;">
+                                <div class="mini-bubble right" style="background:#9b4f96"></div>
+                                <div class="mini-bubble left" style="background:#231a3a"></div>
+                            </div>
+                            <span class="theme-label">Bisexual</span>
+                        </div>
+                        
+                        <div class="theme-preview" data-theme-val="pride-nb" onclick="App.setTheme('pride-nb')">
+                            <div class="theme-preview-inner" style="background:#1e1e1e; border-top: 4px solid #FCF434;">
+                                <div class="mini-bubble right" style="background:#9c59d1"></div>
+                                <div class="mini-bubble left" style="background:#2d2d2d"></div>
+                            </div>
+                            <span class="theme-label">Non-Binary</span>
+                        </div>
                         <div class="theme-preview" data-theme-val="rose" onclick="App.setTheme('rose')"><div class="theme-preview-inner" style="background:#fff5f7;"><div class="mini-bubble right" style="background:#db2777"></div><div class="mini-bubble left" style="background:#ffe4e9"></div></div><span class="theme-label">Rose</span></div>
                         <div class="theme-preview" data-theme-val="sky" onclick="App.setTheme('sky')"><div class="theme-preview-inner" style="background:#f0f9ff;"><div class="mini-bubble right" style="background:#0284c7"></div><div class="mini-bubble left" style="background:#e0f2fe"></div></div><span class="theme-label">Sky</span></div>
                         <div class="theme-preview" data-theme-val="mint" onclick="App.setTheme('mint')"><div class="theme-preview-inner" style="background:#f0fdf4;"><div class="mini-bubble right" style="background:#16a34a"></div><div class="mini-bubble left" style="background:#dcfce7"></div></div><span class="theme-label">Mint</span></div>
@@ -2895,6 +3037,7 @@
         };
         window.REACTION_LOTTIES = {
             '❤️': 'https://fonts.gstatic.com/s/e/notoemoji/latest/2764_fe0f/lottie.json',
+            '🌈': 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f308/lottie.json',
             '😂': 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f602/lottie.json',
             '👍': 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f44d/lottie.json',
             '😢': 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f622/lottie.json',
