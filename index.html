@@ -70,7 +70,39 @@
         [data-theme="emerald-dark"] { --bg-base: #022c22; --bg-panel: #064e3b; --bg-input: #065f46; --border: #059669; --primary: #34d399; --text-main: #ecfdf5; --text-muted: #a7f3d0; --msg-sent: #10b981; --msg-sent-txt: #022c22; --msg-recv: #065f46; --msg-recv-txt: #ecfdf5; --chat-bg: #022c22; --glass-glow: #022c22; }
         [data-theme="deep-purple"] { --bg-base: #1e1b4b; --bg-panel: #312e81; --bg-input: #3730a3; --border: #4f46e5; --primary: #c7d2fe; --text-main: #eef2ff; --text-muted: #a5b4fc; --msg-sent: #6366f1; --msg-sent-txt: #ffffff; --msg-recv: #312e81; --msg-recv-txt: #e0e7ff; --chat-bg: #1e1b4b; --glass-glow: #1e1b4b; }
         [data-theme="crimson-dark"] { --bg-base: #450a0a; --bg-panel: #7f1d1d; --bg-input: #991b1b; --border: #b91c1c; --primary: #fecaca; --text-main: #fef2f2; --text-muted: #fca5a5; --msg-sent: #dc2626; --msg-sent-txt: #ffffff; --msg-recv: #7f1d1d; --msg-recv-txt: #fee2e2; --chat-bg: #450a0a; --glass-glow: #450a0a; }
-                
+
+        /* --- PRIDE MONTH THEMES --- */
+        [data-theme="pride-night"] { 
+            --bg-base: #0d0d12; 
+            --bg-panel: #15151e; 
+            --bg-input: #21212e; 
+            --border: #2e2e42; 
+            --primary: #ff4a9a; 
+            --text-main: #f8fafc; 
+            --text-muted: #94a3b8; 
+            --msg-sent: linear-gradient(135deg, #ff007f 0%, #7f00ff 100%); 
+            --msg-sent-txt: #ffffff; 
+            --msg-recv: #21212e; 
+            --msg-recv-txt: #f8fafc; 
+            --chat-bg: #0d0d12; 
+            --glass-glow: #7f00ff; 
+        }
+        [data-theme="trans-pride"] { 
+            --bg-base: #f0f9ff; 
+            --bg-panel: #ffffff; 
+            --bg-input: #e0f2fe; 
+            --border: #bae6fd; 
+            --primary: #f472b6; 
+            --text-main: #0369a1; 
+            --text-muted: #38bdf8; 
+            --msg-sent: #f472b6; 
+            --msg-sent-txt: #ffffff; 
+            --msg-recv: #e0f2fe; 
+            --msg-recv-txt: #0c4a6e; 
+            --chat-bg: #f0f9ff; 
+            --glass-glow: #bae6fd; 
+        }
+        
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; }
         body { 
             background: var(--bg-base); 
@@ -1946,6 +1978,21 @@
                         <div class="theme-preview" data-theme-val="dark" onclick="App.setTheme('dark')"><div class="theme-preview-inner" style="background:#1e293b;"><div class="mini-bubble right" style="background:#ffffff"></div><div class="mini-bubble left" style="background:#334155"></div></div><span class="theme-label">Dark</span></div>
                         <div class="theme-preview" data-theme-val="oled" onclick="App.setTheme('oled')"><div class="theme-preview-inner" style="background:#000000; border:1px solid #222222;"><div class="mini-bubble right" style="background:#ffffff"></div><div class="mini-bubble left" style="background:#111111"></div></div><span class="theme-label">OLED</span></div>
                         <div class="theme-preview" data-theme-val="dracula" onclick="App.setTheme('dracula')"><div class="theme-preview-inner" style="background:#282a36;"><div class="mini-bubble right" style="background:#ff79c6"></div><div class="mini-bubble left" style="background:#44475a"></div></div><span class="theme-label">Dracula</span></div>
+
+                        <div class="theme-preview" data-theme-val="pride-night" onclick="App.setTheme('pride-night')">
+                            <div class="theme-preview-inner" style="background:#15151e;">
+                                <div class="mini-bubble right" style="background:linear-gradient(135deg, #ff007f, #7f00ff)"></div>
+                                <div class="mini-bubble left" style="background:#21212e"></div>
+                            </div>
+                            <span class="theme-label">Pride Night</span>
+                        </div>
+                        <div class="theme-preview" data-theme-val="trans-pride" onclick="App.setTheme('trans-pride')">
+                            <div class="theme-preview-inner" style="background:#f0f9ff; border:1px solid #bae6fd;">
+                                <div class="mini-bubble right" style="background:#f472b6"></div>
+                                <div class="mini-bubble left" style="background:#e0f2fe"></div>
+                            </div>
+                            <span class="theme-label">Trans Pride</span>
+                        </div>
                         
                         <div class="theme-preview" data-theme-val="rose" onclick="App.setTheme('rose')"><div class="theme-preview-inner" style="background:#fff5f7;"><div class="mini-bubble right" style="background:#db2777"></div><div class="mini-bubble left" style="background:#ffe4e9"></div></div><span class="theme-label">Rose</span></div>
                         <div class="theme-preview" data-theme-val="sky" onclick="App.setTheme('sky')"><div class="theme-preview-inner" style="background:#f0f9ff;"><div class="mini-bubble right" style="background:#0284c7"></div><div class="mini-bubble left" style="background:#e0f2fe"></div></div><span class="theme-label">Sky</span></div>
