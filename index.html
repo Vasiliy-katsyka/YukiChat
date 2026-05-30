@@ -4990,8 +4990,11 @@
                         });
                     }
                 
+                    // --- UPDATE THE WEBSOCKET LISTENER BLOCK ---
                     if (data.type === 'message_action' && State.chat == data.chat_id) {
                         req(`/api/messages/${data.chat_id}?after=0`).then(async msgs => {
+                            let updatedAny = false; // <--- 1. Track if any message is modified
+                            
                             for (let m of msgs) {
                                 if (m.content && m.content.startsWith("__E2EE__:")) {
                                     m.content = await E2EE.decrypt(data.chat_id, m.content);
@@ -5007,6 +5010,7 @@
                                     
                                     if (existingMsg.innerHTML !== newHTML) {
                                         existingMsg.innerHTML = newHTML;
+                                        updatedAny = true; // <--- 2. Mark as updated
                                         if (!isMine) FX.check(m.content, `msg-${m.id}`);
                                         
                                         // FIX: Re-initialize Lottie for updated reaction pills!
@@ -5018,7 +5022,12 @@
                                         }
                                     }
                                 }
-                            };
+                            }
+                            
+                            // 3. Re-run compilers if any HTML was rebuilt [2]
+                            if (updatedAny) {
+                                App.renderMath(); 
+                            }
                         });
                     }
                 };
