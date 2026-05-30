@@ -252,6 +252,20 @@
         [data-theme^="pride-"] .n-glass-border:focus-within {
             animation: input-rainbow-glow 4s infinite linear !important;
         }
+
+        /* --- RAINBOW COLOR-SHIFTING VERIFIED TICKS --- */
+        @keyframes rainbow-fill {
+            0% { fill: #e70000; filter: drop-shadow(0 0 2px rgba(231, 0, 0, 0.6)); }
+            20% { fill: #ff8c00; filter: drop-shadow(0 0 2px rgba(255, 140, 0, 0.6)); }
+            40% { fill: #ffeb00; filter: drop-shadow(0 0 2px rgba(255, 235, 0, 0.6)); }
+            60% { fill: #00811f; filter: drop-shadow(0 0 2px rgba(0, 129, 31, 0.6)); }
+            80% { fill: #004cff; filter: drop-shadow(0 0 2px rgba(0, 76, 255, 0.6)); }
+            100% { fill: #760089; filter: drop-shadow(0 0 2px rgba(118, 0, 137, 0.6)); }
+        }
+        
+        [data-theme^="pride-"] svg[style*="fill:#0088cc"] {
+            animation: rainbow-fill 6s infinite linear;
+        }
         
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; }
         body { 
