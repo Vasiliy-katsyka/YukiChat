@@ -81,8 +81,8 @@ self.addEventListener('push', function(event) {
     event.waitUntil(
         localforage.getItem('y_t').then(function(token) {
             if (token) {
-                // Fetch from absolute API path to prevent relative 404 failures [2]
-                return fetch(`${API_URL}/api/sync`, {
+                // Cache-busting parameter prevents browsers from serving stale unread counts
+                return fetch(`${API_URL}/api/sync?_t=${Date.now()}`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -97,11 +97,23 @@ self.addEventListener('push', function(event) {
                         const unreadChats = syncData.chats.filter(c => c.unread > 0 && c.id !== 'ai');
                         
                         if (unreadChats.length > 0) {
-                            // Extract keys dynamically from IndexedDB
-                            return localforage.keys().then(async keys => {
-                                const keyName = keys.find(k => k.startsWith('y_e2ee_keys_'));
+                            return localforage.getItem('y_u').then(async userJson => {
+                                let userId = null;
+                                if (userJson) {
+                                    try {
+                                        const userObj = typeof userJson === 'string' ? JSON.parse(userJson) : userJson;
+                                        userId = userObj.userId || userObj.id;
+                                    } catch (e) {}
+                                }
+
+                                // KeyName resolution with robust database scanning fallback
+                                let keyName = userId ? `y_e2ee_keys_${userId}` : null;
+                                if (!keyName) {
+                                    const keys = await localforage.keys();
+                                    keyName = keys.find(k => k.startsWith('y_e2ee_keys_'));
+                                }
+
                                 let privateKey = null;
-                                
                                 if (keyName) {
                                     const keysObj = await localforage.getItem(keyName);
                                     if (keysObj && keysObj.privateKey) {
@@ -118,11 +130,13 @@ self.addEventListener('push', function(event) {
                                 }
 
                                 const promises = unreadChats.map(async unreadChat => {
-                                    const isDM = unreadChat.type === 'dm';
-                                    const senderName = isDM ? unreadChat.dm_username : unreadChat.name;
-                                    let bodyText = unreadChat.last_msg || "New message received";
-                                    
+                                    // Wrap each mapping in its own try...catch so decryption or formatting issues
+                                    // on one message never break notifications for others.
                                     try {
+                                        const isDM = unreadChat.type === 'dm';
+                                        const senderName = isDM ? unreadChat.dm_username : unreadChat.name;
+                                        let bodyText = unreadChat.last_msg || "New message received";
+                                        
                                         if (unreadChat.last_msg_type === 'photo') {
                                             bodyText = '🖼️ Photo';
                                         } else if (unreadChat.last_msg_type === 'file') {
@@ -137,22 +151,30 @@ self.addEventListener('push', function(event) {
                                             bodyText = '👾 Sticker';
                                         } else if (bodyText.startsWith("__E2EE__:")) {
                                             if (privateKey) {
-                                                bodyText = await decryptMessage(unreadChat.id, bodyText, token, privateKey);
+                                                try {
+                                                    bodyText = await decryptMessage(unreadChat.id, bodyText, token, privateKey);
+                                                } catch (decErr) {
+                                                    console.error("Failed to decrypt individual message:", decErr);
+                                                    bodyText = "🔒 [Encrypted Message]";
+                                                }
                                             } else {
                                                 bodyText = "🔒 [Encrypted Message]";
                                             }
                                         }
-                                    } catch (err) {
-                                        console.error("Failed to parse message text:", err);
-                                        bodyText = "🔒 [Encrypted Message]";
-                                    }
 
-                                    const avatar = isDM ? (unreadChat.dm_avatar || `${APP_URL}/icon-192-lgbt.png`) : (unreadChat.avatar || `${APP_URL}/icon-192-lgbt.png`);
-                                    
-                                    try {
+                                        const avatar = isDM ? (unreadChat.dm_avatar || `${APP_URL}/icon-192-lgbt.png`) : (unreadChat.avatar || `${APP_URL}/icon-192-lgbt.png`);
                                         return await showIndividualNotification(unreadChat.id, senderName, bodyText, avatar, unreadChat.last_msg_id);
                                     } catch (err) {
-                                        console.error("Failed to show individual notification:", err);
+                                        console.error("Failed to process individual notification:", err);
+                                        // Show safe baseline fallback for this single notification
+                                        try {
+                                            const isDM = unreadChat.type === 'dm';
+                                            const senderName = isDM ? unreadChat.dm_username : unreadChat.name;
+                                            const avatar = isDM ? (unreadChat.dm_avatar || `${APP_URL}/icon-192-lgbt.png`) : (unreadChat.avatar || `${APP_URL}/icon-192-lgbt.png`);
+                                            return await showIndividualNotification(unreadChat.id, senderName, "New message received", avatar, unreadChat.last_msg_id);
+                                        } catch (fallbackErr) {
+                                            console.error("Critical fallback notification failure:", fallbackErr);
+                                        }
                                     }
                                 });
                                 return Promise.all(promises);
@@ -161,7 +183,10 @@ self.addEventListener('push', function(event) {
                     }
                     return showDefaultNotification();
                 })
-                .catch(() => showDefaultNotification());
+                .catch(err => {
+                    console.error("Push Event Sync Chain Error:", err);
+                    return showDefaultNotification();
+                });
             } else {
                 return showDefaultNotification();
             }
