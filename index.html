@@ -239,21 +239,18 @@
         }
         
         
-        /* ==========================================
-           DYNAMIC RAINBOW STARTUP LOADING SCREEN
-           ========================================== */
-        @keyframes rainbow-loader-bg {
-            0% { background: #e70000; }
-            17% { background: #ff8c00; }
-            33% { background: #ffeb00; }
-            50% { background: #00811f; }
-            67% { background: #004cff; }
-            83% { background: #732982; }
-            100% { background: #e70000; }
+        /* --- RAINBOW FOCUS GLOW --- */
+        @keyframes input-rainbow-glow {
+            0% { box-shadow: 0 0 12px rgba(231, 0, 0, 0.45); border-color: rgba(231, 0, 0, 0.75); }
+            20% { box-shadow: 0 0 12px rgba(255, 140, 0, 0.45); border-color: rgba(255, 140, 0, 0.75); }
+            40% { box-shadow: 0 0 12px rgba(255, 235, 0, 0.45); border-color: rgba(255, 235, 0, 0.75); }
+            60% { box-shadow: 0 0 12px rgba(0, 129, 31, 0.45); border-color: rgba(0, 129, 31, 0.75); }
+            80% { box-shadow: 0 0 12px rgba(0, 76, 255, 0.45); border-color: rgba(0, 76, 255, 0.75); }
+            100% { box-shadow: 0 0 12px rgba(118, 0, 137, 0.45); border-color: rgba(118, 0, 137, 0.75); }
         }
         
-        #app-loader div:first-child {
-            animation: bounce-spin 1.5s infinite cubic-bezier(0.68, -0.55, 0.265, 1.55), rainbow-loader-bg 5s infinite linear !important;
+        [data-theme^="pride-"] .n-glass-border:focus-within {
+            animation: input-rainbow-glow 4s infinite linear !important;
         }
         
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; }
