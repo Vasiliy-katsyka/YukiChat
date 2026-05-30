@@ -2598,6 +2598,125 @@
         // --- YUKICHAT FX ENGINE ---
         const rand = (min, max) => Math.random() * (max - min) + min;
         const randColor = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+        // --- LIGHTWEIGHT AUDIO ID3 TAGS PARSER ---
+        async function parseAudioMetadata(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const buffer = e.target.result;
+                    const view = new DataView(buffer);
+                    
+                    // Check if ID3v2 container is present
+                    if (view.byteLength < 10 || view.getUint8(0) !== 0x49 || view.getUint8(1) !== 0x44 || view.getUint8(2) !== 0x33) {
+                        resolve({ title: file.name.replace(/\.[^/.]+$/, ""), artist: "Unknown Artist", cover: "" });
+                        return;
+                    }
+                    
+                    let offset = 10;
+                    const totalSize = ((view.getUint8(6) & 0x7F) << 21) |
+                                      ((view.getUint8(7) & 0x7F) << 14) |
+                                      ((view.getUint8(8) & 0x7F) << 7) |
+                                      (view.getUint8(9) & 0x7F);
+                    
+                    let title = "";
+                    let artist = "";
+                    let cover = "";
+                    
+                    const utf8Decoder = new TextDecoder("utf-8");
+                    const utf16Decoder = new TextDecoder("utf-16");
+                    
+                    function decodeText(bytes, encoding) {
+                        if (encoding === 0x01 || encoding === 0x02) {
+                            return utf16Decoder.decode(bytes).replace(/^\uFEFF|\uFFFE/, "").trim();
+                        }
+                        return utf8Decoder.decode(bytes).trim();
+                    }
+    
+                    try {
+                        while (offset < totalSize + 10 && offset < view.byteLength - 10) {
+                            const frameId = String.fromCharCode(
+                                view.getUint8(offset),
+                                view.getUint8(offset + 1),
+                                view.getUint8(offset + 2),
+                                view.getUint8(offset + 3)
+                            );
+                            
+                            const frameSize = (view.getUint8(offset + 4) << 24) |
+                                              (view.getUint8(offset + 5) << 16) |
+                                              (view.getUint8(offset + 6) << 8) |
+                                              view.getUint8(offset + 7);
+                            
+                            if (frameSize <= 0 || offset + 10 + frameSize > view.byteLength) break;
+                            const frameDataStart = offset + 10;
+                            
+                            if (frameId === "TIT2") {
+                                const encoding = view.getUint8(frameDataStart);
+                                const textBytes = new Uint8Array(buffer, frameDataStart + 1, frameSize - 1);
+                                title = decodeText(textBytes, encoding);
+                            } else if (frameId === "TPE1") {
+                                const encoding = view.getUint8(frameDataStart);
+                                const textBytes = new Uint8Array(buffer, frameDataStart + 1, frameSize - 1);
+                                artist = decodeText(textBytes, encoding);
+                            } else if (frameId === "APIC") { // Cover Photo Frame
+                                const encoding = view.getUint8(frameDataStart);
+                                let mimeTypeStart = frameDataStart + 1;
+                                let mimeTypeEnd = mimeTypeStart;
+                                while (view.getUint8(mimeTypeEnd) !== 0 && mimeTypeEnd < frameDataStart + frameSize) {
+                                    mimeTypeEnd++;
+                                }
+                                const mimeType = String.fromCharCode.apply(null, new Uint8Array(buffer, mimeTypeStart, mimeTypeEnd - mimeTypeStart));
+                                let descStart = mimeTypeEnd + 2;
+                                let descEnd = descStart;
+                                if (encoding === 0x01 || encoding === 0x02) {
+                                    while (!(view.getUint8(descEnd) === 0 && view.getUint8(descEnd + 1) === 0) && descEnd < frameDataStart + frameSize) {
+                                        descEnd += 2;
+                                    }
+                                    descEnd += 2;
+                                } else {
+                                    while (view.getUint8(descEnd) !== 0 && descEnd < frameDataStart + frameSize) {
+                                        descEnd++;
+                                    }
+                                    descEnd++;
+                                }
+                                const pictureDataStart = descEnd;
+                                const pictureDataSize = (frameDataStart + frameSize) - pictureDataStart;
+                                if (pictureDataSize > 0) {
+                                    const pictureBytes = new Uint8Array(buffer, pictureDataStart, pictureDataSize);
+                                    let binary = "";
+                                    for (let i = 0; i < pictureBytes.length; i++) {
+                                        binary += String.fromCharCode(pictureBytes[i]);
+                                    }
+                                    const base64 = btoa(binary);
+                                    cover = `data:${mimeType};base64,${base64}`;
+                                }
+                            }
+                            offset += 10 + frameSize;
+                        }
+                    } catch(err) {
+                        console.warn("Metadata parsing error:", err);
+                    }
+                    
+                    // Filename parsing fallback
+                    if (!title) {
+                        const cleanName = file.name.replace(/\.[^/.]+$/, "");
+                        const parts = cleanName.split(" - ");
+                        if (parts.length > 1) {
+                            artist = artist || parts[0].trim();
+                            title = parts[1].trim();
+                        } else {
+                            title = cleanName;
+                        }
+                    }
+                    resolve({
+                        title: title || "Song Title",
+                        artist: artist || "Unknown Artist",
+                        cover: cover || ""
+                    });
+                };
+                reader.readAsArrayBuffer(file.slice(0, 500 * 1024)); // Read first 500KB to parse tags
+            });
+        }
         
         class MetallicStreamer {
             constructor(x, y, colorArr) {
@@ -3653,6 +3772,8 @@
                 else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
             }
         };
+
+
         
         const App = {
             // --- AUTHENTICATION ---
@@ -4126,27 +4247,62 @@
                 } 
                 else if (m.type === 'audio') {
                     let audioTitle = "Audio File";
-                    if (m.content) {
+                    let audioArtist = "Unknown Artist";
+                    let coverSrc = "";
+                    let userCaptionText = "";
+
+                    // Decrypt caption structure and parse JSON payload
+                    if (m.caption) {
+                        try {
+                            const meta = JSON.parse(m.caption);
+                            if (meta.title) audioTitle = meta.title;
+                            if (meta.artist) audioArtist = meta.artist;
+                            if (meta.cover) coverSrc = meta.cover;
+                            if (meta.userCaption) userCaptionText = meta.userCaption;
+                        } catch(e) {
+                            // Support legacy text-only titles
+                            audioTitle = m.caption;
+                        }
+                    }
+
+                    if (audioTitle === "Audio File" && m.content) {
                         try {
                             const urlObj = new URL(m.content);
                             let decoded = decodeURIComponent(urlObj.pathname.split('/').pop());
-                            decoded = decoded.replace(/^yuki_\d+[\._]/, ''); // Strip timestamp prefixes
-                            if (decoded) audioTitle = decoded;
+                            decoded = decoded.replace(/^yuki_\d+[\._]/, '');
+                            if (decoded) {
+                                const parts = decoded.split(" - ");
+                                if (parts.length > 1) {
+                                    audioArtist = parts[0].trim();
+                                    audioTitle = parts[1].replace(/\.[^/.]+$/, "").trim();
+                                } else {
+                                    audioTitle = decoded.replace(/\.[^/.]+$/, "").trim();
+                                }
+                            }
                         } catch(e) {}
                     }
+
+                    const thumbHtml = coverSrc 
+                        ? `<img src="${coverSrc}" style="width:100%; height:100%; object-fit:cover;">` 
+                        : `<span style="font-size: 18px;">🎵</span>`;
+
+                    const captionHtml = userCaptionText 
+                        ? `<div class="msg-caption" style="margin-top: 8px;">${formatText(userCaptionText)}</div>` 
+                        : ``;
+
                     inner += `
                     <div class="audio-msg-card" onclick="event.stopPropagation();" style="display: flex; align-items: center; gap: 12px; background: var(--bg-input); padding: 12px; border-radius: 16px; min-width: 240px; max-width: 320px; margin-top: 4px;">
                         <div style="position: relative; width: 44px; height: 44px; flex-shrink: 0; background: #333; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border);">
-                            <span style="font-size: 18px;">🎵</span>
+                            ${thumbHtml}
                             <button class="btn" style="position: absolute; inset: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); color: white; display: flex; align-items: center; justify-content: center; border-radius: 10px;" onclick="MusicPlayer.initTrack('${m.content}', '${audioTitle.replace(/'/g, "\\'")}')">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 1px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                             </button>
                         </div>
-                        <div class="audio-card-details" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+                        <div class="audio-card-details" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left;">
                             <span style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${audioTitle}</span>
-                            <span style="font-size:11px; color:var(--text-muted);">Audio File</span>
+                            <span style="font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${audioArtist}</span>
                         </div>
-                    </div>`.replace(/\s+/g, ' '); // Prevents line breaks from producing empty space!
+                    </div>${captionHtml}`.replace(/\s+/g, ' ');
                 }
                 else if (m.type === 'video') {
                     inner += `
@@ -5996,7 +6152,7 @@
             cancelReply() { State.replyTo = null; document.getElementById('reply-preview').style.display='none'; },
             scrollToPin() { const c = document.getElementById('msgs'); if(c) c.scrollTop = 0; },
 
-            prepMedia(e) {
+            async prepMedia(e, typeOverride = null) {
                 const files = Array.from(e.target.files);
                 if (files.length === 0) return;
                 e.target.value = '';
@@ -6004,25 +6160,40 @@
                 State.capMediaQueue = [];
                 let loadedCount = 0;
                 
-                files.forEach(f => {
-                    let inferredType = 'file';
-                    if (f.type.startsWith('image/')) inferredType = 'photo';
-                    else if (f.type.startsWith('video/')) inferredType = 'video';
-                    else if (f.type.startsWith('audio/')) inferredType = 'audio';
+                for (const f of files) {
+                    let inferredType = typeOverride || 'file';
+                    if (!typeOverride) {
+                        if (f.type.startsWith('image/')) inferredType = 'photo';
+                        else if (f.type.startsWith('video/')) inferredType = 'video';
+                        else if (f.type.startsWith('audio/')) inferredType = 'audio';
+                    }
                     
-                    State.capMediaQueue.push({ rawFile: f, type: inferredType, filename: f.name });
+                    const queueItem = { rawFile: f, type: inferredType, filename: f.name };
+                    
+                    // Asynchronously parse embedded ID3 audio details if type is audio
+                    if (inferredType === 'audio') {
+                        const meta = await parseAudioMetadata(f);
+                        queueItem.audioMeta = meta;
+                    }
+                    
+                    State.capMediaQueue.push(queueItem);
                     loadedCount++;
                     
                     if (loadedCount === files.length) {
-                        document.getElementById('media-preview-img').src = inferredType === 'photo' 
-                            ? URL.createObjectURL(f) 
-                            : 'https://via.placeholder.com/150/333333/FFFFFF?text=Media';
+                        let previewSrc = 'https://via.placeholder.com/150/333333/FFFFFF?text=Media';
+                        if (inferredType === 'photo') {
+                            previewSrc = URL.createObjectURL(f);
+                        } else if (inferredType === 'audio' && queueItem.audioMeta && queueItem.audioMeta.cover) {
+                            previewSrc = queueItem.audioMeta.cover;
+                        }
+                        
+                        document.getElementById('media-preview-img').src = previewSrc;
                         document.getElementById('media-preview-title').innerText = files.length > 1 ? `${files.length} Files Ready` : f.name;
                         document.getElementById('media-crop-btn').style.display = (files.length === 1 && inferredType === 'photo') ? 'flex' : 'none';
                         document.getElementById('media-preview').style.display = 'flex';
                         document.getElementById('msg-input').focus();
                     }
-                });
+                }
             },
             openCrop() {
                 if (!State.capMediaQueue || State.capMediaQueue.length !== 1) return;
@@ -6088,9 +6259,28 @@
                     try {
                         const s3Url = await this.uploadToS3(item.rawFile);
                         const finalContent = await E2EE.encrypt(targetChat, s3Url);
-                        let finalCap = currentCap;
-                        if (currentCap) {
-                            finalCap = await E2EE.encrypt(targetChat, currentCap);
+                        
+                        let metadataString = currentCap;
+                        if (item.type === 'audio' && item.audioMeta) {
+                            let coverUrl = "";
+                            if (item.audioMeta.cover) {
+                                try {
+                                    coverUrl = await this.uploadToS3(item.audioMeta.cover, 'jpg', 'image/jpeg');
+                                } catch(err) {
+                                    console.warn("Cover image upload failed:", err);
+                                }
+                            }
+                            metadataString = JSON.stringify({
+                                title: item.audioMeta.title,
+                                artist: item.audioMeta.artist,
+                                cover: coverUrl,
+                                userCaption: currentCap
+                            });
+                        }
+
+                        let finalCap = metadataString;
+                        if (metadataString) {
+                            finalCap = await E2EE.encrypt(targetChat, metadataString);
                         }
                         
                         const res = await req(`/api/messages/${targetChat}`, 'POST', {
@@ -6109,7 +6299,7 @@
                                 const fakeMsg = {
                                     id: res.id,
                                     content: s3Url,
-                                    caption: currentCap,
+                                    caption: metadataString,
                                     type: item.type,
                                     created_at: new Date().toISOString(),
                                     is_read: 0,
@@ -6617,140 +6807,218 @@
             handlePointerLeave(e) {
                 clearTimeout(this.gestureTimeout);
             },
+            // --- INITIALIZATION ---
             async start() {
-                this.isRecording = true;
-                this.chunks = [];
-                this.peaks = [];
-                
-                const constraints = { audio: true };
-                if (this.mode === 'video') {
-                    // Requests ideal 1:1 constraints to help stabilize hardware crops [1]
-                    constraints.video = { width: { ideal: 400 }, height: { ideal: 400 }, facingMode: "user" };
-                    document.getElementById('recording-video-circle').style.display = 'block';
-                } else {
-                    document.getElementById('recording-video-circle').style.display = 'none';
+                // Mirror token to localforage so the Service Worker can authenticate background fetches [2]
+                if (State.t) {
+                    localforage.setItem('y_t', State.t).catch(err => console.error(err));
                 }
-                
+
+                document.getElementById('set-av').src = State.u.avatar || getDefAv(State.u.username);
+                document.getElementById('nav-av').src = State.u.avatar || getDefAv(State.u.username);
+                Router.updateNav();
+                this.initFolders();
+
+                // Initialize End-to-End Encryption properly to prevent race conditions on reload
                 try {
-                    this.stream = await navigator.mediaDevices.getUserMedia(constraints);
-                    
-                    if (this.mode === 'video') {
-                        document.getElementById('recording-preview-feed').srcObject = this.stream;
-                    }
-                    
-                    if (this.mode === 'voice') {
-                        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                        const src = this.audioCtx.createMediaStreamSource(this.stream);
-                        const analyser = this.audioCtx.createAnalyser();
-                        analyser.fftSize = 128;
-                        src.connect(analyser);
-                        const array = new Uint8Array(analyser.frequencyBinCount);
-                        
-                        this.analyseInterval = setInterval(() => {
-                            analyser.getByteFrequencyData(array);
-                            let sum = 0;
-                            array.forEach(v => sum += v);
-                            this.peaks.push(Math.round(sum / array.length));
-                        }, 120);
-                    }
-                    
-                    document.getElementById('recording-hud').style.display = 'flex';
-                    
-                    let seconds = 0;
-                    this.timerInterval = setInterval(() => {
-                        seconds++;
-                        const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-                        const s = String(seconds % 60).padStart(2, '0');
-                        document.getElementById('recording-hud-timer').innerText = `Recording... ${m}:${s}`;
-                        
-                        if (this.isRecording && !this.hasCanceled) {
-                            document.onpointermove = (pe) => {
-                                const dragDist = Math.hypot(pe.clientX - this.startX, pe.clientY - this.startY);
-                                if (dragDist > 120) { // Sliding past threshold triggers graceful cancel
-                                    this.stop(true);
-                                }
-                            };
-                        }
-                    }, 1000);
-                    
-                    // Check local support to choose the safest cross-platform containers [1]
-                    let options = {};
-                    if (this.mode === 'voice') {
-                        if (MediaRecorder.isTypeSupported('audio/webm')) options.mimeType = 'audio/webm';
-                        else if (MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
-                    } else {
-                        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) options.mimeType = 'video/webm;codecs=vp8';
-                        else if (MediaRecorder.isTypeSupported('video/mp4')) options.mimeType = 'video/mp4';
-                    }
-                    this.mediaRecorder = new MediaRecorder(this.stream, options);
-                    this.mediaRecorder.ondataavailable = (ev) => {
-                        if (ev.data.size > 0) this.chunks.push(ev.data);
-                    };
-                    
-                    this.mediaRecorder.onstop = async () => {
-                        document.onpointermove = null;
-                        if (this.hasCanceled) return;
-                        
-                        const blob = new Blob(this.chunks, { type: this.mode === 'voice' ? 'audio/webm' : 'video/webm' });
-                        
-                        // --- OPTIMISTIC SENDING PLACEHOLDER (Opacity: 0.6) ---
-                        const tempId = 'temp-rec-' + Date.now();
-                        const msgsCont = document.getElementById('msgs');
-                        if (msgsCont) {
-                            let tempHtml = '';
-                            if (this.mode === 'voice') {
-                                tempHtml = `<div class="voice-player" style="opacity:0.6;"><div class="loader" style="width:20px;height:20px;border-color:var(--text-muted);border-top-color:var(--primary);"></div> <span style="font-size:12px;color:var(--text-muted);margin-left:8px;">Sending Voice...</span></div>`;
-                            } else {
-                                tempHtml = `<div class="video-note-container" style="opacity:0.6; display:flex; align-items:center; justify-content:center; border:2px dashed var(--primary);"><div class="loader" style="width:30px;height:30px;border-color:var(--text-muted);border-top-color:var(--primary);"></div></div>`;
-                            }
-                            
-                            const bStyle = (this.mode === 'video') ? 'background: transparent !important; padding: 0 !important; box-shadow: none !important; border: none !important;' : '';
-                            msgsCont.insertAdjacentHTML('beforeend', `
-                                <div class="msg-row sent" id="${tempId}" style="opacity:0.6;">
-                                    <div class="msg-bubble" style="${bStyle}">${tempHtml}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Sending...</div></div>
-                                </div>
-                            `);
-                            msgsCont.scrollTop = msgsCont.scrollHeight;
-                        }
-                        
-                        try {
-                            const fileUrl = await App.uploadToS3(blob, 'webm', blob.type);
-                            const payload = { content: fileUrl, type: this.mode === 'voice' ? 'voice' : 'video_note' };
-                            if (this.mode === 'voice') {
-                                payload.caption = JSON.stringify({ peaks: this.peaks });
-                            }
-                            const res = await req(`/api/messages/${State.chat}`, 'POST', payload);
-                            
-                            // Swap placeholder out for the finalized message
-                            const tempEl = document.getElementById(tempId);
-                            if (tempEl) {
-                                tempEl.id = `msg-${res.id}`;
-                                tempEl.style.opacity = '1';
-                                
-                                const fakeMsg = {
-                                    id: res.id,
-                                    content: fileUrl,
-                                    caption: payload.caption,
-                                    type: payload.type,
-                                    created_at: new Date().toISOString(),
-                                    is_read: 0,
-                                    sender_id: State.u.userId
-                                };
-                                tempEl.innerHTML = App.buildMsgHTML(fakeMsg, true, State.chats.get(State.chat)?.type);
-                            }
-                            App.fastPoll();
-                        } catch(err) {
-                            document.getElementById(tempId)?.remove();
-                            UI.toast("Failed to deliver message");
-                        }
-                    };
-                    
-                    this.mediaRecorder.start();
-                } catch(err) {
-                    console.error("Recording initialization failed:", err);
-                    UI.toast("Microphone/Camera permissions denied");
-                    this.isRecording = false;
+                    await E2EE.init();
+                } catch (e) {
+                    console.error("E2EE Encryption Initialization Failed:", e);
                 }
+                
+                // --- NEW: Keyboard Shortcuts ---
+                document.addEventListener('keydown', (e) => {
+                    const isInput = ['INPUT', 'TEXTAREA'].includes(e.target.tagName);
+                    
+                    // Ctrl+K or '/' for Search
+                    if (((e.ctrlKey || e.metaKey) && e.key === 'k') || (!isInput && e.key === '/')) {
+                        e.preventDefault();
+                        document.querySelector('.search-bar input')?.focus();
+                        if(Router.stack[Router.stack.length-1] !== 'panel-root') App.switchTab('chats');
+                    }
+                    
+                    // Esc: Close Modals, Cancel Reply, Close Chat
+                    if (e.key === 'Escape') {
+                        if (State.replyTo) App.cancelReply();
+                        else if (document.getElementById('ctx-menu').classList.contains('show')) App.closeCtx();
+                        else if (Router.stack.length > 1 && Router.stack[Router.stack.length-1] !== 'panel-chat') Router.pop();
+                    }
+                
+                    // Up Arrow: Edit/Reply to last message if input is empty
+                    if (e.key === 'ArrowUp' && e.target.id === 'msg-input' && !e.target.value) {
+                        e.preventDefault();
+                        const myMsgs = Array.from(document.querySelectorAll('.msg-row.sent'));
+                        if (myMsgs.length > 0) {
+                            const lastMsg = myMsgs[myMsgs.length - 1];
+                            State.targetId = lastMsg.id.replace('msg-', '');
+                            const bubble = lastMsg.querySelector('.msg-bubble');
+                            State.targetTxt = bubble ? (bubble.getAttribute('data-raw') || 'Media') : '';
+                            App.initReply();
+                        }
+                    }
+                });
+                
+                // Shift+Enter / Enter sending
+                const msgInput = document.getElementById('msg-input');
+                if(msgInput) {
+                    msgInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey && window.innerWidth >= 768) {
+                            e.preventDefault();
+                            App.sendText();
+                        }
+                    });
+                }
+                const effectsEnabled = localStorage.getItem('y_msg_effects_enabled') === 'true';
+                const effectsCheckbox = document.getElementById('set-msg-effects');
+                if (effectsCheckbox) effectsCheckbox.checked = effectsEnabled;
+                // --- NEW: Drag & Drop Dropzone UI ---
+                const chatArea = document.getElementById('panel-chat');
+                const dropOverlay = document.getElementById('drop-zone-overlay');
+                chatArea.addEventListener('dragover', (e) => { e.preventDefault(); dropOverlay.style.display = 'flex'; });
+                chatArea.addEventListener('dragleave', (e) => { 
+                    if(e.relatedTarget === dropOverlay || e.target === dropOverlay) return;
+                    e.preventDefault(); dropOverlay.style.display = 'none'; 
+                });
+                chatArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropOverlay.style.display = 'none';
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        App.prepMedia({ target: { files: e.dataTransfer.files, value: '' } });
+                    }
+                });
+                
+                // Init Compact Mode setting
+                const isCompact = localStorage.getItem('y_compact') === 'true';
+                if (document.getElementById('set-compact')) document.getElementById('set-compact').checked = isCompact;
+                this.toggleCompactMode(isCompact);
+
+                const msgsCont = document.getElementById('msgs');
+                let touchStartX = 0;
+                let swipeTarget = null;
+                
+                msgsCont.addEventListener('touchstart', e => {
+                    const bubble = e.target.closest('.msg-bubble');
+                    if (!bubble) return;
+                    touchStartX = e.touches[0].clientX;
+                    swipeTarget = bubble;
+                    swipeTarget.style.transition = 'none';
+                }, {passive: true});
+                
+                msgsCont.addEventListener('touchmove', e => {
+                    if (!swipeTarget) return;
+                    const diff = e.touches[0].clientX - touchStartX;
+                    if (diff < -10) { // Swipe left
+                        swipeTarget.style.transform = `translateX(${Math.max(diff, -60)}px)`;
+                    }
+                }, {passive: true});
+                
+                msgsCont.addEventListener('touchend', e => {
+                    if (!swipeTarget) return;
+                    const diff = e.changedTouches[0].clientX - touchStartX;
+                    swipeTarget.style.transition = 'transform 0.2s';
+                    swipeTarget.style.transform = 'translateX(0)';
+                    
+                    if (diff < -50) {
+                        // Trigger reply
+                        const row = swipeTarget.closest('.msg-row');
+                        State.targetId = row.id.replace('msg-', '');
+                        State.targetTxt = swipeTarget.getAttribute('data-raw') || 'Media';
+                        App.initReply();
+                    }
+                    swipeTarget = null;
+                });
+                const mCont = document.getElementById('media-zoom-container');
+                const mImg = document.getElementById('media-viewer-img');
+                let mStartDist = 0, mStartX = 0, mStartY = 0, mPanX = 0, mPanY = 0;
+                
+                mCont.addEventListener('touchstart', e => {
+                    if(e.touches.length === 2) {
+                        mStartDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                    } else if (e.touches.length === 1 && State.mScale > 1) {
+                        mStartX = e.touches[0].pageX - mPanX;
+                        mStartY = e.touches[0].pageY - mPanY;
+                    }
+                });
+                
+                mCont.addEventListener('touchmove', e => {
+                    if(e.touches.length === 2) {
+                        e.preventDefault();
+                        const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                        State.mScale = Math.min(Math.max(1, State.mScale * (dist / mStartDist)), 4);
+                        mStartDist = dist;
+                    } else if (e.touches.length === 1 && State.mScale > 1) {
+                        e.preventDefault();
+                        mPanX = e.touches[0].pageX - mStartX;
+                        mPanY = e.touches[0].pageY - mStartY;
+                    }
+                    mImg.style.transform = `scale(${State.mScale}) translate(${mPanX/State.mScale}px, ${mPanY/State.mScale}px)`;
+                });
+                
+                mCont.addEventListener('touchend', () => {
+                    if(State.mScale <= 1) { mPanX = 0; mPanY = 0; mImg.style.transform = `scale(1) translate(0px, 0px)`; }
+                });
+                
+                const nameEl = document.getElementById('set-name');
+                if(nameEl.tagName === 'INPUT') nameEl.value = State.u.username; else nameEl.textContent = State.u.username;
+                document.getElementById('set-bio').value = State.u.bio || '';
+                // Initialize Animated Reactions Setting (Default to true)
+                const animReact = localStorage.getItem('y_anim_react') !== 'false';
+                if (document.getElementById('set-anim-react')) {
+                    document.getElementById('set-anim-react').checked = animReact;
+                }
+                
+                const t = localStorage.getItem('y_theme') || 'dark'; this.setTheme(t);
+                const w = localStorage.getItem('y_wall') || ''; this.setWallpaper(w);
+
+                // Initialize Blur state
+                const blur = localStorage.getItem('y_glass_blur') || '4';
+                document.documentElement.style.setProperty('--glass-blur', `${blur}px`);
+                const blurSlider = document.getElementById('set-blur');
+                if (blurSlider) blurSlider.value = blur;
+                const blurDisp = document.getElementById('blur-val-disp');
+                if (blurDisp) blurDisp.innerText = `${blur}px`;
+                
+                let skels=''; for(let i=0;i<6;i++) skels+=`<div class="user-item"><div class="skel-av skeleton"></div><div class="user-info"><div class="skel-text skeleton"></div><div class="skel-text short skeleton"></div></div></div>`;
+                document.getElementById('chat-list').innerHTML = skels;
+
+                const p = new URLSearchParams(window.location.search);
+                const basePath = window.location.pathname;
+
+                if(p.get('channel') || p.get('group')) {
+                    const h = p.get('channel') || p.get('group');
+                    req('/api/chats/join', 'POST', {handle: h}).then(r => this.openChat(r.chat_id)).catch(e=>UI.toast("Join failed"));
+                    window.history.replaceState({}, document.title, basePath);
+                } else if (p.get('stickerpack')) {
+                    const sp = p.get('stickerpack');
+                    this.previewStickerPack(sp);
+                    window.history.replaceState({}, document.title, basePath);
+                } else if (p.get('user')) {
+                    this.handleMention(p.get('user'));
+                    window.history.replaceState({}, document.title, basePath);
+                }
+                
+                this.loadStickerKeyboard();
+                if(State.u.username === 'vasiliy') document.getElementById('admin-panel').style.display = 'block';
+
+                let totalBytes = 0;
+                for(let key in localStorage) if(localStorage.hasOwnProperty(key)) totalBytes += ((localStorage[key].length + key.length) * 2);
+                document.getElementById('cache-size').innerText = (totalBytes / 1024).toFixed(1) + ' KB';
+                Weather.init();
+                
+                this.sync(); 
+
+                App.connectWS();
+
+                // Kill the high-CPU fast poll loop (WebSocket handles this instantly now!)
+                if (State.fastLoop) clearInterval(State.fastLoop);
+                
+                // Background Sync Loop: Slowed down to 30s just to safely keep online dots updated
+                if (State.syncLoop) clearInterval(State.syncLoop);
+                State.syncLoop = setInterval(() => {
+                    if (document.visibilityState === 'visible') {
+                        App.sync(); 
+                    }
+                }, 8000);
             },
             async stop(canceled = false) {
                 if (!this.isRecording) return;
