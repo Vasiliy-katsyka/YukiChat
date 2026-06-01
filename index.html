@@ -1922,14 +1922,14 @@
         </div>
     </div>
 
-    <!-- WHY YUKICHAT IS THE BEST INFO MODAL -->
-    <div id="why-best-modal" style="display: none; position: fixed; inset: 0; z-index: 11000; background: color-mix(in srgb, var(--text-main) 15%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
-        <div class="liquid-glass" style="max-width: 420px; width: 100%; background: var(--bg-panel); border-radius: 28px; border: 1px solid var(--border); padding: 32px 24px; text-align: left; box-shadow: var(--shadow); color: var(--text-main); position: relative;">
+    <!-- 1. WHY YUKICHAT IS THE BEST INFO MODAL -->
+    <div id="why-best-modal" style="display: none; position: fixed; inset: 0; z-index: 11000; background: color-mix(in srgb, var(--text-main) 8%, transparent); backdrop-filter: blur(1px); -webkit-backdrop-filter: blur(1px); align-items: center; justify-content: center; padding: 20px;">
+        <div class="n-liquid n-glass-border" style="--glass-blur: 1px; max-width: 420px; width: 100%; border-radius: 28px; padding: 32px 24px; text-align: left; box-shadow: var(--shadow); color: var(--text-main); position: relative;">
             
-            <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 20px; letter-spacing: -0.5px;">Why YukiChat? ❄️</h2>
+            <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 20px; letter-spacing: -0.5px;">Why YukiChat? ❄️</h2>
             
-            <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; font-size: 14.5px; line-height: 1.5; opacity: 0.9;">
-                <div>🔒 <b>End-to-End Encryption:</b> Direct messages are secured locally using ECDH & AES-GCM. Your conversations remain strictly private.</div>
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; font-size: 14px; line-height: 1.5; opacity: 0.9;">
+                <div>🔒 <b>End-to-End Encryption:</b> Direct messages are secured locally using ECDH & AES-GCM. Your conversations remain private.</div>
                 <div>✨ <b>Gemini AI Integration:</b> Edit, translate, or summarize texts instantly with a built-in assistant.</div>
                 <div>🎨 <b>Dynamic Customization:</b> Personalize your experience with themes, wallpapers, adjustable glass blurs, and animated stickers.</div>
                 <div>📱 <b>Progressive Web App:</b> Install YukiChat directly to your home screen for a full-screen standalone layout and push notifications.</div>
@@ -2805,13 +2805,13 @@
         <!-- DESKTOP FOLDERS RAIL -->
         <div id="desktop-folders-nav"></div>
     </div>
-<!-- CHANGE PASSWORD MODAL -->
-    <div id="change-password-modal" style="display: none; position: fixed; inset: 0; z-index: 11000; background: color-mix(in srgb, var(--text-main) 15%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
-        <div class="liquid-glass" style="max-width: 400px; width: 100%; background: var(--bg-panel); border-radius: 28px; border: 1px solid var(--border); padding: 32px 24px; text-align: left; box-shadow: var(--shadow); color: var(--text-main);">
+    <!-- 2. CHANGE PASSWORD MODAL -->
+    <div id="change-password-modal" style="display: none; position: fixed; inset: 0; z-index: 11000; background: color-mix(in srgb, var(--text-main) 8%, transparent); backdrop-filter: blur(1px); -webkit-backdrop-filter: blur(1px); align-items: center; justify-content: center; padding: 20px;">
+        <div class="n-liquid n-glass-border" style="--glass-blur: 1px; max-width: 400px; width: 100%; border-radius: 28px; padding: 32px 24px; text-align: left; box-shadow: var(--shadow); color: var(--text-main); position: relative;">
             <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 20px; letter-spacing: -0.5px;">Change Password</h2>
             
-            <input type="password" id="change-pass-old" class="settings-input liquid-glass n-glass-border" placeholder="Current Password" style="background:transparent; margin-bottom: 12px;">
-            <input type="password" id="change-pass-new" class="settings-input liquid-glass n-glass-border" placeholder="New Password" style="background:transparent; margin-bottom: 24px;">
+            <input type="password" id="change-pass-old" class="settings-input liquid-glass n-glass-border" placeholder="Current Password" style="background:transparent; margin-bottom: 12px; color: var(--text-main);">
+            <input type="password" id="change-pass-new" class="settings-input liquid-glass n-glass-border" placeholder="New Password" style="background:transparent; margin-bottom: 24px; color: var(--text-main);">
             
             <div style="display: flex; gap: 12px;">
                 <button class="btn btn-outline" style="flex: 1;" onclick="App.toggleChangePasswordModal(false)">Cancel</button>
@@ -2820,15 +2820,15 @@
         </div>
     </div>
 
-    <!-- FORGOT PASSWORD / RECOVERY MODAL -->
-    <div id="recovery-modal" style="display: none; position: fixed; inset: 0; z-index: 11000; background: color-mix(in srgb, var(--text-main) 15%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
-        <div class="liquid-glass" style="max-width: 400px; width: 100%; background: var(--bg-panel); border-radius: 28px; border: 1px solid var(--border); padding: 32px 24px; text-align: left; box-shadow: var(--shadow); color: var(--text-main);">
+    <!-- 3. FORGOT PASSWORD / RECOVERY MODAL -->
+    <div id="recovery-modal" style="display: none; position: fixed; inset: 0; z-index: 11000; background: color-mix(in srgb, var(--text-main) 8%, transparent); backdrop-filter: blur(1px); -webkit-backdrop-filter: blur(1px); align-items: center; justify-content: center; padding: 20px;">
+        <div class="n-liquid n-glass-border" style="--glass-blur: 1px; max-width: 400px; width: 100%; border-radius: 28px; padding: 32px 24px; text-align: left; box-shadow: var(--shadow); color: var(--text-main); position: relative;">
             <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 16px; letter-spacing: -0.5px;">Account Recovery</h2>
             
             <!-- Step 1: Username lookup -->
             <div id="recovery-step-1" style="display: block;">
                 <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">Enter your username to retrieve your security question.</p>
-                <input type="text" id="recovery-username" class="settings-input liquid-glass n-glass-border" placeholder="Username" style="background:transparent; margin-bottom: 20px;">
+                <input type="text" id="recovery-username" class="settings-input liquid-glass n-glass-border" placeholder="Username" style="background:transparent; margin-bottom: 20px; color: var(--text-main);">
                 <div style="display: flex; gap: 12px;">
                     <button class="btn btn-outline" style="flex: 1;" onclick="App.toggleRecoveryModal(false)">Cancel</button>
                     <button class="btn liquid-glass n-glass-border" style="flex: 1; color: var(--text-main); background: var(--bg-input);" onclick="App.getRecoveryQuestion()">Find Account</button>
@@ -2840,8 +2840,8 @@
                 <p style="font-weight: 600; font-size: 15px; margin-bottom: 6px;">Security Question:</p>
                 <p id="recovery-question-text" style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px; font-style: italic;">Question goes here...</p>
                 
-                <input type="text" id="recovery-answer" class="settings-input liquid-glass n-glass-border" placeholder="Your Answer" style="background:transparent; margin-bottom: 12px;">
-                <input type="password" id="recovery-new-pass" class="settings-input liquid-glass n-glass-border" placeholder="New Password" style="background:transparent; margin-bottom: 24px;">
+                <input type="text" id="recovery-answer" class="settings-input liquid-glass n-glass-border" placeholder="Your Answer" style="background:transparent; margin-bottom: 12px; color: var(--text-main);">
+                <input type="password" id="recovery-new-pass" class="settings-input liquid-glass n-glass-border" placeholder="New Password" style="background:transparent; margin-bottom: 24px; color: var(--text-main);">
                 
                 <div style="display: flex; gap: 12px;">
                     <button class="btn btn-outline" style="flex: 1;" onclick="App.showRecoveryStep1()">Back</button>
@@ -2850,6 +2850,7 @@
             </div>
         </div>
     </div>
+    
     <!-- MUSIC DASHBOARD PANEL MODAL -->
     <div id="panel-music-dashboard" class="panel">
         <div class="panel-header">
@@ -5714,12 +5715,17 @@
             },
         
             async logout() { 
-                // 1. Show loader so user knows something is happening
+                // 1. Show loader
                 App.setMainTitle('Logging out...');
                 
-                // 2. Clear both storage types (CRITICAL)
-                localStorage.clear(); 
-                await localforage.clear(); 
+                // 2. Selectively remove only active session keys
+                localStorage.removeItem('y_t');
+                localStorage.removeItem('y_u');
+                
+                if (window.localforage) {
+                    await localforage.removeItem('y_t').catch(()=>{});
+                    await localforage.removeItem('y_u').catch(()=>{});
+                }
                 
                 // 3. Redirect to home
                 location.href = '/'; 
