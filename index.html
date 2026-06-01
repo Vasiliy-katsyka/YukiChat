@@ -1873,11 +1873,19 @@
             </div>
 
             <!-- SLIDE 2: CREDENTIALS (LOGIN / REGISTER) -->
+            <!-- SLIDE 2: CREDENTIALS (LOGIN / REGISTER) -->
             <div id="auth-slide-credentials" style="display: none;">
                 <h2 id="credentials-title" style="font-size: 24px; font-weight: 800; margin-bottom: 24px;">Create Account</h2>
                 
                 <input type="text" id="auth-u" class="settings-input liquid-glass n-glass-border" placeholder="Username" style="background:transparent; margin-bottom: 12px;">
-                <input type="password" id="auth-p" class="settings-input liquid-glass n-glass-border" placeholder="Password" style="margin-bottom: 24px; background:transparent;">
+                <input type="password" id="auth-p" class="settings-input liquid-glass n-glass-border" placeholder="Password" style="margin-bottom: 12px; background:transparent;">
+                
+                <!-- FORGOT PASSWORD LINK -->
+                <div style="text-align: right; margin-bottom: 24px; padding-right: 4px;">
+                    <span style="font-size: 13px; color: var(--text-muted); cursor: pointer; text-decoration: underline;" onclick="App.toggleRecoveryModal(true)">
+                        Forgot Password?
+                    </span>
+                </div>
                 
                 <div style="display: flex; flex-direction: column; gap: 12px;">
                     <button class="btn liquid-glass n-glass-border" id="btn-auth-main" onclick="App.submitAuth()" style="color:#000;">Continue</button>
@@ -1915,16 +1923,21 @@
     </div>
 
     <!-- WHY YUKICHAT IS THE BEST INFO MODAL -->
-    <div id="why-best-modal" style="display: none; position: fixed; inset: 0; z-index: 11000; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
-        <div class="liquid-glass n-liquid" style="max-width: 420px; width: 100%; background: var(--bg-panel); border-radius: 28px; border: 1px solid var(--border); padding: 32px 24px; text-align: left; box-shadow: var(--shadow);">
-            <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 16px; letter-spacing: -0.5px;">Why YukiChat? ❄️</h2>
-            <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; font-size: 14px; line-height: 1.5; color: var(--text-main);">
-                <div>🔒 <b>End-to-End Encryption:</b> Direct messages are encrypted locally using ECDH & AES-GCM. Your messages are private.</div>
-                <div>✨ <b>Gemini AI Integration:</b> Edit, translate, or summarize text instantly with an AI assistant.</div>
-                <div>🎨 <b>Dynamic Customization:</b> Change themes, blurs, wallpapers, and apply animated reaction stickers.</div>
-                <div>📱 <b>Fully Installable PWA:</b> Add it to your home screen for full-screen integration and notifications.</div>
+    <div id="why-best-modal" style="display: none; position: fixed; inset: 0; z-index: 11000; background: color-mix(in srgb, var(--text-main) 15%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
+        <div class="liquid-glass" style="max-width: 420px; width: 100%; background: var(--bg-panel); border-radius: 28px; border: 1px solid var(--border); padding: 32px 24px; text-align: left; box-shadow: var(--shadow); color: var(--text-main); position: relative;">
+            
+            <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 20px; letter-spacing: -0.5px;">Why YukiChat? ❄️</h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; font-size: 14.5px; line-height: 1.5; opacity: 0.9;">
+                <div>🔒 <b>End-to-End Encryption:</b> Direct messages are secured locally using ECDH & AES-GCM. Your conversations remain strictly private.</div>
+                <div>✨ <b>Gemini AI Integration:</b> Edit, translate, or summarize texts instantly with a built-in assistant.</div>
+                <div>🎨 <b>Dynamic Customization:</b> Personalize your experience with themes, wallpapers, adjustable glass blurs, and animated stickers.</div>
+                <div>📱 <b>Progressive Web App:</b> Install YukiChat directly to your home screen for a full-screen standalone layout and push notifications.</div>
             </div>
-            <button class="btn liquid-glass n-glass-border" onclick="App.toggleWhyBest(false)" style="color:#000;">Close</button>
+            
+            <button class="btn liquid-glass n-glass-border" onclick="App.toggleWhyBest(false)" style="color: var(--text-main); background: var(--bg-input);">
+                Close
+            </button>
         </div>
     </div>
     <!-- Chat Selection Bar (goes inside #panel-root, above the root-header) -->
@@ -2390,12 +2403,20 @@
             </div>
             <div class="settings-header">Security</div>
             <div class="settings-card">
-                <div class="settings-row" id="settings-biometric-row" style="margin:0; background:transparent; cursor:pointer;" onclick="App.registerBiometrics()">
+                <div class="settings-row" id="settings-biometric-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0; cursor:pointer;" onclick="App.registerBiometrics()">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
                         Set Up Biometric Login
                     </div>
                     <span id="biometric-status" style="font-size:12px; color:var(--text-muted); font-weight:700;">Not Setup</span>
+                </div>
+                <!-- CHANGE PASSWORD ROW -->
+                <div class="settings-row" style="margin:0; background:transparent; cursor:pointer;" onclick="App.toggleChangePasswordModal(true)">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        Change Password
+                    </div>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </div>
             </div>
             <div class="settings-header">Privacy</div>
@@ -2784,7 +2805,51 @@
         <!-- DESKTOP FOLDERS RAIL -->
         <div id="desktop-folders-nav"></div>
     </div>
+<!-- CHANGE PASSWORD MODAL -->
+    <div id="change-password-modal" style="display: none; position: fixed; inset: 0; z-index: 11000; background: color-mix(in srgb, var(--text-main) 15%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
+        <div class="liquid-glass" style="max-width: 400px; width: 100%; background: var(--bg-panel); border-radius: 28px; border: 1px solid var(--border); padding: 32px 24px; text-align: left; box-shadow: var(--shadow); color: var(--text-main);">
+            <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 20px; letter-spacing: -0.5px;">Change Password</h2>
+            
+            <input type="password" id="change-pass-old" class="settings-input liquid-glass n-glass-border" placeholder="Current Password" style="background:transparent; margin-bottom: 12px;">
+            <input type="password" id="change-pass-new" class="settings-input liquid-glass n-glass-border" placeholder="New Password" style="background:transparent; margin-bottom: 24px;">
+            
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-outline" style="flex: 1;" onclick="App.toggleChangePasswordModal(false)">Cancel</button>
+                <button class="btn liquid-glass n-glass-border" style="flex: 1; color: var(--text-main); background: var(--bg-input);" onclick="App.submitChangePassword()">Save</button>
+            </div>
+        </div>
+    </div>
 
+    <!-- FORGOT PASSWORD / RECOVERY MODAL -->
+    <div id="recovery-modal" style="display: none; position: fixed; inset: 0; z-index: 11000; background: color-mix(in srgb, var(--text-main) 15%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
+        <div class="liquid-glass" style="max-width: 400px; width: 100%; background: var(--bg-panel); border-radius: 28px; border: 1px solid var(--border); padding: 32px 24px; text-align: left; box-shadow: var(--shadow); color: var(--text-main);">
+            <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 16px; letter-spacing: -0.5px;">Account Recovery</h2>
+            
+            <!-- Step 1: Username lookup -->
+            <div id="recovery-step-1" style="display: block;">
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">Enter your username to retrieve your security question.</p>
+                <input type="text" id="recovery-username" class="settings-input liquid-glass n-glass-border" placeholder="Username" style="background:transparent; margin-bottom: 20px;">
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-outline" style="flex: 1;" onclick="App.toggleRecoveryModal(false)">Cancel</button>
+                    <button class="btn liquid-glass n-glass-border" style="flex: 1; color: var(--text-main); background: var(--bg-input);" onclick="App.getRecoveryQuestion()">Find Account</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Answer question & reset -->
+            <div id="recovery-step-2" style="display: none;">
+                <p style="font-weight: 600; font-size: 15px; margin-bottom: 6px;">Security Question:</p>
+                <p id="recovery-question-text" style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px; font-style: italic;">Question goes here...</p>
+                
+                <input type="text" id="recovery-answer" class="settings-input liquid-glass n-glass-border" placeholder="Your Answer" style="background:transparent; margin-bottom: 12px;">
+                <input type="password" id="recovery-new-pass" class="settings-input liquid-glass n-glass-border" placeholder="New Password" style="background:transparent; margin-bottom: 24px;">
+                
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-outline" style="flex: 1;" onclick="App.showRecoveryStep1()">Back</button>
+                    <button class="btn liquid-glass n-glass-border" style="flex: 1; color: var(--text-main); background: var(--bg-input);" onclick="App.submitRecoveryReset()">Reset Password</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- MUSIC DASHBOARD PANEL MODAL -->
     <div id="panel-music-dashboard" class="panel">
         <div class="panel-header">
@@ -4304,6 +4369,81 @@
                              </div>`;
                 });
                 list.innerHTML = html;
+            },
+
+            // --- CHANGE PASSWORD METHODS ---
+            toggleChangePasswordModal(show) {
+                document.getElementById('change-pass-old').value = '';
+                document.getElementById('change-pass-new').value = '';
+                document.getElementById('change-password-modal').style.display = show ? 'flex' : 'none';
+            },
+
+            async submitChangePassword() {
+                const old_password = document.getElementById('change-pass-old').value.trim();
+                const new_password = document.getElementById('change-pass-new').value.trim();
+
+                if (!old_password || !new_password) {
+                    return UI.toast("Please fill in all fields");
+                }
+
+                try {
+                    await req('/api/user/password', 'PUT', { old_password, new_password });
+                    UI.toast("Password changed successfully!");
+                    this.toggleChangePasswordModal(false);
+                } catch (err) {
+                    UI.toast(err.message || "Failed to change password");
+                }
+            },
+
+            // --- ACCOUNT RECOVERY METHODS ---
+            toggleRecoveryModal(show) {
+                document.getElementById('recovery-username').value = '';
+                document.getElementById('recovery-answer').value = '';
+                document.getElementById('recovery-new-pass').value = '';
+                document.getElementById('recovery-modal').style.display = show ? 'flex' : 'none';
+                this.showRecoveryStep1();
+            },
+
+            showRecoveryStep1() {
+                document.getElementById('recovery-step-1').style.display = 'block';
+                document.getElementById('recovery-step-2').style.display = 'none';
+            },
+
+            async getRecoveryQuestion() {
+                const username = document.getElementById('recovery-username').value.trim();
+                if (!username) return UI.toast("Please enter your username");
+
+                try {
+                    const res = await req('/api/recover/question', 'POST', { username });
+                    
+                    if (res && res.question) {
+                        document.getElementById('recovery-question-text').innerText = res.question;
+                        document.getElementById('recovery-step-1').style.display = 'none';
+                        document.getElementById('recovery-step-2').style.display = 'block';
+                    } else {
+                        UI.toast("No security question configured for this account.");
+                    }
+                } catch (err) {
+                    UI.toast(err.message || "Account recovery query failed.");
+                }
+            },
+
+            async submitRecoveryReset() {
+                const username = document.getElementById('recovery-username').value.trim();
+                const security_a = document.getElementById('recovery-answer').value.trim();
+                const new_password = document.getElementById('recovery-new-pass').value.trim();
+
+                if (!security_a || !new_password) {
+                    return UI.toast("Please fill in all recovery fields");
+                }
+
+                try {
+                    await req('/api/recover/reset', 'POST', { username, security_a, new_password });
+                    UI.toast("Password reset successfully! You can now log in.");
+                    this.toggleRecoveryModal(false);
+                } catch (err) {
+                    UI.toast(err.message || "Incorrect recovery details provided.");
+                }
             },
             
             openEditFolder(id) {
@@ -7787,6 +7927,15 @@
             if(State.t) { 
                 document.getElementById('panel-auth').classList.remove('active'); 
                 App.start(); 
+            } else {
+                // If logged out, check if biometric login can be offered on the welcome screen
+                if (localStorage.getItem('y_bio_cred_id')) {
+                    const bioBtn = document.getElementById('btn-biometric-login');
+                    if (bioBtn) bioBtn.style.display = 'flex';
+                    
+                    const bioStatus = document.getElementById('biometric-status');
+                    if (bioStatus) bioStatus.innerText = 'Enrolled';
+                }
             }
             // Fade out and remove the loader
             setTimeout(() => {
