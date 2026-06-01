@@ -2972,189 +2972,6 @@
             }
         });
 
-        // Add these actions inside your App object:
-        Object.assign(App, {
-            showAuthSlide(slideId, mode = null) {
-                document.getElementById('auth-slide-welcome').style.display = 'none';
-                document.getElementById('auth-slide-credentials').style.display = 'none';
-                document.getElementById('auth-slide-onboarding').style.display = 'none';
-                
-                const target = document.getElementById(`auth-slide-${slideId}`);
-                if (target) target.style.display = 'block';
-
-                if (slideId === 'credentials' && mode) {
-                    State.authMode = mode;
-                    document.getElementById('credentials-title').textContent = mode === 'register' ? 'Create Account' : 'Log In';
-                    document.getElementById('btn-auth-main').textContent = mode === 'register' ? 'Create Account' : 'Log In';
-                    document.getElementById('auth-toggle-txt').textContent = mode === 'register' ? 'Already have an account?' : "Don't have an account?";
-                    document.getElementById('auth-toggle-txt').nextElementSibling.textContent = mode === 'register' ? 'Log In' : 'Sign Up';
-                }
-            },
-
-            toggleWhyBest(show) {
-                document.getElementById('why-best-modal').style.display = show ? 'flex' : 'none';
-            },
-
-            // --- WEBAUTHN / BIOMETRIC ENROLLMENT FOR PASSWORDLESS SIGNINS ---
-            async registerBiometrics() {
-                if (!window.crypto || !window.crypto.subtle || !navigator.credentials) {
-                    return UI.toast("Biometrics not supported on this device/connection.");
-                }
-
-                UI.toast("Verifying your identity...");
-                const username = State.u.username;
-                const userId = State.u.userId;
-
-                try {
-                    const credential = await navigator.credentials.create({
-                        publicKey: {
-                            challenge: new Uint8Array([11, 22, 33, 44, 55]),
-                            rp: { name: "YukiChat" },
-                            user: {
-                                id: new Uint8Array([userId]),
-                                name: username,
-                                displayName: username
-                            },
-                            pubKeyCredParams: [{ type: "public-key", alg: -7 }], // ES256
-                            authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
-                            timeout: 60000
-                        }
-                    });
-
-                    const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
-                    
-                    // Register biometrics with backend API
-                    await req('/api/user/biometrics', 'POST', {
-                        credential_id: credentialId,
-                        public_key: "webauthn_public_key"
-                    });
-
-                    // Save locally to show biometric option on the Welcome Slide
-                    localStorage.setItem('y_bio_cred_id', credentialId);
-                    localStorage.setItem('y_bio_username', username);
-
-                    const bioStatus = document.getElementById('biometric-status');
-                    if (bioStatus) bioStatus.innerText = 'Enrolled';
-                    
-                    UI.toast("Biometric Login registered successfully!");
-                } catch (err) {
-                    console.error(err);
-                    UI.toast("Failed to configure biometrics.");
-                }
-            },
-
-            async biometricLogin() {
-                const credId = localStorage.getItem('y_bio_cred_id');
-                const username = localStorage.getItem('y_bio_username');
-
-                if (!credId || !username) {
-                    return UI.toast("No biometric registration found on this device.");
-                }
-
-                try {
-                    // Trigger hardware verification
-                    await navigator.credentials.get({
-                        publicKey: {
-                            challenge: new Uint8Array([11, 22, 33, 44, 55]),
-                            rpId: window.location.hostname,
-                            allowCredentials: [{
-                                id: new Uint8Array(atob(credId).split("").map(c => c.charCodeAt(0))),
-                                type: "public-key"
-                            }],
-                            timeout: 60000
-                        }
-                    });
-
-                    // Authenticate with backend
-                    const d = await req('/api/login', 'POST', {
-                        username: username,
-                        credential_id: credId,
-                        device: navigator.userAgent.substring(0, 30)
-                    });
-
-                    State.t = d.token; 
-                    State.u = d; 
-                    localStorage.setItem('y_t', d.token); 
-                    localStorage.setItem('y_u', JSON.stringify(d));
-                    
-                    await localforage.setItem('y_t', d.token);
-                    await localforage.setItem('y_u', JSON.stringify(d));
-
-                    document.getElementById('panel-auth').classList.remove('active'); 
-                    this.start();
-
-                } catch (err) {
-                    console.error(err);
-                    UI.toast("Biometric authentication failed.");
-                }
-            },
-
-            // --- REDESIGNED AUTHENTICATION LOOP ---
-            async submitAuth() {
-                const u = document.getElementById('auth-u').value.trim();
-                const p = document.getElementById('auth-p').value.trim();
-                const btn = document.getElementById('btn-auth-main');
-                const isLog = State.authMode === 'login';
-            
-                if (!u || !p) return UI.toast("Please fill in all fields");
-            
-                const originalText = btn.innerHTML;
-                btn.disabled = true;
-                btn.innerHTML = `<div style="display:flex; align-items:center; gap:10px;"><div class="loader"></div> ${isLog ? 'Logging in...' : 'Registering...'}</div>`;
-            
-                try {
-                    const payload = { 
-                        username: u, 
-                        password: p, 
-                        device: navigator.userAgent.substring(0, 30) 
-                    };
-            
-                    const d = await req(`/api/${isLog ? 'login' : 'register'}`, 'POST', payload);
-                    
-                    State.t = d.token; 
-                    State.u = d; 
-                    localStorage.setItem('y_t', d.token); 
-                    localStorage.setItem('y_u', JSON.stringify(d));
-                    
-                    await localforage.setItem('y_t', d.token);
-                    await localforage.setItem('y_u', JSON.stringify(d));
-            
-                    if (!isLog) {
-                        // Registration: Show Onboarding view
-                        this.showAuthSlide('onboarding');
-                    } else {
-                        // Login: Check if profile is setup. If yes, proceed directly into the app
-                        document.getElementById('panel-auth').classList.remove('active'); 
-                        this.start();
-                    }
-            
-                } catch (e) {
-                    UI.toast(e.message);
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
-                }
-            },
-
-            async finishOnboarding() {
-                const bio = document.getElementById('auth-bio').value.trim();
-                const avatar = State.regAv || '';
-
-                UI.toast("Finalizing setup...");
-                try {
-                    await req('/api/user/profile', 'PUT', { bio, avatar });
-                    
-                    State.u.bio = bio;
-                    if (avatar) State.u.avatar = avatar;
-                    localStorage.setItem('y_u', JSON.stringify(State.u));
-
-                    document.getElementById('panel-auth').classList.remove('active'); 
-                    this.start();
-                } catch (e) {
-                    UI.toast("Onboarding failed. Please try again.");
-                }
-            }
-        });
         
         window.addEventListener('beforeinstallprompt', (e) => { 
             e.preventDefault(); 
@@ -5585,10 +5402,8 @@
                 const btn = document.getElementById('btn-auth-main');
                 const isLog = State.authMode === 'login';
             
-                // Validation
                 if (!u || !p) return UI.toast("Please fill in all fields");
             
-                // 1. Show Loading State
                 const originalText = btn.innerHTML;
                 btn.disabled = true;
                 btn.innerHTML = `<div style="display:flex; align-items:center; gap:10px;"><div class="loader"></div> ${isLog ? 'Logging in...' : 'Registering...'}</div>`;
@@ -5599,30 +5414,29 @@
                         password: p, 
                         device: navigator.userAgent.substring(0, 30) 
                     };
-                    
-                    // Add avatar if registering
-                    if (!isLog && State.regAv) payload.avatar = State.regAv;
             
                     const d = await req(`/api/${isLog ? 'login' : 'register'}`, 'POST', payload);
                     
-                    // Save Session
-                    // Save Session
                     State.t = d.token; 
                     State.u = d; 
                     localStorage.setItem('y_t', d.token); 
                     localStorage.setItem('y_u', JSON.stringify(d));
                     
-                    // Mirror to localforage so the Service Worker can authenticate background fetches [2]
-                    localforage.setItem('y_t', d.token).catch(err => console.error(err));
-                    localforage.setItem('y_u', JSON.stringify(d)).catch(err => console.error(err));
+                    await localforage.setItem('y_t', d.token);
+                    await localforage.setItem('y_u', JSON.stringify(d));
             
-                    // 2. Clear UI & Start App
-                    document.getElementById('panel-auth').classList.remove('active'); 
-                    this.start();
+                    if (!isLog) {
+                        // Registration: Show Onboarding slide for new users
+                        this.showAuthSlide('onboarding');
+                    } else {
+                        // Login: Proceed directly into the app (skips onboarding for existing users)
+                        document.getElementById('panel-auth').classList.remove('active'); 
+                        this.start();
+                    }
             
                 } catch (e) {
-                    // 3. Reset Button on Error
                     UI.toast(e.message);
+                } finally {
                     btn.disabled = false;
                     btn.innerHTML = originalText;
                 }
@@ -5630,6 +5444,135 @@
             // Fallback for old HTML just in case
             async auth(isLog) { State.authMode = isLog ? 'login' : 'register'; await this.submitAuth(); },
 
+            showAuthSlide(slideId, mode = null) {
+                document.getElementById('auth-slide-welcome').style.display = 'none';
+                document.getElementById('auth-slide-credentials').style.display = 'none';
+                document.getElementById('auth-slide-onboarding').style.display = 'none';
+                
+                const target = document.getElementById(`auth-slide-${slideId}`);
+                if (target) target.style.display = 'block';
+
+                if (slideId === 'credentials' && mode) {
+                    State.authMode = mode;
+                    document.getElementById('credentials-title').textContent = mode === 'register' ? 'Create Account' : 'Log In';
+                    document.getElementById('btn-auth-main').textContent = mode === 'register' ? 'Create Account' : 'Log In';
+                    document.getElementById('auth-toggle-txt').textContent = mode === 'register' ? 'Already have an account?' : "Don't have an account?";
+                    document.getElementById('auth-toggle-txt').nextElementSibling.textContent = mode === 'register' ? 'Log In' : 'Sign Up';
+                }
+            },
+
+            toggleWhyBest(show) {
+                document.getElementById('why-best-modal').style.display = show ? 'flex' : 'none';
+            },
+
+            async registerBiometrics() {
+                if (!window.crypto || !window.crypto.subtle || !navigator.credentials) {
+                    return UI.toast("Biometrics not supported on this device/connection.");
+                }
+
+                UI.toast("Verifying your identity...");
+                const username = State.u.username;
+                const userId = State.u.userId;
+
+                try {
+                    const credential = await navigator.credentials.create({
+                        publicKey: {
+                            challenge: new Uint8Array([11, 22, 33, 44, 55]),
+                            rp: { name: "YukiChat" },
+                            user: {
+                                id: new Uint8Array([userId]),
+                                name: username,
+                                displayName: username
+                            },
+                            pubKeyCredParams: [{ type: "public-key", alg: -7 }], // ES256
+                            authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+                            timeout: 60000
+                        }
+                    });
+
+                    const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+                    
+                    await req('/api/user/biometrics', 'POST', {
+                        credential_id: credentialId,
+                        public_key: "webauthn_public_key"
+                    });
+
+                    localStorage.setItem('y_bio_cred_id', credentialId);
+                    localStorage.setItem('y_bio_username', username);
+
+                    const bioStatus = document.getElementById('biometric-status');
+                    if (bioStatus) bioStatus.innerText = 'Enrolled';
+                    
+                    UI.toast("Biometric Login registered successfully!");
+                } catch (err) {
+                    console.error(err);
+                    UI.toast("Failed to configure biometrics.");
+                }
+            },
+
+            async biometricLogin() {
+                const credId = localStorage.getItem('y_bio_cred_id');
+                const username = localStorage.getItem('y_bio_username');
+
+                if (!credId || !username) {
+                    return UI.toast("No biometric registration found on this device.");
+                }
+
+                try {
+                    await navigator.credentials.get({
+                        publicKey: {
+                            challenge: new Uint8Array([11, 22, 33, 44, 55]),
+                            rpId: window.location.hostname,
+                            allowCredentials: [{
+                                id: new Uint8Array(atob(credId).split("").map(c => c.charCodeAt(0))),
+                                type: "public-key"
+                            }],
+                            timeout: 60000
+                        }
+                    });
+
+                    const d = await req('/api/login', 'POST', {
+                        username: username,
+                        credential_id: credId,
+                        device: navigator.userAgent.substring(0, 30)
+                    });
+
+                    State.t = d.token; 
+                    State.u = d; 
+                    localStorage.setItem('y_t', d.token); 
+                    localStorage.setItem('y_u', JSON.stringify(d));
+                    
+                    await localforage.setItem('y_t', d.token);
+                    await localforage.setItem('y_u', JSON.stringify(d));
+
+                    document.getElementById('panel-auth').classList.remove('active'); 
+                    this.start();
+
+                } catch (err) {
+                    console.error(err);
+                    UI.toast("Biometric authentication failed.");
+                }
+            },
+
+            async finishOnboarding() {
+                const bio = document.getElementById('auth-bio').value.trim();
+                const avatar = State.regAv || '';
+
+                UI.toast("Finalizing setup...");
+                try {
+                    await req('/api/user/profile', 'PUT', { bio, avatar });
+                    
+                    State.u.bio = bio;
+                    if (avatar) State.u.avatar = avatar;
+                    localStorage.setItem('y_u', JSON.stringify(State.u));
+
+                    document.getElementById('panel-auth').classList.remove('active'); 
+                    this.start();
+                } catch (e) {
+                    UI.toast("Onboarding failed. Please try again.");
+                }
+            },
+        
             async logout() { 
                 // 1. Show loader so user knows something is happening
                 App.setMainTitle('Logging out...');
