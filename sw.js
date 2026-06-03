@@ -22,38 +22,56 @@ self.addEventListener('fetch', event => {
 });
 
 // Decrypts incoming encrypted content directly in the background
-async function decryptMessage(chatId, content, token, privateKey) {
+async function decryptMessage(chatId, content, token, privateKey, userId) {
     if (!content || !content.startsWith("__E2EE__:")) return content;
-    if (!self.crypto || !self.crypto.subtle || !privateKey) return "🔒 [Encrypted]";
+    if (!self.crypto || !self.crypto.subtle) return "🔒 [Encrypted]";
 
     try {
         let sharedKey = sharedKeysCache[chatId];
+        
         if (!sharedKey) {
-            // Retrieve recipient's public key from the VPS database
+            // Priority 1: Check pre-derived symmetric key cache [1]
+            if (userId) {
+                const cacheName = `derived_key_${userId}_${chatId}`;
+                const cachedKeyJwk = await localforage.getItem(cacheName);
+                if (cachedKeyJwk) {
+                    sharedKey = await self.crypto.subtle.importKey(
+                        "jwk", cachedKeyJwk,
+                        { name: "AES-GCM" },
+                        true, ["decrypt"]
+                    );
+                    sharedKeysCache[chatId] = sharedKey;
+                }
+            }
+        }
+
+        if (!sharedKey && privateKey) {
+            // Priority 2: Derive key manually if not cached yet
             const keyRes = await fetch(`${API_URL}/api/e2ee/key/${chatId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (!keyRes.ok) return "🔒 [Encrypted]";
-            const keyData = await keyRes.json();
-            if (!keyData || !keyData.public_key) return "🔒 [Encrypted]";
-
-            const otherPubJwk = JSON.parse(keyData.public_key);
-            const otherPubKey = await self.crypto.subtle.importKey(
-                "jwk", otherPubJwk,
-                { name: "ECDH", namedCurve: "P-256" },
-                true, []
-            );
-
-            // Derive the symmetric shared AES-GCM key
-            sharedKey = await self.crypto.subtle.deriveKey(
-                { name: "ECDH", public: otherPubKey },
-                privateKey,
-                { name: "AES-GCM", length: 256 },
-                true,
-                ["decrypt"]
-            );
-            sharedKeysCache[chatId] = sharedKey;
+            if (keyRes.ok) {
+                const keyData = await keyRes.json();
+                if (keyData && keyData.public_key) {
+                    const otherPubJwk = JSON.parse(keyData.public_key);
+                    const otherPubKey = await self.crypto.subtle.importKey(
+                        "jwk", otherPubJwk,
+                        { name: "ECDH", namedCurve: "P-256" },
+                        true, []
+                    );
+                    sharedKey = await self.crypto.subtle.deriveKey(
+                        { name: "ECDH", public: otherPubKey },
+                        privateKey,
+                        { name: "AES-GCM", length: 256 },
+                        true,
+                        ["decrypt"]
+                    );
+                    sharedKeysCache[chatId] = sharedKey;
+                }
+            }
         }
+
+        if (!sharedKey) return "🔒 [Encrypted Message]";
 
         const parts = content.split(":");
         const ivB64 = parts[1];
@@ -150,9 +168,9 @@ self.addEventListener('push', function(event) {
                                         } else if (unreadChat.last_msg_type === 'sticker') {
                                             bodyText = '👾 Sticker';
                                         } else if (bodyText.startsWith("__E2EE__:")) {
-                                            if (privateKey) {
+                                            if (privateKey || userId) {
                                                 try {
-                                                    bodyText = await decryptMessage(unreadChat.id, bodyText, token, privateKey);
+                                                    bodyText = await decryptMessage(unreadChat.id, bodyText, token, privateKey, userId);
                                                 } catch (decErr) {
                                                     console.error("Failed to decrypt individual message:", decErr);
                                                     bodyText = "🔒 [Encrypted Message]";
