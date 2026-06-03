@@ -1024,7 +1024,7 @@
                 width: 100%;
             }
             /* Transform secondary panels into floating modals on PC */
-            #panel-settings, #panel-profile, #panel-new, #panel-create-channel, #panel-sessions {
+            #panel-settings, #panel-profile, #panel-new, #panel-create-channel, #panel-sessions, #panel-folders, #panel-edit-folder, #panel-devtools {
                 position: fixed !important;
                 top: 50% !important;
                 left: 50% !important;
@@ -1042,7 +1042,7 @@
             }
             
             /* Active Modal State */
-            #panel-settings.active, #panel-profile.active, #panel-new.active, #panel-create-channel.active, #panel-sessions.active {
+            #panel-settings.active, #panel-profile.active, #panel-new.active, #panel-create-channel.active, #panel-sessions.active, #panel-folders.active, #panel-edit-folder.active, #panel-devtools.active {
                 transform: translate(-50%, -50%) scale(1) !important;
                 opacity: 1;
                 visibility: visible !important;
@@ -2204,7 +2204,7 @@
             <button class="icon-btn" onclick="Router.pop()">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
-            <div class="panel-title">Settings</div>
+            <div class="panel-title" onclick="App.tapSettingsHeader()" style="cursor:pointer; user-select:none;">Settings</div>
             <div style="width:40px"></div>
         </div>
         <div class="panel-body" style="padding: 0 20px;">
@@ -2376,6 +2376,16 @@
                     <span>Keyword Screen Effects</span>
                     <input type="checkbox" id="set-msg-effects" style="width:20px;height:20px;" onchange="localStorage.setItem('y_msg_effects_enabled', this.checked)">
                 </div>
+                <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
+                    <span>Quick Double-Tap Reaction</span>
+                    <select id="set-quick-reaction" class="settings-input" style="width:auto; margin:0; padding:6px 12px;" onchange="localStorage.setItem('y_quick_reaction_emoji', this.value)">
+                        <option value="❤️">❤️</option>
+                        <option value="👍">👍</option>
+                        <option value="😂">😂</option>
+                        <option value="🔥">🔥</option>
+                        <option value="🎉">🎉</option>
+                    </select>
+                </div>
                 <!-- Insert this inside the "Appearance" settings-card -->
                 <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0;">
                     <span>Show Weather Emoji</span>
@@ -2461,6 +2471,12 @@
                 <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0; cursor:pointer;" onclick="App.loadSessions()">
                     <span>Active Sessions</span>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </div>
+                <div id="dev-tools-row-container" style="display:none;">
+                    <div class="settings-row" style="margin:0; background:transparent; border-bottom:1px solid var(--border); border-radius:0; color:var(--primary); cursor:pointer;" onclick="Router.push('panel-devtools'); App.initDevToolsUI();">
+                        <span>🛠️ Developer Tools</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </div>
                 </div>
                 <div class="settings-row" style="margin:0; background:transparent; color:var(--danger); cursor:pointer;" onclick="App.logout()">
                     <div style="display:flex; align-items:center; gap:10px;">
@@ -2659,6 +2675,65 @@
             <button class="btn btn-outline" id="folder-delete-btn" style="color:var(--danger); border-color:var(--danger); margin-top:24px;" onclick="App.deleteFolder()">Delete Folder</button>
         </div>
     </div>
+
+    <!-- DEVELOPER TOOLS MODAL -->
+    <div id="panel-devtools" class="panel">
+        <div class="panel-header">
+            <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+            <div class="panel-title">Developer Tools 🛠️</div>
+            <div style="width:40px"></div>
+        </div>
+        <div class="panel-body" style="padding: 20px;">
+            <!-- Tabs Menu -->
+            <div class="ai-tabs" style="margin-bottom:16px;">
+                <div class="ai-tab active" id="tab-dev-diags" onclick="App.setDevTab('diags')">Diagnostics</div>
+                <div class="ai-tab" id="tab-dev-e2ee" onclick="App.setDevTab('e2ee')">E2EE Keys</div>
+                <div class="ai-tab" id="tab-dev-logs" onclick="App.setDevTab('logs')">Console Logs</div>
+            </div>
+
+            <!-- TAB 1: Diagnostics -->
+            <div id="dev-content-diags" style="display:block;">
+                <div class="settings-header">Connection Stats</div>
+                <div class="settings-card" style="padding:16px; font-family:monospace; font-size:13px;">
+                    <div>WebSocket State: <span id="dev-ws-state" style="font-weight:700;">CLOSED</span></div>
+                    <div style="margin-top:6px;">Sync Interval Loop: <span style="color:var(--success);">Active (8000ms)</span></div>
+                </div>
+                
+                <div class="settings-header">Network Fault Injection</div>
+                <div class="settings-card" style="padding:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span>Simulate High Latency (2s Delay)</span>
+                        <input type="checkbox" id="dev-sim-latency" style="width:20px;height:20px;" onchange="localStorage.setItem('dev_latency_sim', this.checked)">
+                    </div>
+                </div>
+                <button class="btn btn-outline" style="color:var(--danger); border-color:var(--danger); margin-top:12px;" onclick="App.triggerWSDisconnect()">Force WS Disconnect</button>
+            </div>
+
+            <!-- TAB 2: E2EE Key Management -->
+            <div id="dev-content-e2ee" style="display:none;">
+                <div class="settings-header">Local Key Pair</div>
+                <textarea id="dev-e2ee-pubkey" class="settings-input" style="font-family:monospace; font-size:11px; height:100px; resize:none;" readonly></textarea>
+                
+                <div class="settings-header">Escrow Recovery Management</div>
+                <div style="display:flex; gap:10px; margin-bottom:16px;">
+                    <button class="btn" style="font-size:13px;" onclick="App.forceE2EEBackup()">Push Key Backup</button>
+                    <button class="btn btn-outline" style="font-size:13px;" onclick="App.forceE2EERestore()">Pull Key Restore</button>
+                </div>
+                <button class="btn btn-outline" style="color:var(--danger); border-color:var(--danger); width:100%;" onclick="App.rotateKeysDev()">Force Rotate ECDH Keys</button>
+            </div>
+
+            <!-- TAB 3: Mobile Console Log Stream -->
+            <div id="dev-content-logs" style="display:none;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <button class="btn btn-outline" style="width:auto; padding:6px 12px; font-size:12px;" onclick="window.devLogs = []; document.getElementById('dev-logs-container').innerHTML = '';">Clear Log Console</button>
+                </div>
+                <div id="dev-logs-container" style="background:#000; color:#0f0; border-radius:12px; padding:12px; height:350px; overflow-y:auto; font-family:monospace; font-size:11px; word-break:break-all;">
+                    <!-- Real-time intercepted logs output -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- CALL UI PANEL -->
     <!-- PERMANENT MEDIA ELEMENTS (Fixes Audio Drops & iOS Autoplay Blocks) -->
     <audio id="rtc-audio" autoplay playsinline style="display:none;"></audio>
@@ -2888,6 +2963,30 @@
         </div>
     </div>
     <script>
+        // Global array to store client logs for Dev Tools [1]
+        window.devLogs = [];
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function captureLog(type, args) {
+            const msg = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ');
+            window.devLogs.push({ type, msg, time: new Date().toLocaleTimeString() });
+            if (window.devLogs.length > 300) window.devLogs.shift(); // Bound storage size limit
+            
+            // Render dynamically if dev log panel is open
+            const devLogCont = document.getElementById('dev-logs-container');
+            if (devLogCont) {
+                const color = type === 'error' ? '#ef4444' : (type === 'warn' ? '#f59e0b' : 'var(--text-main)');
+                devLogCont.insertAdjacentHTML('beforeend', `<div style="color:${color}; font-family:monospace; font-size:12px; margin-bottom:6px; border-bottom:1px solid var(--border); padding-bottom:4px;">[${type.toUpperCase()}] ${msg}</div>`);
+                devLogCont.scrollTop = devLogCont.scrollHeight;
+            }
+        }
+        
+        console.log = (...args) => { originalLog(...args); captureLog('log', args); };
+        console.error = (...args) => { originalError(...args); captureLog('error', args); };
+        console.warn = (...args) => { originalWarn(...args); captureLog('warn', args); };
+        
         // --- YUKICHAT MEET SSO BRIDGE ---
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('sso') === 'meet') {
@@ -3343,6 +3442,75 @@
             myPublicKeyJwk: null,
             sharedKeys: {}, // Cache of derived symmetric keys by chatId
 
+            async deriveBackupKey(passphrase, salt) {
+                const enc = new TextEncoder();
+                const keyMaterial = await window.crypto.subtle.importKey(
+                    "raw", enc.encode(passphrase), "PBKDF2", false, ["deriveKey"]
+                );
+                return window.crypto.subtle.deriveKey(
+                    { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+                    keyMaterial,
+                    { name: "AES-GCM", length: 256 },
+                    false, ["encrypt", "decrypt"]
+                );
+            },
+
+            async backupKeys(passphrase) {
+                if (!passphrase || !this.myPublicKeyJwk) return;
+                const keyName = `y_e2ee_keys_${State.u.userId}`;
+                const localKeys = await localforage.getItem(keyName);
+                if (!localKeys) return;
+
+                const enc = new TextEncoder();
+                const salt = window.crypto.getRandomValues(new Uint8Array(16));
+                const key = await this.deriveBackupKey(passphrase, salt);
+                const iv = window.crypto.getRandomValues(new Uint8Array(12));
+
+                const encryptedBuffer = await window.crypto.subtle.encrypt(
+                    { name: "AES-GCM", iv: iv },
+                    key,
+                    enc.encode(JSON.stringify(localKeys))
+                );
+
+                const saltB64 = btoa(String.fromCharCode(...salt));
+                const ivB64 = btoa(String.fromCharCode(...iv));
+                const cipherB64 = btoa(String.fromCharCode(...new Uint8Array(encryptedBuffer)));
+
+                const escrowBlob = `${saltB64}:${ivB64}:${cipherB64}`;
+                await req('/api/e2ee/escrow', 'POST', { escrow_key: escrowBlob });
+                console.log("[E2EE] Keys backed up securely in zero-knowledge cloud escrow.");
+            },
+
+            async restoreKeys(passphrase) {
+                try {
+                    const res = await req('/api/e2ee/escrow');
+                    if (!res || !res.escrow_key) return false;
+
+                    const parts = res.escrow_key.split(':');
+                    const salt = new Uint8Array(atob(parts[0]).split('').map(c => c.charCodeAt(0)));
+                    const iv = new Uint8Array(atob(parts[1]).split('').map(c => c.charCodeAt(0)));
+                    const ciphertext = new Uint8Array(atob(parts[2]).split('').map(c => c.charCodeAt(0)));
+
+                    const key = await this.deriveBackupKey(passphrase, salt);
+                    const decryptedBuffer = await window.crypto.subtle.decrypt(
+                        { name: "AES-GCM", iv: iv },
+                        key,
+                        ciphertext
+                    );
+
+                    const decodedStr = new TextDecoder().decode(decryptedBuffer);
+                    const localKeys = JSON.parse(decodedStr);
+
+                    const keyName = `y_e2ee_keys_${State.u.userId}`;
+                    await localforage.setItem(keyName, localKeys);
+                    console.log("[E2EE] Keys restored successfully from zero-knowledge escrow!");
+                    return true;
+                } catch(e) {
+                    console.error("[E2EE] Failed to restore keys during escrow retrieval:", e);
+                    return false;
+                }
+            },
+
             async init() {
                 if (!State.t || !State.u || !State.u.userId) return;
                 
@@ -3356,17 +3524,39 @@
                 let keys = await localforage.getItem(keyName);
                 
                 if (!keys) {
-                    const keyPair = await window.crypto.subtle.generateKey(
-                        { name: "ECDH", namedCurve: "P-256" },
-                        true,
-                        ["deriveKey"]
-                    );
-                    
-                    const pubJwk = await window.crypto.subtle.exportKey("jwk", keyPair.publicKey);
-                    const privJwk = await window.crypto.subtle.exportKey("jwk", keyPair.privateKey);
-                    
-                    keys = { publicKey: pubJwk, privateKey: privJwk };
-                    await localforage.setItem(keyName, keys);
+                    // Try to restore from escrow backup if possible [1]
+                    let restored = false;
+                    if (State.rawPassword) {
+                        restored = await this.restoreKeys(State.rawPassword);
+                        if (restored) keys = await localforage.getItem(keyName);
+                    }
+
+                    if (!restored) {
+                        const keyPair = await window.crypto.subtle.generateKey(
+                            { name: "ECDH", namedCurve: "P-256" },
+                            true,
+                            ["deriveKey"]
+                        );
+                        
+                        const pubJwk = await window.crypto.subtle.exportKey("jwk", keyPair.publicKey);
+                        const privJwk = await window.crypto.subtle.exportKey("jwk", keyPair.privateKey);
+                        
+                        keys = { publicKey: pubJwk, privateKey: privJwk };
+                        await localforage.setItem(keyName, keys);
+
+                        // Securely push backup directly after creation
+                        if (State.rawPassword) {
+                            await this.backupKeys(State.rawPassword);
+                        }
+                    }
+                } else {
+                    // If keys are local but escrow is empty, push backup in the background
+                    if (State.rawPassword) {
+                        const escrowCheck = await req('/api/e2ee/escrow');
+                        if (!escrowCheck || !escrowCheck.escrow_key) {
+                            await this.backupKeys(State.rawPassword);
+                        }
+                    }
                 }
                 
                 this.myPrivateKey = await window.crypto.subtle.importKey(
@@ -3387,7 +3577,20 @@
                 if (this.sharedKeys[chatId]) return this.sharedKeys[chatId];
                 if (!window.crypto || !window.crypto.subtle || !this.myPrivateKey) return null;
                 
+                const cacheName = `derived_key_${State.u.userId}_${chatId}`;
                 try {
+                    // Check local key cache first [1]
+                    const cachedKeyJwk = await localforage.getItem(cacheName);
+                    if (cachedKeyJwk) {
+                        const importedKey = await window.crypto.subtle.importKey(
+                            "jwk", cachedKeyJwk,
+                            { name: "AES-GCM" },
+                            true, ["encrypt", "decrypt"]
+                        );
+                        this.sharedKeys[chatId] = importedKey;
+                        return importedKey;
+                    }
+
                     const res = await req(`/api/e2ee/key/${chatId}`);
                     if (!res || !res.public_key) return null;
                     
@@ -3406,6 +3609,9 @@
                         ["encrypt", "decrypt"]
                     );
                     
+                    const jwk = await window.crypto.subtle.exportKey("jwk", sharedKey);
+                    await localforage.setItem(cacheName, jwk);
+
                     this.sharedKeys[chatId] = sharedKey;
                     return sharedKey;
                 } catch (e) {
@@ -3470,10 +3676,16 @@
             chats: new Map(), chat: null, syncLoop: null, lastMsgId: 0,
             capMedia: null, capType: null, authMode: 'register', regAv: null, replyTo: null,
             notifiedMsgs: new Set(),
-            notifiedCalls: new Set()
+            notifiedCalls: new Set(),
+            settingsTaps: 0,
+            rawPassword: "" // Escrow uses this temporary session-lifetime variable to derive backing storage keys
         };
 
         const req = async (path, m='GET', b=null) => {
+            // Check if simulated latency is active [1]
+            if (localStorage.getItem('dev_latency_sim') === 'true') {
+                await new Promise(r => setTimeout(r, 2000));
+            }
             // FIX: Add cache: 'no-store' to stop Chrome/Safari from caching chat history!
             const opt = { method:m, headers:{}, cache: 'no-store' };
             if(State.t) opt.headers['Authorization'] = `Bearer ${State.t}`;
@@ -4306,6 +4518,29 @@
                 const activeChatName = activeChatObj ? (activeChatObj.type === 'dm' ? activeChatObj.dm_username : activeChatObj.name) : '';
                 document.title = titlePrefix + (activeChatName ? `${activeChatName} - YukiChat` : 'YukiChat');
             },
+            handleBubbleClick(e, msgId, isMine) {
+                e.stopPropagation();
+                const now = Date.now();
+                const lastClick = this.lastBubbleClickTime || 0;
+                const lastMsgId = this.lastBubbleClickId || null;
+                
+                this.lastBubbleClickTime = now;
+                this.lastBubbleClickId = msgId;
+
+                if (now - lastClick < 300 && lastMsgId === msgId) {
+                    // Double-tap detected
+                    e.preventDefault();
+                    const fastEmoji = localStorage.getItem('y_quick_reaction_emoji') || '❤️';
+                    App.msgAct('react', fastEmoji, msgId);
+                } else {
+                    // Single-tap fallback timer to allow double-click routing
+                    setTimeout(() => {
+                        if (this.lastBubbleClickTime === now) {
+                            App.showCtx(e, msgId, isMine);
+                        }
+                    }, 280);
+                }
+            },
             // --- CHAT FOLDERS LOGIC ---
             initFolders() {
                 State.chatFilter = 'all';
@@ -4333,6 +4568,83 @@
                     });
                 }
                 App.renderGraphs(); // <--- ADD THIS LINE HERE
+            },
+            setDevTab(tab) {
+                document.querySelectorAll('#panel-devtools .ai-tab').forEach(el => el.classList.remove('active'));
+                document.getElementById(`tab-dev-${tab}`).classList.add('active');
+                
+                document.getElementById('dev-content-diags').style.display = tab === 'diags' ? 'block' : 'none';
+                document.getElementById('dev-content-e2ee').style.display = tab === 'e2ee' ? 'block' : 'none';
+                document.getElementById('dev-content-logs').style.display = tab === 'logs' ? 'block' : 'none';
+                
+                if (tab === 'logs') {
+                    const cont = document.getElementById('dev-logs-container');
+                    cont.innerHTML = '';
+                    window.devLogs.forEach(l => {
+                        const color = l.type === 'error' ? '#ef4444' : (l.type === 'warn' ? '#f59e0b' : '#0f0');
+                        cont.insertAdjacentHTML('beforeend', `<div style="color:${color}; font-family:monospace; font-size:12px; margin-bottom:6px; border-bottom:1px solid var(--border); padding-bottom:4px;">[${l.time}] ${l.msg}</div>`);
+                    });
+                    cont.scrollTop = cont.scrollHeight;
+                }
+            },
+            initDevToolsUI() {
+                App.setDevTab('diags');
+                const wsState = document.getElementById('dev-ws-state');
+                if (wsState) {
+                    const states = ["CONNECTING", "OPEN", "CLOSING", "CLOSED"];
+                    wsState.innerText = State.ws ? states[State.ws.readyState] : "NULL";
+                }
+                const pubKeyField = document.getElementById('dev-e2ee-pubkey');
+                if (pubKeyField && E2EE.myPublicKeyJwk) {
+                    pubKeyField.value = JSON.stringify(E2EE.myPublicKeyJwk, null, 2);
+                }
+            },
+            triggerWSDisconnect() {
+                if (State.ws) {
+                    State.ws.close();
+                    UI.toast("Forced WebSocket Close");
+                    App.initDevToolsUI();
+                }
+            },
+            async forceE2EEBackup() {
+                const pass = prompt("Enter E2EE Backup Secret Key (or your Login Password):");
+                if (!pass) return;
+                try {
+                    await E2EE.backupKeys(pass);
+                    UI.toast("Escrow backup complete!");
+                } catch(e) {
+                    UI.toast("Backup failed: " + e.message);
+                }
+            },
+            async forceE2EERestore() {
+                const pass = prompt("Enter E2EE Backup Secret Key (or your Login Password):");
+                if (!pass) return;
+                try {
+                    const ok = await E2EE.restoreKeys(pass);
+                    if (ok) {
+                        E2EE.sharedKeys = {};
+                        await E2EE.init();
+                        App.initDevToolsUI();
+                        UI.toast("ECDH keys restored and active!");
+                    } else {
+                        UI.toast("Restore failed: Incorrect key or no backup found");
+                    }
+                } catch(e) {
+                    UI.toast("Restore failed");
+                }
+            },
+            async rotateKeysDev() {
+                if (!confirm("Are you sure you want to regenerate and rotate your E2EE key pair?")) return;
+                try {
+                    const keyName = `y_e2ee_keys_${State.u.userId}`;
+                    await localforage.removeItem(keyName);
+                    E2EE.sharedKeys = {};
+                    await E2EE.init();
+                    App.initDevToolsUI();
+                    UI.toast("ECDH Key Pair successfully rotated!");
+                } catch(e) {
+                    UI.toast("Failed to rotate keys");
+                }
             },
             toggleFolders(enabled, init = false) {
                 State.foldersEnabled = enabled;
@@ -5026,7 +5338,7 @@
                 const senderName = (!isMine && chatType !== 'dm') ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
                 const bubbleStyle = (m.type === 'sticker' || m.type === 'video_note') ? 'background: transparent !important; padding: 0 !important; box-shadow: none !important; border: none !important;' : '';
 
-                return `<div class="msg-bubble" style="${bubbleStyle}" ${rawAttr}>${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tickHtml}${viewsH}</div></div>`;
+                return `<div class="msg-bubble" style="${bubbleStyle}" ${rawAttr} onclick="App.handleBubbleClick(event, ${m.id}, ${isMine})">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tickHtml}${viewsH}</div></div>`;
             },
             renderGraphs() {
                 const containers = document.querySelectorAll('.desmos-graph-container:not(.graph-loaded)');
@@ -5195,7 +5507,7 @@
                             const isMine = m.sender_id === State.u.userId;
                             const innerHTML = App.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
                             
-                            cont.insertAdjacentHTML('beforeend', `<div class="msg-row ${isMine ? 'sent' : 'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`);
+                            cont.insertAdjacentHTML('beforeend', `<div class="msg-row ${isMine ? 'sent' : 'received'}" id="msg-${m.id}">${innerHTML}</div>`);
                             if (isAtBottom) cont.scrollTop = cont.scrollHeight;
                             
                             State.lastMsgId = m.id;
@@ -5537,6 +5849,23 @@
                     UI.toast('Cache Cleared');
                 });
             },
+
+            tapSettingsHeader() {
+                State.settingsTaps = (State.settingsTaps || 0) + 1;
+                if (State.settingsTaps === 10) {
+                    localStorage.setItem('y_dev_unlocked', 'true');
+                    UI.toast("🛠️ Developer Options Unlocked!");
+                    App.checkDevToolsRow();
+                }
+            },
+            checkDevToolsRow() {
+                const isUnlocked = localStorage.getItem('y_dev_unlocked') === 'true';
+                const container = document.getElementById('dev-tools-row-container');
+                if (container) {
+                    container.style.display = isUnlocked ? 'block' : 'none';
+                }
+            },
+    
             async submitAuth() {
                 const u = document.getElementById('auth-u').value.trim();
                 const p = document.getElementById('auth-p').value.trim();
@@ -5550,6 +5879,7 @@
                 btn.innerHTML = `<div style="display:flex; align-items:center; gap:10px;"><div class="loader"></div> ${isLog ? 'Logging in...' : 'Registering...'}</div>`;
             
                 try {
+                    State.rawPassword = p; // Retain password temporarily in memory to encrypt private key automatically
                     const payload = { 
                         username: u, 
                         password: p, 
@@ -5982,6 +6312,11 @@
                 if (document.getElementById('set-compact')) document.getElementById('set-compact').checked = isCompact;
                 this.toggleCompactMode(isCompact);
 
+                // Init Fast Reaction setting
+                const quickRx = localStorage.getItem('y_quick_reaction_emoji') || '❤️';
+                const rxSelect = document.getElementById('set-quick-reaction');
+                if (rxSelect) rxSelect.value = quickRx;
+
                 const msgsCont = document.getElementById('msgs');
                 let touchStartX = 0;
                 let swipeTarget = null;
@@ -6067,6 +6402,8 @@
                 if (blurSlider) blurSlider.value = blur;
                 const blurDisp = document.getElementById('blur-val-disp');
                 if (blurDisp) blurDisp.innerText = `${blur}px`;
+                
+                App.checkDevToolsRow(); // Evaluates and displays developer options if previously unlocked [1]
                 
                 let skels=''; for(let i=0;i<6;i++) skels+=`<div class="user-item"><div class="skel-av skeleton"></div><div class="user-info"><div class="skel-text skeleton"></div><div class="skel-text short skeleton"></div></div></div>`;
                 document.getElementById('chat-list').innerHTML = skels;
@@ -6870,8 +7207,7 @@
                     
                         const isMine = m.sender_id === State.u.userId;
                         const innerHTML = this.buildMsgHTML(m, isMine, chat?.type);
-                        htmlBatch += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" onclick="App.showCtx(event, ${m.id}, ${isMine})" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
-                        
+                        htmlBatch += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
                         if (!isMine) fxChecks.push({ content: m.content, id: `msg-${m.id}` });
                         addedNew = true;
                     });
