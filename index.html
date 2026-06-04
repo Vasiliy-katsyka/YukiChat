@@ -4503,6 +4503,59 @@
                     }
                 });
             },
+            async processOfflineQueue() {
+                if (State.isProcessingOfflineQueue) return;
+                State.isProcessingOfflineQueue = true;
+
+                let queue = await localforage.getItem('y_offline_queue') || [];
+                if (queue.length === 0) {
+                    State.isProcessingOfflineQueue = false;
+                    return;
+                }
+
+                console.log(`[Offline Queue] Found ${queue.length} pending items. Initiating outbox sync...`);
+                let remaining = [];
+
+                for (let item of queue) {
+                    try {
+                        const res = await req(`/api/messages/${item.chatId}`, 'POST', {
+                            content: item.content,
+                            type: 'text',
+                            reply_to_id: item.replyTo
+                        });
+
+                        // If user is currently looking at the chat, transition the bubble
+                        if (State.chat === item.chatId) {
+                            const tempEl = document.getElementById(item.tempId);
+                            if (tempEl && res && res.id) {
+                                tempEl.id = `msg-${res.id}`;
+                                tempEl.style.opacity = '1';
+                                const loadingTxt = tempEl.querySelector('.msg-bubble > div:last-child');
+                                if (loadingTxt) {
+                                    loadingTxt.innerHTML = `${UI.formatTime(res.created_at)} <span class="msg-tick">✓</span>`;
+                                }
+                                if (res.id > State.lastMsgId) State.lastMsgId = res.id;
+                                
+                                const msgsCont = document.getElementById('msgs');
+                                if (msgsCont) {
+                                    localforage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        // Request failed again (offline), keep this item and succeeding items in queue
+                        remaining.push(item);
+                    }
+                }
+
+                await localforage.setItem('y_offline_queue', remaining);
+                State.isProcessingOfflineQueue = false;
+
+                if (remaining.length === 0) {
+                    UI.toast("All pending outbox messages delivered!");
+                    App.sync(); // Refresh chat lists to populate updated previews
+                }
+            },
             updateTotalUnreadBadge() {
                 let totalUnread = 0;
                 State.chats.forEach(c => {
@@ -5316,19 +5369,31 @@
                     inner += `<div class="msg-caption">${formatText(m.caption)}</div>`;
                 }
 
-                let rxs = JSON.parse(m.reactions||'{}');
-                let rxCounts = {};
-                for(let k in rxs) { rxCounts[rxs[k]] = (rxCounts[rxs[k]] || 0) + 1; }
+                let rxs = JSON.parse(m.reactions || '{}');
+                let rxGroups = {}; // emoji -> Array of userIds who voted
+                for (let uid in rxs) {
+                    let em = rxs[uid];
+                    if (!rxGroups[em]) rxGroups[em] = [];
+                    rxGroups[em].push(Number(uid));
+                }
                 
                 let rxH = '';
                 const animOn = localStorage.getItem('y_anim_react') !== 'false';
                 
-                for(let em in rxCounts) {
+                for (let em in rxGroups) {
+                    let userIds = rxGroups[em];
+                    let count = userIds.length;
+                    
+                    // Highlight if current user voted for this emoji [1]
+                    let hasMyReaction = userIds.includes(Number(State.u.userId));
+                    let activeClass = hasMyReaction ? ' active-reaction' : '';
+                    let activeStyle = hasMyReaction ? 'border: 1px solid var(--primary); background: color-mix(in srgb, var(--primary) 18%, transparent) !important;' : '';
+                    
                     let content = (animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[em]) 
                         ? `<div data-url="${window.REACTION_LOTTIES[em]}" style="width:20px;height:20px;pointer-events:none;"></div>` 
                         : em;
-                    rxH += `<div class="rx-pill" onclick="event.stopPropagation(); App.msgAct('react', '${em}', ${m.id})">
-                                ${content} <span style="margin-left:4px">${rxCounts[em]}</span>
+                    rxH += `<div class="rx-pill${activeClass}" style="${activeStyle}" onclick="event.stopPropagation(); App.msgAct('react', '${em}', ${m.id})">
+                                ${content} <span style="margin-left:4px">${count}</span>
                             </div>`;
                 }
                 if(rxH) inner += `<div class="msg-reactions-wrap">${rxH}</div>`;
@@ -5468,6 +5533,7 @@
                 State.ws.onopen = () => {
                     App.setMainTitle('Updating...');
                     App.sync(); // Force a sync when connected to get caught up
+                    App.processOfflineQueue(); // Flush pending drafts automatically upon connection [1]
                 };
                 
                 // Send a Ping every 25 seconds to keep the Cloudflare Worker alive forever!
@@ -5479,6 +5545,34 @@
                 
                 State.ws.onmessage = async (e) => {
                     const data = JSON.parse(e.data);
+                    
+                    if (data.type === 'presence') {
+                        // Dynamically update user online presence badges [1]
+                        const isOnline = data.status === 'online';
+                        
+                        // 1. Update status inside chat header if viewing this user
+                        const c = State.chats.get(State.chat);
+                        if (c && c.type === 'dm' && c.dm_user_id == data.user_id) {
+                            const statusEl = document.getElementById('chat-status');
+                            if (statusEl) statusEl.innerHTML = isOnline ? '<span style="color:var(--success)">Online</span>' : 'Offline';
+                        }
+                        
+                        // 2. Update online dot in the Sidebar Chat list
+                        const itemEl = document.querySelector(`.user-item[data-chat-id]`);
+                        State.chats.forEach(chat => {
+                            if (chat.dm_user_id == data.user_id) {
+                                chat.dm_online = isOnline ? 1 : 0;
+                                const dotEl = document.querySelector(`.user-item[data-chat-id="${chat.id}"] .online-dot`);
+                                if (dotEl) {
+                                    dotEl.style.display = isOnline ? 'block' : 'none';
+                                } else if (isOnline) {
+                                    // Append online-dot wrapper dynamically if not present
+                                    const avWrap = document.querySelector(`.user-item[data-chat-id="${chat.id}"] .avatar-wrap`);
+                                    if (avWrap) avWrap.insertAdjacentHTML('beforeend', '<div class="online-dot"></div>');
+                                }
+                            }
+                        });
+                    }
                     
                     if (data.type === 'new_message') {
                         const m = data.message;
@@ -5520,9 +5614,16 @@
                     }
                     
                     if (data.type === 'read_update' && State.chat == data.chat_id) {
-                        document.querySelectorAll('.msg-tick').forEach(tick => {
-                            tick.classList.add('read');
-                            tick.innerText = '✓✓';
+                        // Highlight ticks where message index is less than or equal to current read checkpoint [1]
+                        document.querySelectorAll('#msgs .msg-row.sent').forEach(row => {
+                            const msgId = parseInt(row.id.replace('msg-', '')) || 0;
+                            if (msgId <= data.max_id) {
+                                const tick = row.querySelector('.msg-tick');
+                                if (tick) {
+                                    tick.classList.add('read');
+                                    tick.innerText = '✓✓';
+                                }
+                            }
                         });
                     }
                 
@@ -6435,6 +6536,9 @@
                 this.sync(); 
 
                 App.connectWS();
+                
+                // Monitor native connectivity state transitions
+                window.addEventListener('online', () => App.processOfflineQueue());
 
                 // Kill the high-CPU fast poll loop (WebSocket handles this instantly now!)
                 if (State.fastLoop) clearInterval(State.fastLoop);
@@ -6762,7 +6866,7 @@
                             RTC.incomingCallId = null; RTC.incomingChat = null;
                         }
         
-                        const isOnline = isDM && c.dm_last_seen && (new Date() - new Date(c.dm_last_seen + (c.dm_last_seen.includes('Z')?'':'Z')) < 60000);
+                        const isOnline = isDM && c.dm_online === 1;
                         const onlineDot = isOnline ? `<div class="online-dot"></div>` : '';
         
                         // NEW: Inject selection and pin classes
@@ -7001,6 +7105,7 @@
                 if (!c) return; 
             
                 // Instant local unread clearing
+                // Instant local unread clearing
                 c.unread = 0;
                 const itemEl = document.querySelector(`.user-item[data-chat-id="${id}"]`);
                 if (itemEl) {
@@ -7008,6 +7113,17 @@
                     if (badge) badge.remove();
                 }
                 App.updateTotalUnreadBadge();
+                
+                // Clear and sync read receipts progress with server [1]
+                if (id !== 'ai') {
+                    // Fetch latest message index to set as read boundary
+                    const rows = document.querySelectorAll('#msgs .msg-row');
+                    if (rows.length > 0) {
+                        const lastRow = rows[rows.length - 1];
+                        const lastRowId = parseInt(lastRow.id.replace('msg-', '')) || 0;
+                        req(`/api/chats/${id}/read`, 'POST', { max_id: lastRowId }).catch(()=>{});
+                    }
+                }
             
                 Router.push('panel-chat');
                 // ... rest of App.openChat ...
@@ -7238,6 +7354,12 @@
                             el.setAttribute('data-loaded', 'true');
                             lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
                         });
+                    }
+
+                    // Update Pinned Message UI
+                    // Auto dispatch bulk read receipt for newly received messages [1]
+                    if (addedNew && msgs.some(m => m.sender_id !== State.u.userId)) {
+                        req(`/api/chats/${targetChat}/read`, 'POST', { max_id: State.lastMsgId }).catch(()=>{});
                     }
 
                     // Update Pinned Message UI
@@ -7513,73 +7635,118 @@
                     }
                 } catch(e) {
                     const tempEl = document.getElementById(tempId);
-                    if(tempEl) tempEl.innerHTML = '<div class="msg-bubble" style="background:var(--danger)">❌ Failed</div>';
-                    UI.toast('Failed to send');
+                    if (tempEl) {
+                        // Update visual layout of the bubble to denote a pending local queue item [1]
+                        const loadingTxt = tempEl.querySelector('.msg-bubble > div:last-child');
+                        if (loadingTxt) {
+                            const originalTime = loadingTxt.innerText.split(' ')[0] || '';
+                            loadingTxt.innerHTML = `${originalTime} <span style="opacity:0.6; font-weight:600;">⏳ Outbox</span>`;
+                        }
+                    }
+                    
+                    try {
+                        const queueItem = {
+                            tempId: tempId,
+                            chatId: targetChat,
+                            content: finalContent,
+                            replyTo: State.replyTo,
+                            rawText: txt,
+                            isEncrypted: isEncrypted,
+                            created_at: new Date().toISOString()
+                        };
+                        
+                        let queue = await localforage.getItem('y_offline_queue') || [];
+                        queue.push(queueItem);
+                        await localforage.setItem('y_offline_queue', queue);
+                        
+                        // Save modified cached messages containing the pending state
+                        if (msgsCont) {
+                            await localforage.setItem(`y_cache_msgs_${targetChat}`, msgsCont.innerHTML);
+                        }
+                        UI.toast('Saved to outbox (offline)');
+                    } catch(err) {
+                        if (tempEl) tempEl.innerHTML = '<div class="msg-bubble" style="background:var(--danger)">❌ Failed</div>';
+                    }
                 }
             },
             async msgAct(act, emoji=null, overrideMsgId=null) {
                 const msgId = overrideMsgId || State.targetId;
                 
-                // 1. INSTANT OPTIMISTIC UI & MASSIVE ANIMATION
                 if (act === 'react' && emoji) {
                     const msgEl = document.getElementById(`msg-${msgId}`);
                     const animOn = localStorage.getItem('y_anim_react') !== 'false';
                     
-                    if (msgEl) {
-                        // A. Play the massive float animation
-                        if (animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[emoji]) {
-                            const rect = msgEl.getBoundingClientRect();
-                            const floatEl = document.createElement('div');
-                            floatEl.className = 'floating-reaction';
-                            floatEl.style.left = `${rect.left + rect.width / 2}px`;
-                            floatEl.style.top = `${rect.top}px`;
-                            document.body.appendChild(floatEl);
-                            
-                            if (window.lottie) {
-                                lottie.loadAnimation({
-                                    container: floatEl, renderer: 'svg', loop: false, autoplay: true,
-                                    path: window.REACTION_LOTTIES[emoji]
-                                });
-                            }
-                            setTimeout(() => floatEl.remove(), 2500); 
+                    // A. Trigger high-impact floating animation
+                    if (msgEl && animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[emoji]) {
+                        const rect = msgEl.getBoundingClientRect();
+                        const floatEl = document.createElement('div');
+                        floatEl.className = 'floating-reaction';
+                        floatEl.style.left = `${rect.left + rect.width / 2}px`;
+                        floatEl.style.top = `${rect.top}px`;
+                        document.body.appendChild(floatEl);
+                        
+                        if (window.lottie) {
+                            lottie.loadAnimation({
+                                container: floatEl, renderer: 'svg', loop: false, autoplay: true,
+                                path: window.REACTION_LOTTIES[emoji]
+                            });
                         }
+                        setTimeout(() => floatEl.remove(), 2500); 
+                    }
 
-                        // B. Instantly draw a temporary pill on the message bubble
-                        const bubble = msgEl.querySelector('.msg-bubble');
-                        let rxWrap = bubble.querySelector('.msg-reactions-wrap');
-                        if (!rxWrap) {
-                            rxWrap = document.createElement('div');
-                            rxWrap.className = 'msg-reactions-wrap';
-                            bubble.appendChild(rxWrap);
-                        }
+                    // B. Client-side state mutation for zero-latency toggle UI [1]
+                    const cachedHtml = await localforage.getItem(`y_cache_msgs_${State.chat}`);
+                    const bubble = msgEl ? msgEl.querySelector('.msg-bubble') : null;
+                    if (bubble) {
+                        let rxAttr = bubble.getAttribute('data-raw') || '';
+                        let isMine = msgEl.classList.contains('sent');
                         
-                        const tempPill = document.createElement('div');
-                        tempPill.className = 'rx-pill';
-                        
-                        if (animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[emoji]) {
-                            tempPill.innerHTML = `<div data-url="${window.REACTION_LOTTIES[emoji]}" style="width:20px;height:20px;"></div> <span style="margin-left:4px">1</span>`;
-                            rxWrap.appendChild(tempPill);
-                            
-                            if (window.lottie) {
-                                const lDiv = tempPill.querySelector('[data-url]');
-                                lottie.loadAnimation({ container: lDiv, renderer: 'svg', loop: true, autoplay: true, path: lDiv.dataset.url });
+                        // Parse existing reactions list from client-side DOM or fetch simulation
+                        // Simply retrieve and query latest local message records to rewrite UI block
+                        req(`/api/messages/${State.chat}?after=0`).then(async msgs => {
+                            const targetMsg = msgs.find(m => m.id == msgId);
+                            if (targetMsg) {
+                                // Decrypt
+                                if (targetMsg.content && targetMsg.content.startsWith("__E2EE__:")) {
+                                    targetMsg.content = await E2EE.decrypt(State.chat, targetMsg.content);
+                                }
+                                if (targetMsg.caption && targetMsg.caption.startsWith("__E2EE__:")) {
+                                    targetMsg.caption = await E2EE.decrypt(State.chat, targetMsg.caption);
+                                }
+                                
+                                // Toggle client-side reaction map locally
+                                let map = JSON.parse(targetMsg.reactions || '{}');
+                                if (map[State.u.userId] === emoji) {
+                                    delete map[State.u.userId];
+                                } else {
+                                    map[State.u.userId] = emoji;
+                                }
+                                targetMsg.reactions = JSON.stringify(map);
+                                
+                                // Re-render message bubble wrapper instantly
+                                msgEl.innerHTML = App.buildMsgHTML(targetMsg, isMine, State.chats.get(State.chat)?.type);
+                                
+                                // Fire active lotties in reconstructed pills
+                                if (animOn && window.lottie) {
+                                    msgEl.querySelectorAll('.rx-pill [data-url]:not([data-loaded])').forEach(el => {
+                                        el.setAttribute('data-loaded', 'true');
+                                        lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
+                                    });
+                                }
                             }
-                        } else {
-                            tempPill.innerHTML = `${emoji} <span style="margin-left:4px">1</span>`;
-                            rxWrap.appendChild(tempPill);
-                        }
+                        });
                     }
                 }
         
-                this.closeCtx(); // Hide context menu smoothly
+                this.closeCtx(); // Close options menu
                 
-                // 2. Send in background (The WebSocket will overwrite the temporary pill with the real total count in ~200ms)
+                // C. Dispatches update request to Server database in background
                 try { 
                     await req(`/api/messages/${msgId}/action`, 'POST', {action:act, emoji}); 
                     if (act === 'delete') document.getElementById(`msg-${msgId}`)?.remove();
                 } catch(e) {
                     UI.toast('Action failed');
-                    this.fastPoll(); // Fetch original state if offline/failed
+                    this.fastPoll(); 
                 }
             },
 
