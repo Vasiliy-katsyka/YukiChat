@@ -5369,12 +5369,21 @@
                     inner += `<div class="msg-caption">${formatText(m.caption)}</div>`;
                 }
 
-                let rxs = JSON.parse(m.reactions || '{}');
+                let rxs = {};
+                try {
+                    rxs = JSON.parse(m.reactions || '{}');
+                    if (!rxs || typeof rxs !== 'object') rxs = {};
+                } catch(e) {
+                    rxs = {};
+                }
+                
                 let rxGroups = {}; // emoji -> Array of userIds who voted
                 for (let uid in rxs) {
                     let em = rxs[uid];
-                    if (!rxGroups[em]) rxGroups[em] = [];
-                    rxGroups[em].push(Number(uid));
+                    if (em) {
+                        if (!rxGroups[em]) rxGroups[em] = [];
+                        rxGroups[em].push(Number(uid));
+                    }
                 }
                 
                 let rxH = '';
@@ -7676,7 +7685,7 @@
                     const msgEl = document.getElementById(`msg-${msgId}`);
                     const animOn = localStorage.getItem('y_anim_react') !== 'false';
                     
-                    // A. Trigger high-impact floating animation
+                    // A. Trigger floating micro-animation
                     if (msgEl && animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[emoji]) {
                         const rect = msgEl.getBoundingClientRect();
                         const floatEl = document.createElement('div');
@@ -7694,53 +7703,89 @@
                         setTimeout(() => floatEl.remove(), 2500); 
                     }
 
-                    // B. Client-side state mutation for zero-latency toggle UI [1]
-                    const cachedHtml = await localforage.getItem(`y_cache_msgs_${State.chat}`);
-                    const bubble = msgEl ? msgEl.querySelector('.msg-bubble') : null;
-                    if (bubble) {
-                        let rxAttr = bubble.getAttribute('data-raw') || '';
-                        let isMine = msgEl.classList.contains('sent');
-                        
-                        // Parse existing reactions list from client-side DOM or fetch simulation
-                        // Simply retrieve and query latest local message records to rewrite UI block
-                        req(`/api/messages/${State.chat}?after=0`).then(async msgs => {
-                            const targetMsg = msgs.find(m => m.id == msgId);
-                            if (targetMsg) {
-                                // Decrypt
-                                if (targetMsg.content && targetMsg.content.startsWith("__E2EE__:")) {
-                                    targetMsg.content = await E2EE.decrypt(State.chat, targetMsg.content);
+                    // B. Direct, Zero-Latency DOM-based Optimistic Update [1]
+                    if (msgEl) {
+                        const bubble = msgEl.querySelector('.msg-bubble');
+                        if (bubble) {
+                            let rxWrap = bubble.querySelector('.msg-reactions-wrap');
+                            if (!rxWrap) {
+                                // Create the reactions wrapper if it doesn't exist
+                                rxWrap = document.createElement('div');
+                                rxWrap.className = 'msg-reactions-wrap';
+                                bubble.appendChild(rxWrap);
+                            }
+                            
+                            // Scan for an existing pill matching this emoji
+                            let targetPill = null;
+                            const pills = rxWrap.querySelectorAll('.rx-pill');
+                            pills.forEach(p => {
+                                if (p.innerText.includes(emoji)) {
+                                    targetPill = p;
                                 }
-                                if (targetMsg.caption && targetMsg.caption.startsWith("__E2EE__:")) {
-                                    targetMsg.caption = await E2EE.decrypt(State.chat, targetMsg.caption);
-                                }
+                            });
+                            
+                            const activeStyle = 'border: 1px solid var(--primary); background: color-mix(in srgb, var(--primary) 18%, transparent) !important;';
+                            
+                            if (targetPill) {
+                                const countSpan = targetPill.querySelector('span');
+                                let currentCount = parseInt(countSpan.innerText) || 1;
                                 
-                                // Toggle client-side reaction map locally
-                                let map = JSON.parse(targetMsg.reactions || '{}');
-                                if (map[State.u.userId] === emoji) {
-                                    delete map[State.u.userId];
+                                if (targetPill.classList.contains('active-reaction')) {
+                                    // Retract my vote
+                                    currentCount--;
+                                    if (currentCount <= 0) {
+                                        targetPill.remove();
+                                    } else {
+                                        countSpan.innerText = currentCount;
+                                        targetPill.classList.remove('active-reaction');
+                                        targetPill.removeAttribute('style');
+                                    }
                                 } else {
-                                    map[State.u.userId] = emoji;
+                                    // Add my vote to existing pill
+                                    currentCount++;
+                                    countSpan.innerText = currentCount;
+                                    targetPill.classList.add('active-reaction');
+                                    targetPill.style.cssText = activeStyle;
                                 }
-                                targetMsg.reactions = JSON.stringify(map);
+                            } else {
+                                // Append brand-new active reaction pill
+                                let content = (animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[emoji]) 
+                                    ? `<div data-url="${window.REACTION_LOTTIES[emoji]}" style="width:20px;height:20px;pointer-events:none;"></div>` 
+                                    : emoji;
+                                    
+                                const newPillHtml = `
+                                    <div class="rx-pill active-reaction" style="${activeStyle}" onclick="event.stopPropagation(); App.msgAct('react', '${emoji}', ${msgId})">
+                                        ${content} <span style="margin-left:4px">1</span>
+                                    </div>`;
+                                rxWrap.insertAdjacentHTML('beforeend', newPillHtml);
                                 
-                                // Re-render message bubble wrapper instantly
-                                msgEl.innerHTML = App.buildMsgHTML(targetMsg, isMine, State.chats.get(State.chat)?.type);
-                                
-                                // Fire active lotties in reconstructed pills
+                                // Initialize Lottie if active
                                 if (animOn && window.lottie) {
-                                    msgEl.querySelectorAll('.rx-pill [data-url]:not([data-loaded])').forEach(el => {
-                                        el.setAttribute('data-loaded', 'true');
-                                        lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
-                                    });
+                                    const newPill = rxWrap.lastElementChild;
+                                    const lDiv = newPill.querySelector('[data-url]');
+                                    if (lDiv) {
+                                        lottie.loadAnimation({ container: lDiv, renderer: 'svg', loop: true, autoplay: true, path: lDiv.dataset.url });
+                                    }
                                 }
                             }
-                        });
+                            
+                            // Prune wrapper if all reaction pills have been cleared
+                            if (rxWrap.children.length === 0) {
+                                rxWrap.remove();
+                            }
+                            
+                            // Update persistent chat cache block in the background
+                            const msgsCont = document.getElementById('msgs');
+                            if (msgsCont) {
+                                localforage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
+                            }
+                        }
                     }
                 }
         
-                this.closeCtx(); // Close options menu
+                this.closeCtx(); // Dismiss menu
                 
-                // C. Dispatches update request to Server database in background
+                // C. Process backend database updates quietly in background
                 try { 
                     await req(`/api/messages/${msgId}/action`, 'POST', {action:act, emoji}); 
                     if (act === 'delete') document.getElementById(`msg-${msgId}`)?.remove();
