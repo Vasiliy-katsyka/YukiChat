@@ -1757,6 +1757,47 @@
             text-decoration: none !important;
             color: inherit !important;
         }
+
+        /* --- REACTION RECURSION CASCADE STACKS --- */
+        .rx-chain-stack {
+            position: relative;
+            display: inline-block;
+            height: 28px;
+            margin-right: 14px; /* Leave breathing room for the offset background cards */
+            cursor: pointer;
+        }
+        
+        .rx-stack-pill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2px 6px;
+            font-size: 13px;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        /* We style the offsets dynamically: depth 0 is newest, 1 is middle, 2 is oldest */
+        .rx-stack-pill[data-depth] {
+            z-index: calc(10 - var(--depth));
+            transform: 
+                scale(calc(1 - (var(--depth) * 0.15))) 
+                translate(calc(var(--depth) * -12px), calc(var(--depth) * -6px));
+            opacity: calc(1 - (var(--depth) * 0.3));
+        }
+        
+        .rx-stack-pill.active-reaction {
+            border-color: var(--primary);
+            background: color-mix(in srgb, var(--primary) 12%, transparent);
+        }        
     </style>
 </head>
 <body>
@@ -4468,7 +4509,52 @@
             }
         };
 
-
+        // Renders our receding stack chains
+        function renderReactionChains(reactionsJson, msgId) {
+            let chains = [];
+            try {
+                const parsed = JSON.parse(reactionsJson || '{}');
+                chains = parsed.chains || [];
+            } catch(e) {
+                return '';
+            }
+        
+            let html = '<div class="msg-reactions-wrap" style="display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; position:relative; min-height:28px;">';
+        
+            chains.forEach((chain, chainIdx) => {
+                if (chain.length === 0) return;
+        
+                // Process only the last 3 reactions for visual stacking
+                const visibleSlice = chain.slice(-3);
+                const latestReaction = chain[chain.length - 1];
+                const isMineOnTop = latestReaction.uid === Number(State.u.userId);
+        
+                html += `<div class="rx-chain-stack" onclick="App.handleChainClick(event, ${msgId}, ${chainIdx})">`;
+        
+                // Render oldest-visible to newest-visible so they layer perfectly
+                visibleSlice.forEach((item, index) => {
+                    const depth = visibleSlice.length - 1 - index; 
+                    const isLatest = depth === 0;
+                    const activeClass = (isLatest && isMineOnTop) ? ' active-reaction' : '';
+                    
+                    const animOn = localStorage.getItem('y_anim_react') !== 'false';
+                    const content = (animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[item.emoji])
+                        ? `<div data-url="${window.REACTION_LOTTIES[item.emoji]}" style="width:18px;height:18px;pointer-events:none;"></div>`
+                        : item.emoji;
+        
+                    html += `
+                        <div class="rx-stack-pill${activeClass}" style="--depth: ${depth};" data-depth="${depth}" data-emoji="${item.emoji}">
+                            ${content}
+                        </div>
+                    `;
+                });
+        
+                html += `</div>`;
+            });
+        
+            html += '</div>';
+            return html;
+        }
         
         const App = {
             // --- AUTHENTICATION ---
@@ -5421,44 +5507,8 @@
                     inner += `<div class="msg-caption">${formatText(m.caption)}</div>`;
                 }
 
-                let rxs = {};
-                try {
-                    rxs = JSON.parse(m.reactions || '{}');
-                    if (!rxs || typeof rxs !== 'object') rxs = {};
-                } catch(e) {
-                    rxs = {};
-                }
-                
-                let rxGroups = {}; // emoji -> Array of userIds who voted
-                for (let uid in rxs) {
-                    let em = rxs[uid];
-                    if (em) {
-                        if (!rxGroups[em]) rxGroups[em] = [];
-                        rxGroups[em].push(Number(uid));
-                    }
-                }
-                
-                let rxH = '';
-                const animOn = localStorage.getItem('y_anim_react') !== 'false';
-                
-                for (let em in rxGroups) {
-                    let userIds = rxGroups[em];
-                    let count = userIds.length;
-                    
-                    // Highlight if current user voted for this emoji [1]
-                    let hasMyReaction = userIds.includes(Number(State.u.userId));
-                    let activeClass = hasMyReaction ? ' active-reaction' : '';
-                    let activeStyle = hasMyReaction ? 'border: 1px solid var(--primary); background: color-mix(in srgb, var(--primary) 18%, transparent) !important;' : '';
-                    
-                    let content = (animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[em]) 
-                        ? `<div data-url="${window.REACTION_LOTTIES[em]}" style="width:20px;height:20px;pointer-events:none;"></div>` 
-                        : em;
-                    // Locate this block in buildMsgHTML (around line 1800):
-                    rxH += `<div class="rx-pill${activeClass}" data-emoji="${em}" style="${activeStyle}" onclick="event.stopPropagation(); App.msgAct('react', '${em}', ${m.id})">
-                                ${content} <span style="margin-left:4px">${count}</span>
-                            </div>`;
-                }
-                if(rxH) inner += `<div class="msg-reactions-wrap">${rxH}</div>`;
+                // Render the cascading stack chains recursively [1]
+                inner += renderReactionChains(m.reactions, m.id);
                         
                 let viewsH = (chatType === 'channel' && m.views) ? `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>` : '';
                 const tickHtml = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
@@ -7734,15 +7784,14 @@
                     }
                 }
             },
-            async msgAct(act, emoji=null, overrideMsgId=null) {
+            async msgAct(act, emoji=null, overrideMsgId=null, chainIdx=null) {
                 const msgId = overrideMsgId || State.targetId;
-                
-                // Locate this block inside App.msgAct:
+
                 if (act === 'react' && emoji) {
                     const msgEl = document.getElementById(`msg-${msgId}`);
                     const animOn = localStorage.getItem('y_anim_react') !== 'false';
-                
-                    // A. Trigger floating micro-animation
+
+                    // Trigger floating micro-animation on top of message bubble [1]
                     if (msgEl && animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[emoji]) {
                         const rect = msgEl.getBoundingClientRect();
                         const floatEl = document.createElement('div');
@@ -7759,91 +7808,114 @@
                         }
                         setTimeout(() => floatEl.remove(), 2500); 
                     }
-                
-                    // B. Direct, Zero-Latency DOM-based Optimistic Update
-                    if (msgEl) {
-                        const bubble = msgEl.querySelector('.msg-bubble');
-                        if (bubble) {
-                            let rxWrap = bubble.querySelector('.msg-reactions-wrap');
-                            if (!rxWrap) {
-                                rxWrap = document.createElement('div');
-                                rxWrap.className = 'msg-reactions-wrap';
-                                bubble.appendChild(rxWrap);
-                            }
-                            
-                            // Query strictly by the data-emoji attribute
-                            let targetPill = rxWrap.querySelector(`.rx-pill[data-emoji="${emoji}"]`);
-                            const activeStyle = 'border: 1px solid var(--primary); background: color-mix(in srgb, var(--primary) 18%, transparent) !important;';
-                            
-                            if (targetPill) {
-                                const countSpan = targetPill.querySelector('span');
-                                let currentCount = parseInt(countSpan.innerText) || 1;
-                                
-                                if (targetPill.classList.contains('active-reaction')) {
-                                    // Retract vote
-                                    currentCount--;
-                                    if (currentCount <= 0) {
-                                        targetPill.remove();
-                                    } else {
-                                        countSpan.innerText = currentCount;
-                                        targetPill.classList.remove('active-reaction');
-                                        targetPill.removeAttribute('style');
-                                    }
-                                } else {
-                                    // Add vote to existing pill
-                                    currentCount++;
-                                    countSpan.innerText = currentCount;
-                                    targetPill.classList.add('active-reaction');
-                                    targetPill.style.cssText = activeStyle;
-                                }
-                            } else {
-                                // Append brand-new active reaction pill
-                                let content = (animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[emoji]) 
-                                    ? `<div data-url="${window.REACTION_LOTTIES[emoji]}" style="width:20px;height:20px;pointer-events:none;"></div>` 
-                                    : emoji;
-                                    
-                                const newPillHtml = `
-                                    <div class="rx-pill active-reaction" data-emoji="${emoji}" style="${activeStyle}" onclick="event.stopPropagation(); App.msgAct('react', '${emoji}', ${msgId})">
-                                        ${content} <span style="margin-left:4px">1</span>
-                                    </div>`;
-                                rxWrap.insertAdjacentHTML('beforeend', newPillHtml);
-                                
-                                // Initialize Lottie if active
-                                if (animOn && window.lottie) {
-                                    const newPill = rxWrap.lastElementChild;
-                                    const lDiv = newPill.querySelector('[data-url]');
-                                    if (lDiv) {
-                                        lottie.loadAnimation({ container: lDiv, renderer: 'svg', loop: true, autoplay: true, path: lDiv.dataset.url });
-                                    }
-                                }
-                            }
-                            
-                            // Remove wrapper if all reaction pills have been cleared
-                            if (rxWrap.children.length === 0) {
-                                rxWrap.remove();
-                            }
-                            
-                            // Update persistent cache
-                            const msgsCont = document.getElementById('msgs');
-                            if (msgsCont) {
-                                localforage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
-                            }
-                        }
-                    }
                 }
-        
-                this.closeCtx(); // Dismiss menu
+
+                this.closeCtx(); // Dismiss context menu
                 
-                // C. Process backend database updates quietly in background
                 try { 
-                    await req(`/api/messages/${msgId}/action`, 'POST', {action:act, emoji}); 
+                    await req(`/api/messages/${msgId}/action`, 'POST', {
+                        action: act, 
+                        emoji, 
+                        chain_index: chainIdx
+                    }); 
                     if (act === 'delete') document.getElementById(`msg-${msgId}`)?.remove();
                 } catch(e) {
                     UI.toast('Action failed');
-                    this.fastPoll(); 
                 }
             },
+            handleChainClick(e, msgId, chainIdx) {
+                e.stopPropagation();
+                
+                // If my own reaction is on top, clicking retracts it [1]
+                const stackEl = e.currentTarget;
+                const topPill = stackEl.querySelector('.rx-stack-pill[data-depth="0"]');
+                if (topPill && topPill.classList.contains('active-reaction')) {
+                    const emoji = topPill.getAttribute('data-emoji');
+                    App.msgAct('react', emoji, msgId, chainIdx);
+                    return;
+                }
 
+                // Spawns a clean, floating picker aligned with the stack
+                const existing = document.getElementById('dynamic-chain-picker');
+                if (existing) existing.remove();
+
+                const picker = document.createElement('div');
+                picker.id = 'dynamic-chain-picker';
+                picker.className = 'n-liquid';
+                picker.style.cssText = `
+                    position: fixed;
+                    left: ${e.clientX}px;
+                    top: ${e.clientY - 30}px;
+                    background: rgba(20, 20, 20, 0.85);
+                    backdrop-filter: blur(20px);
+                    -webkit-backdrop-filter: blur(20px);
+                    border: 1px solid rgba(255,255,255,0.15);
+                    border-radius: 16px;
+                    padding: 6px;
+                    display: flex;
+                    gap: 8px;
+                    z-index: 10000;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                    transform: translate(-50%, -100%) scale(0.9);
+                    transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+                `;
+
+                const emojis = ['❤️', '👍', '😂', '🔥', '🎉'];
+                emojis.forEach(em => {
+                    const btn = document.createElement('button');
+                    btn.innerText = em;
+                    btn.style.cssText = "background:none; border:none; font-size:20px; cursor:pointer; padding:4px; transition:transform 0.1s;";
+                    btn.onmouseenter = () => btn.style.transform = "scale(1.25)";
+                    btn.onmouseleave = () => btn.style.transform = "scale(1)";
+                    btn.onclick = (ev) => {
+                        ev.stopPropagation();
+                        App.msgAct('react', em, msgId, chainIdx);
+                        picker.remove();
+                    };
+                    picker.appendChild(btn);
+                });
+
+                document.body.appendChild(picker);
+                setTimeout(() => picker.style.transform = 'translate(-50%, -100%) scale(1)', 10);
+
+                const closeHandler = () => {
+                    picker.remove();
+                    document.removeEventListener('click', closeHandler);
+                };
+                setTimeout(() => document.addEventListener('click', closeHandler), 100);
+            },
+
+            updateMessageReactionsDOM(msgId, reactionsData) {
+                const msgEl = document.getElementById(`msg-${msgId}`);
+                if (!msgEl) return;
+                const bubble = msgEl.querySelector('.msg-bubble');
+                if (!bubble) return;
+
+                // Remove existing reaction node cleanly
+                const rxWrap = bubble.querySelector('.msg-reactions-wrap');
+                if (rxWrap) rxWrap.remove();
+
+                const reactionsJson = typeof reactionsData === 'object' ? JSON.stringify(reactionsData) : reactionsData;
+                const stackHtml = renderReactionChains(reactionsJson, msgId);
+                
+                if (stackHtml) {
+                    bubble.insertAdjacentHTML('beforeend', stackHtml);
+                    
+                    // Activate Lotties if enabled
+                    const animOn = localStorage.getItem('y_anim_react') !== 'false';
+                    if (animOn && window.lottie) {
+                        bubble.querySelectorAll('.rx-pill [data-url]').forEach(el => {
+                            lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
+                        });
+                    }
+                }
+
+                // Update cache
+                const msgsCont = document.getElementById('msgs');
+                if (msgsCont && State.chat) {
+                    localforage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
+                }
+            },
             // --- PROFILE & SETTINGS ---
             viewProfile(chatId) {
                 const c = State.chats.get(chatId); if(!c) return;
