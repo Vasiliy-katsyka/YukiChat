@@ -1202,9 +1202,7 @@
         .ctx-reactions span:active { transform: scale(0.7); }
         
         /* Telegram-style Grouped Reaction Pills */
-        .msg-reactions-wrap {
-            display: flex; flex-wrap: wrap; gap: 6px; position: absolute; bottom: -14px; right: 8px; z-index: 2;
-        }
+
         .rx-pill {
             display: flex; align-items: center; justify-content: center; background: var(--bg-base); 
             border-radius: 12px; padding: 2px 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); 
@@ -1758,32 +1756,8 @@
             color: inherit !important;
         }
 
-        /* --- REACTION RECURSION CASCADE STACKS --- */
-        .rx-chain-stack {
-            position: relative;
-            display: inline-block;
-            height: 28px;
-            margin-right: 14px; /* Leave breathing room for the offset background cards */
-            cursor: pointer;
-        }
         
-        .rx-stack-pill {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg-base);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 2px 6px;
-            font-size: 13px;
-            box-shadow: var(--shadow);
-            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease;
-            user-select: none;
-            -webkit-user-select: none;
-        }
+
         
         /* We style the offsets dynamically: depth 0 is newest, 1 is middle, 2 is oldest */
         .rx-stack-pill[data-depth] {
@@ -1797,7 +1771,74 @@
         .rx-stack-pill.active-reaction {
             border-color: var(--primary);
             background: color-mix(in srgb, var(--primary) 12%, transparent);
-        }        
+        }      
+        /* --- Telegram-style Grouped Reaction Pills --- */
+        .msg-reactions-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            position: absolute;
+            bottom: -14px;
+            z-index: 20;
+        }
+        
+        /* Align reactions to the right for sent messages, left for received */
+        .msg-row.sent .msg-reactions-wrap {
+            right: 12px;
+            left: auto;
+        }
+        
+        .msg-row.received .msg-reactions-wrap {
+            left: 12px;
+            right: auto;
+        }
+        
+        .rx-chain-stack {
+            position: relative;
+            display: inline-flex;
+            height: 28px;
+            cursor: pointer;
+        }
+        
+        .rx-stack-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 13px;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease;
+            user-select: none;
+            -webkit-user-select: none;
+            white-space: nowrap;
+        }
+        
+        /* The active topmost pill determines the flow size of the stack container */
+        .rx-stack-pill[data-depth="0"] {
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Background cascading cards sit behind the topmost pill */
+        .rx-stack-pill:not([data-depth="0"]) {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .rx-stack-pill[data-depth] {
+            transform: 
+                scale(calc(1 - (var(--depth) * 0.1))) 
+                translate(calc(var(--depth) * -8px), calc(var(--depth) * -4px));
+            opacity: calc(1 - (var(--depth) * 0.25));
+            z-index: calc(10 - var(--depth));
+        }
     </style>
 </head>
 <body>
@@ -4509,7 +4550,6 @@
             }
         };
 
-        // Renders our receding stack chains
         function renderReactionChains(reactionsJson, msgId) {
             let chains = [];
             try {
@@ -4518,40 +4558,48 @@
             } catch(e) {
                 return '';
             }
-        
-            let html = '<div class="msg-reactions-wrap" style="display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; position:relative; min-height:28px;">';
-        
+            
+            // FIX 1: If there are no reactions, return an empty string immediately
+            // This prevents creating empty containers that stretch message bubbles vertically
+            if (chains.length === 0) return '';
+            
+            // FIX 2: Removed inline styles completely to allow clean stylesheet positioning
+            let html = '<div class="msg-reactions-wrap">';
+            
             chains.forEach((chain, chainIdx) => {
                 if (chain.length === 0) return;
-        
-                // Process only the last 3 reactions for visual stacking
+                
                 const visibleSlice = chain.slice(-3);
                 const latestReaction = chain[chain.length - 1];
                 const isMineOnTop = latestReaction.uid === Number(State.u.userId);
-        
+                
                 html += `<div class="rx-chain-stack" onclick="App.handleChainClick(event, ${msgId}, ${chainIdx})">`;
-        
-                // Render oldest-visible to newest-visible so they layer perfectly
+                
                 visibleSlice.forEach((item, index) => {
                     const depth = visibleSlice.length - 1 - index; 
                     const isLatest = depth === 0;
                     const activeClass = (isLatest && isMineOnTop) ? ' active-reaction' : '';
                     
                     const animOn = localStorage.getItem('y_anim_react') !== 'false';
-                    const content = (animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[item.emoji])
+                    let content = (animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[item.emoji])
                         ? `<div data-url="${window.REACTION_LOTTIES[item.emoji]}" style="width:18px;height:18px;pointer-events:none;"></div>`
                         : item.emoji;
-        
+                    
+                    // FIX 3: Append the total count of the chain to the topmost visual pill if greater than 1
+                    if (isLatest && chain.length > 1) {
+                        content += `<span style="margin-left:4px; font-weight:700; font-size:11px;">${chain.length}</span>`;
+                    }
+                    
                     html += `
                         <div class="rx-stack-pill${activeClass}" style="--depth: ${depth};" data-depth="${depth}" data-emoji="${item.emoji}">
                             ${content}
                         </div>
                     `;
                 });
-        
+                
                 html += `</div>`;
             });
-        
+            
             html += '</div>';
             return html;
         }
