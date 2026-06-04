@@ -4503,6 +4503,58 @@
                     }
                 });
             },
+            updateMessageReactionsDOM(msgId, reactions) {
+                const msgEl = document.getElementById(`msg-${msgId}`);
+                if (!msgEl) return;
+                const bubble = msgEl.querySelector('.msg-bubble');
+                if (!bubble) return;
+            
+                let rxWrap = bubble.querySelector('.msg-reactions-wrap');
+                if (rxWrap) rxWrap.remove(); // Clear old layout
+            
+                let rxGroups = {}; // emoji -> Array of userIds
+                for (let uid in reactions) {
+                    let em = reactions[uid];
+                    if (em) {
+                        if (!rxGroups[em]) rxGroups[em] = [];
+                        rxGroups[em].push(Number(uid));
+                    }
+                }
+            
+                let rxH = '';
+                const animOn = localStorage.getItem('y_anim_react') !== 'false';
+            
+                for (let em in rxGroups) {
+                    let userIds = rxGroups[em];
+                    let count = userIds.length;
+                    let hasMyReaction = userIds.includes(Number(State.u.userId));
+                    let activeClass = hasMyReaction ? ' active-reaction' : '';
+                    let activeStyle = hasMyReaction ? 'border: 1px solid var(--primary); background: color-mix(in srgb, var(--primary) 18%, transparent) !important;' : '';
+            
+                    let content = (animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[em])
+                        ? `<div data-url="${window.REACTION_LOTTIES[em]}" style="width:20px;height:20px;pointer-events:none;"></div>`
+                        : em;
+            
+                    rxH += `<div class="rx-pill${activeClass}" data-emoji="${em}" style="${activeStyle}" onclick="event.stopPropagation(); App.msgAct('react', '${em}', ${msgId})">
+                                ${content} <span style="margin-left:4px">${count}</span>
+                            </div>`;
+                }
+            
+                if (rxH) {
+                    bubble.insertAdjacentHTML('beforeend', `<div class="msg-reactions-wrap">${rxH}</div>`);
+                    if (animOn && window.lottie) {
+                        bubble.querySelectorAll('.rx-pill [data-url]').forEach(el => {
+                            lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
+                        });
+                    }
+                }
+            
+                // Update local cache
+                const msgsCont = document.getElementById('msgs');
+                if (msgsCont && State.chat) {
+                    localforage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
+                }
+            },
             async processOfflineQueue() {
                 if (State.isProcessingOfflineQueue) return;
                 State.isProcessingOfflineQueue = true;
@@ -5401,7 +5453,8 @@
                     let content = (animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[em]) 
                         ? `<div data-url="${window.REACTION_LOTTIES[em]}" style="width:20px;height:20px;pointer-events:none;"></div>` 
                         : em;
-                    rxH += `<div class="rx-pill${activeClass}" style="${activeStyle}" onclick="event.stopPropagation(); App.msgAct('react', '${em}', ${m.id})">
+                    // Locate this block in buildMsgHTML (around line 1800):
+                    rxH += `<div class="rx-pill${activeClass}" data-emoji="${em}" style="${activeStyle}" onclick="event.stopPropagation(); App.msgAct('react', '${em}', ${m.id})">
                                 ${content} <span style="margin-left:4px">${count}</span>
                             </div>`;
                 }
@@ -5554,7 +5607,10 @@
                 
                 State.ws.onmessage = async (e) => {
                     const data = JSON.parse(e.data);
-                    
+                    // Add this inside the WebSocket onmessage handler (around line 2000):
+                    if (data.type === 'message_reaction' && State.chat == data.chat_id) {
+                        App.updateMessageReactionsDOM(data.msg_id, data.reactions);
+                    }
                     if (data.type === 'presence') {
                         // Dynamically update user online presence badges [1]
                         const isOnline = data.status === 'online';
@@ -7681,10 +7737,11 @@
             async msgAct(act, emoji=null, overrideMsgId=null) {
                 const msgId = overrideMsgId || State.targetId;
                 
+                // Locate this block inside App.msgAct:
                 if (act === 'react' && emoji) {
                     const msgEl = document.getElementById(`msg-${msgId}`);
                     const animOn = localStorage.getItem('y_anim_react') !== 'false';
-                    
+                
                     // A. Trigger floating micro-animation
                     if (msgEl && animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[emoji]) {
                         const rect = msgEl.getBoundingClientRect();
@@ -7702,28 +7759,20 @@
                         }
                         setTimeout(() => floatEl.remove(), 2500); 
                     }
-
-                    // B. Direct, Zero-Latency DOM-based Optimistic Update [1]
+                
+                    // B. Direct, Zero-Latency DOM-based Optimistic Update
                     if (msgEl) {
                         const bubble = msgEl.querySelector('.msg-bubble');
                         if (bubble) {
                             let rxWrap = bubble.querySelector('.msg-reactions-wrap');
                             if (!rxWrap) {
-                                // Create the reactions wrapper if it doesn't exist
                                 rxWrap = document.createElement('div');
                                 rxWrap.className = 'msg-reactions-wrap';
                                 bubble.appendChild(rxWrap);
                             }
                             
-                            // Scan for an existing pill matching this emoji
-                            let targetPill = null;
-                            const pills = rxWrap.querySelectorAll('.rx-pill');
-                            pills.forEach(p => {
-                                if (p.innerText.includes(emoji)) {
-                                    targetPill = p;
-                                }
-                            });
-                            
+                            // Query strictly by the data-emoji attribute
+                            let targetPill = rxWrap.querySelector(`.rx-pill[data-emoji="${emoji}"]`);
                             const activeStyle = 'border: 1px solid var(--primary); background: color-mix(in srgb, var(--primary) 18%, transparent) !important;';
                             
                             if (targetPill) {
@@ -7731,7 +7780,7 @@
                                 let currentCount = parseInt(countSpan.innerText) || 1;
                                 
                                 if (targetPill.classList.contains('active-reaction')) {
-                                    // Retract my vote
+                                    // Retract vote
                                     currentCount--;
                                     if (currentCount <= 0) {
                                         targetPill.remove();
@@ -7741,7 +7790,7 @@
                                         targetPill.removeAttribute('style');
                                     }
                                 } else {
-                                    // Add my vote to existing pill
+                                    // Add vote to existing pill
                                     currentCount++;
                                     countSpan.innerText = currentCount;
                                     targetPill.classList.add('active-reaction');
@@ -7754,7 +7803,7 @@
                                     : emoji;
                                     
                                 const newPillHtml = `
-                                    <div class="rx-pill active-reaction" style="${activeStyle}" onclick="event.stopPropagation(); App.msgAct('react', '${emoji}', ${msgId})">
+                                    <div class="rx-pill active-reaction" data-emoji="${emoji}" style="${activeStyle}" onclick="event.stopPropagation(); App.msgAct('react', '${emoji}', ${msgId})">
                                         ${content} <span style="margin-left:4px">1</span>
                                     </div>`;
                                 rxWrap.insertAdjacentHTML('beforeend', newPillHtml);
@@ -7769,12 +7818,12 @@
                                 }
                             }
                             
-                            // Prune wrapper if all reaction pills have been cleared
+                            // Remove wrapper if all reaction pills have been cleared
                             if (rxWrap.children.length === 0) {
                                 rxWrap.remove();
                             }
                             
-                            // Update persistent chat cache block in the background
+                            // Update persistent cache
                             const msgsCont = document.getElementById('msgs');
                             if (msgsCont) {
                                 localforage.setItem(`y_cache_msgs_${State.chat}`, msgsCont.innerHTML);
