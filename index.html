@@ -5767,7 +5767,7 @@
                                         
                                         // FIX: Re-initialize Lottie for updated reaction pills!
                                         if (localStorage.getItem('y_anim_react') !== 'false' && window.lottie) {
-                                            existingMsg.querySelectorAll('.rx-pill [data-url]:not([data-loaded])').forEach(el => {
+                                            existingMsg.querySelectorAll('.rx-stack-pill [data-url]:not([data-loaded]), .rx-pill [data-url]:not([data-loaded])').forEach(el => {
                                                 el.setAttribute('data-loaded', 'true');
                                                 lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
                                             });
@@ -7465,7 +7465,7 @@
                     }
                     // Activate Lotties in message badges
                     if (localStorage.getItem('y_anim_react') !== 'false' && window.lottie) {
-                        cont.querySelectorAll('.rx-pill [data-url]:not([data-loaded]), .inline-lottie[data-url]:not([data-loaded])').forEach(el => {
+                        cont.querySelectorAll('.rx-stack-pill [data-url]:not([data-loaded]), .rx-pill [data-url]:not([data-loaded]), .inline-lottie[data-url]:not([data-loaded])').forEach(el => {
                             el.setAttribute('data-loaded', 'true');
                             lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
                         });
@@ -7904,7 +7904,7 @@
                     // Activate Lotties if enabled
                     const animOn = localStorage.getItem('y_anim_react') !== 'false';
                     if (animOn && window.lottie) {
-                        bubble.querySelectorAll('.rx-pill [data-url]').forEach(el => {
+                        bubble.querySelectorAll('.rx-stack-pill [data-url], .rx-pill [data-url]').forEach(el => {
                             lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
                         });
                     }
