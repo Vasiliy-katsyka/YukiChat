@@ -5513,6 +5513,8 @@
             },
             buildMsgHTML(m, isMine, chatType) {
                 let inner = '';
+                
+                // --- REPLIES ---
                 if (m.reply_to_id) {
                     let repTxt = 'Replied message';
                     const repEl = document.getElementById(`msg-${m.reply_to_id}`);
@@ -5526,113 +5528,41 @@
                 let safeContent = m.content || '';
                 const rawAttr = m.type === 'text' ? `data-raw="${safeContent.replace(/"/g, '&quot;')}"` : '';
             
-                // Markdown Parser
+                // --- BULLETPROOF MARKDOWN PARSER ---
                 const formatText = (text) => {
                     if (!text) return '';
                     let t = String(text).replace(/</g,'&lt;');
             
-                    // --- GRAPH BUILDER PARSER ---
+                    // Graph Builder
                     t = t.replace(/\[graph\]([\s\S]*?)\[\/graph\]/g, (match, p1) => {
                         const uniqueId = 'graph_' + Math.random().toString(36).substring(2, 9);
                         const escapedLatex = p1.replace(/"/g, '&quot;').trim();
-                        return `<div class="desmos-graph-container" id="${uniqueId}" data-latex="${escapedLatex}" style="width: 320px; max-width: 100%; height: 250px; border-radius: 16px; border: 1px solid var(--border); overflow: hidden; margin: 8px 0; background: #fff; display: block;" onclick="event.stopPropagation();"></div>`;
+                        return `<div class="desmos-graph-container" id="${uniqueId}" data-latex="${escapedLatex}" style="width: 100%; max-width: 320px; height: 250px; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; margin: 8px 0; background: #fff; display: block;" onclick="event.stopPropagation();"></div>`;
                     });
             
-                    // 1. Code Blocks
+                    // Code Blocks (Premium but safe width)
                     t = t.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-                        const displayLang = lang || 'code';
                         return `
-                        <div class="code-block-container" onclick="event.stopPropagation();">
-                            <div class="code-block-header">
-                                <span>${displayLang}</span>
-                                <button class="copy-code-btn" onclick="App.copyCodeBlock(this)">
-                                    <svg class="copy-icon" viewBox="0 0 24 24" style="width:13px; height:13px; fill:currentColor;"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-                                    <span class="copy-text">Copy</span>
+                        <div style="border-radius: 8px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); margin: 8px 0; overflow: hidden; max-width: 100%; text-align: left;" onclick="event.stopPropagation();">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: rgba(0, 0, 0, 0.15); border-bottom: 1px solid var(--border); font-size: 11px; font-family: monospace; color: var(--text-muted);">
+                                <span>${lang || 'code'}</span>
+                                <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 4px;" onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.innerText); UI.toast('Copied!');">
+                                    <svg viewBox="0 0 24 24" style="width:13px; height:13px; fill:currentColor;"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg> Copy
                                 </button>
                             </div>
-                            <pre><code>${code.trim()}</code></pre>
-                        </div>
-                        `;
+                            <pre style="margin: 0; padding: 12px; overflow-x: auto; font-family: monospace; font-size: 13px; line-height: 1.4;"><code>${code.trim()}</code></pre>
+                        </div>`;
                     });
-                    t = t.replace(/```([\s\S]*?)```/g, (match, code) => {
-                        return `
-                        <div class="code-block-container" onclick="event.stopPropagation();">
-                            <div class="code-block-header">
-                                <span>code</span>
-                                <button class="copy-code-btn" onclick="App.copyCodeBlock(this)">
-                                    <svg class="copy-icon" viewBox="0 0 24 24" style="width:13px; height:13px; fill:currentColor;"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-                                    <span class="copy-text">Copy</span>
-                                </button>
-                            </div>
-                            <pre><code>${code.trim()}</code></pre>
-                        </div>
-                        `;
-                    });
-                    t = t.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
+                    
+                    // Inline code
+                    t = t.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.15);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
                 
-                    // 4. Tables Parser
-                    const lines = t.split('\n');
-                    let inTable = false;
-                    let tableHtml = '';
-                    for (let i = 0; i < lines.length; i++) {
-                        let line = lines[i].trim();
-                        if (line.startsWith('|') && line.endsWith('|')) {
-                            if (!inTable) {
-                                inTable = true;
-                                tableHtml = '<table style="border-collapse: collapse; margin: 10px 0; width: 100%; font-size: 13px; line-height: 1.4;">';
-                            }
-                            let cells = line.split('|').map(c => c.trim()).filter((c, idx, arr) => idx > 0 && idx < arr.length - 1);
-                            if (cells.every(c => /^:-*|-*:|:-*:|-+$/.test(c))) {
-                                lines[i] = ''; 
-                                continue; 
-                            }
-                            let isHeader = (tableHtml.match(/<tr>/g) || []).length === 0;
-                            tableHtml += '<tr style="border-bottom: 1px solid var(--border);">';
-                            cells.forEach(cell => {
-                                let tag = isHeader ? 'th' : 'td';
-                                let style = isHeader ? 'font-weight: 600; background: color-mix(in srgb, var(--bg-input) 40%, transparent);' : '';
-                                tableHtml += `<${tag} style="padding: 6px 10px; border: 1px solid var(--border); ${style}">${cell}</${tag}>`;
-                            });
-                            tableHtml += '</tr>';
-                            lines[i] = ''; 
-                        } else {
-                            if (inTable) {
-                                inTable = false;
-                                tableHtml += '</table>';
-                                lines[i] = tableHtml + '\n' + lines[i];
-                            }
-                        }
-                    }
-                    if (inTable) {
-                        tableHtml += '</table>';
-                        lines[lines.length - 1] += tableHtml;
-                    }
-                    t = lines.filter(l => l !== '').join('\n');
-                
-                    // 5. Images Parser
+                    // Images
                     t = t.replace(/!\[([^\]]*)\]\((https?:\/\/[^\s\)]+)\)/g, '<div style="margin: 8px 0; text-align: center;"><img src="$2" alt="$1" style="max-width: 100%; max-height: 250px; border-radius: 8px;" onclick="event.stopPropagation(); App.openMedia(\'$2\')"><span style="display:block; font-size:11px; color:var(--text-muted); margin-top:2px;">$1</span></div>');
                 
-                    // 6. Blockquotes and Lists
-                    t = t.split('\n').map(line => {
-                        let trimmed = line.trim();
-                        if (trimmed.startsWith('&gt;')) {
-                            return `<blockquote style="border-left: 3px solid var(--primary); padding-left: 10px; margin: 8px 0; color: var(--text-muted); font-style: italic;">${trimmed.substring(4).trim()}</blockquote>`;
-                        }
-                        if (trimmed.startsWith('* ')) {
-                            return `<li style="margin-left: 16px; list-style-type: disc; padding-left: 4px;">${trimmed.substring(2).trim()}</li>`;
-                        }
-                        if (/^\d+\.\s/.test(trimmed)) {
-                            let dotIdx = trimmed.indexOf('.');
-                            return `<li style="margin-left: 16px; list-style-type: decimal; padding-left: 4px;">${trimmed.substring(dotIdx + 1).trim()}</li>`;
-                        }
-                        return line;
-                    }).join('\n');
-                
-                    // 7. Core Markdown Formatting
+                    // Core Formatting
                     t = t.replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>');
                     t = t.replace(/\*([\s\S]*?)\*/g, '<em>$1</em>');
-                    t = t.replace(/^### (.*$)/gim, '<h3 style="margin:12px 0 6px;font-size:15px;font-weight:600;">$1</h3>');
-                    t = t.replace(/^## (.*$)/gim, '<h2 style="margin:14px 0 6px;font-size:17px;font-weight:600;">$1</h2>');
                     
                     t = t.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
                     
@@ -5644,26 +5574,26 @@
                     return t;
                 };
             
+                let cleanTxt = '';
+                
+                // --- CALLS ---
                 const isCallCompleted = safeContent.includes("Ended Call") || safeContent.includes("Завершенный вызов");
                 const isCallMissed = safeContent.includes("Missed Call") || safeContent.includes("Пропущенный вызов") || safeContent.includes("Canceled Call") || safeContent.includes("Отмененный вызов");
             
-                let cleanTxt = '';
                 if (m.type === 'text') {
                     if (isCallCompleted || isCallMissed) {
-                        const callClass = isCallCompleted ? "call-completed" : "call-missed";
-                        const callTitle = isCallCompleted ? "Completed Call" : "Missed Call";
+                        const isMissed = isCallMissed;
                         cleanTxt = `
-                        <div class="call-message ${callClass}" onclick="event.stopPropagation();">
-                            <div class="call-icon-box">
+                        <div style="display:flex; align-items:center; gap:12px; min-width:200px; padding:4px 0;" onclick="event.stopPropagation();">
+                            <div style="width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; background: ${isMissed ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)'}; color: ${isMissed ? 'var(--danger)' : 'var(--success)'};">
                                 <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.25 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
                             </div>
-                            <div class="call-info">
-                                <span class="call-title">${I18N.t(callTitle)}</span>
-                                <span class="call-meta">${UI.formatTime(m.created_at)}</span>
+                            <div style="flex-grow:1; display:flex; flex-direction:column;">
+                                <span style="font-size:14px; font-weight:600;">${isMissed ? I18N.t('Missed Call') : I18N.t('Ended Call')}</span>
+                                <span style="font-size:11px; opacity:0.7;">${UI.formatTime(m.created_at)}</span>
                             </div>
-                            <button class="call-back-btn" onclick="event.stopPropagation(); RTC.startCall()">Callback</button>
-                        </div>
-                        `;
+                            <button style="background:rgba(255,255,255,0.1); border:none; color:inherit; padding:6px 12px; border-radius:12px; font-size:12px; cursor:pointer;" onclick="RTC.startCall()">${I18N.t('Call Back')}</button>
+                        </div>`;
                     } else {
                         cleanTxt = formatText(safeContent);
                     }
@@ -5677,11 +5607,12 @@
                     });
                 }
             
+                // --- ATTACHMENTS (Photos, Stickers, Audio, Video, Docs, Voice) ---
                 if (m.type === 'photo') {
-                    inner += `<img src="${m.content}" class="msg-media" onclick="event.stopPropagation(); App.openMedia('${m.content}')">`;
+                    inner += `<img src="${m.content}" class="msg-media" style="border-radius:12px; max-width:100%; max-height:280px; object-fit:cover;" onclick="event.stopPropagation(); App.openMedia('${m.content}')">`;
                 } 
                 else if (m.type === 'sticker') {
-                    inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
+                    inner += `<img src="${m.content}" class="msg-sticker" style="width:140px; height:140px; object-fit:contain;" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
                 } 
                 else if (m.type === 'audio') {
                     let audioTitle = "Audio File";
@@ -5690,8 +5621,7 @@
                     if (m.content) {
                         try {
                             const urlObj = new URL(m.content);
-                            let decoded = decodeURIComponent(urlObj.pathname.split('/').pop());
-                            decoded = decoded.replace(/^yuki_\d+[\._]/, '');
+                            let decoded = decodeURIComponent(urlObj.pathname.split('/').pop()).replace(/^yuki_\d+[\._]/, '');
                             if (decoded) {
                                 const parts = decoded.split(" - ");
                                 if (parts.length > 1) {
@@ -5705,101 +5635,57 @@
                     }
             
                     if (m.content && !m.content.startsWith("__E2EE__") && !m.content.startsWith("🔒")) {
-                        setTimeout(() => {
-                            App.loadAudioMetadata(m.id, m.content);
-                        }, 50);
+                        setTimeout(() => App.loadAudioMetadata(m.id, m.content), 50);
                     }
             
                     inner += `
-                    <div class="audio-msg-card" id="audio-card-${m.id}" onclick="event.stopPropagation();" style="display: flex; align-items: center; gap: 12px; background: var(--bg-input); padding: 12px; border-radius: 16px; min-width: 240px; max-width: 320px; margin-top: 4px;">
-                        <div style="position: relative; width: 44px; height: 44px; flex-shrink: 0; background: #333; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border);">
-                            <div class="audio-cover-container" style="position: absolute; inset: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
-                                <span style="font-size: 18px;">🎵</span>
-                            </div>
-                            <button class="btn" style="position: absolute; inset: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); color: white; display: flex; align-items: center; justify-content: center; border-radius: 10px; z-index: 2;" onclick="MusicPlayer.initTrack('${m.content}', '${audioTitle.replace(/'/g, "\\'")}')">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 1px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <div class="audio-msg-card" id="audio-card-${m.id}" onclick="event.stopPropagation();" style="display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.05); padding: 8px 12px; border-radius: 12px; min-width: 220px; max-width: 280px; margin-top: 4px;">
+                        <div style="position: relative; width: 40px; height: 40px; flex-shrink: 0; background: var(--bg-input); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                            <div class="audio-cover-container" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 16px;">🎵</div>
+                            <button style="position: absolute; inset: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); color: white; border:none; display: flex; align-items: center; justify-content: center; z-index: 2; cursor:pointer;" onclick="MusicPlayer.initTrack('${m.content}', '${audioTitle.replace(/'/g, "\\'")}')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 2px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                             </button>
                         </div>
-                        <div class="audio-card-details" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left;">
+                        <div class="audio-card-details" style="flex: 1; min-width: 0; display: flex; flex-direction: column; text-align: left;">
                             <span class="audio-title" style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${audioTitle}</span>
-                            <span class="audio-artist" style="font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${audioArtist}</span>
+                            <span class="audio-artist" style="font-size:11px; opacity:0.7; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${audioArtist}</span>
                         </div>
-                    </div>`.replace(/\s+/g, ' ');
+                    </div>`;
                 }
                 else if (m.type === 'video') {
+                    // ORIGINAL YukiChat native video player code, safely sized to not stretch screens
                     inner += `
-                    <div class="custom-video-player" id="videoPlayerContainer_${m.id}" onclick="event.stopPropagation();">
-                        <video id="html5Video_${m.id}" preload="metadata" loop playsinline>
-                            <source src="${m.content}" type="video/mp4">
-                        </video>
-                        
-                        <div class="video-center-play-overlay" id="videoOverlay_${m.id}" onclick="VideoPlayer.togglePlay('${m.id}')">
-                            <button class="video-center-play-btn">
-                                <svg viewBox="0 0 24 24" style="width:22px; height:22px; fill:currentColor;"><path d="M8 5v14l11-7z"/></svg>
+                    <div class="custom-video-player" style="position:relative; width:100%; max-width:280px; border-radius:12px; overflow:hidden; background:#000; margin-top:4px;" onclick="event.stopPropagation();">
+                        <video class="custom-video-element" src="${m.content}" preload="metadata" style="width:100%; max-height:280px; display:block; object-fit:cover;"></video>
+                        <div class="video-controls-overlay" style="position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent, rgba(0,0,0,0.8)); padding:8px; display:flex; align-items:center; gap:8px;">
+                            <button class="icon-btn" style="color:#fff; width:24px; height:24px;" onclick="VideoPlayer.togglePlay(this)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            </button>
+                            <div class="video-seek-bar" style="flex:1; height:4px; background:rgba(255,255,255,0.3); border-radius:2px; cursor:pointer; position:relative;" onclick="VideoPlayer.seek(event, this)">
+                                <div class="video-seek-progress" style="height:100%; background:var(--primary); width:0%; border-radius:inherit;"></div>
+                            </div>
+                            <button class="icon-btn" style="color:#fff; width:24px; height:24px;" onclick="VideoPlayer.fullscreen(this)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
                             </button>
                         </div>
-            
-                        <div class="video-controls-bar">
-                            <input type="range" class="video-progress-slider" id="videoScrubber_${m.id}" value="0" min="0" max="100" oninput="VideoPlayer.scrub('${m.id}')">
-                            
-                            <div class="video-control-row">
-                                <div class="video-control-group">
-                                    <button class="vid-btn" id="playPauseBtn_${m.id}" onclick="VideoPlayer.togglePlay('${m.id}')">
-                                        <svg id="playIcon_${m.id}" viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M8 5v14l11-7z"/></svg>
-                                        <svg id="pauseIcon_${m.id}" viewBox="0 0 24 24" style="display:none; width:18px; height:18px; fill:currentColor;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                                    </button>
-                                    
-                                    <div class="volume-control-widget">
-                                        <button class="vid-btn" id="volumeMuteBtn_${m.id}" onclick="VideoPlayer.toggleMute('${m.id}')">
-                                            <svg id="volumeOnIcon_${m.id}" viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
-                                            <svg id="volumeMuteIcon_${m.id}" viewBox="0 0 24 24" style="display:none; width:18px; height:18px; fill:currentColor;"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3z"/></svg>
-                                        </button>
-                                        <input type="range" class="volume-slider" id="volumeSlider_${m.id}" min="0" max="1" step="0.1" value="1" oninput="VideoPlayer.setVolume('${m.id}')">
-                                    </div>
-            
-                                    <span class="video-timer" id="videoTimer_${m.id}">0:00 / 0:00</span>
-                                </div>
-            
-                                <div class="video-control-group">
-                                    <button class="vid-btn" id="speedSelectorBtn_${m.id}" onclick="VideoPlayer.cycleSpeed('${m.id}')">
-                                        <span class="speed-badge" id="speedBadge_${m.id}">1x</span>
-                                    </button>
-                                    <button class="vid-btn" onclick="VideoPlayer.fullscreen('${m.id}')">
-                                        <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    `;
+                    </div>`;
                 } 
                 else if (m.type === 'file') {
-                    const title = m.caption || "Attachment Document";
-                    const ext = title.includes('.') ? title.split('.').pop().substring(0, 4).toLowerCase() : 'file';
+                    const title = m.caption || "Document";
+                    const ext = title.includes('.') ? title.split('.').pop().substring(0, 4).toUpperCase() : 'FILE';
                     inner += `
-                    <div class="document-message" onclick="event.stopPropagation();">
-                        <div class="doc-icon-box">
-                            <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: none; stroke: var(--primary); stroke-width: 2;"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/></svg>
-                            <span class="doc-ext">${ext}</span>
+                    <a href="${m.content}" target="_blank" onclick="event.stopPropagation();" style="display:flex; align-items:center; gap:12px; background:rgba(0,0,0,0.05); padding:8px 12px; border-radius:12px; min-width:200px; max-width:280px; text-decoration:none; color:inherit; margin-top:4px;">
+                        <div style="width:40px; height:40px; background:var(--primary); color:#fff; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; flex-shrink:0;">${ext}</div>
+                        <div style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+                            <span style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${title}</span>
+                            <span style="font-size:11px; opacity:0.7;">Download Document</span>
                         </div>
-                        <div class="doc-details">
-                            <span class="doc-name">${title}</span>
-                            <span class="doc-meta">Document</span>
-                        </div>
-                        <a href="${m.content}" target="_blank" download class="doc-download-btn">
-                            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;"><path d="M19.35 10.04A7.49 7.49 0 0012 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 000 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z" fill="currentColor"/></svg>
-                        </a>
-                    </div>
-                    `;
+                        <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor; opacity:0.7;"><path d="M19.35 10.04A7.49 7.49 0 0012 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 000 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+                    </a>`;
                 } 
                 else if (m.type === 'voice') {
                     let peaks = [];
-                    try {
-                        let parsed = JSON.parse(m.caption || '{}');
-                        peaks = parsed.peaks || [];
-                    } catch(e) {
-                        peaks = [];
-                    }
+                    try { peaks = JSON.parse(m.caption || '{}').peaks || []; } catch(e) { peaks = []; }
                     
                     const targetBars = 35;
                     let displayPeaks = [];
@@ -5821,43 +5707,32 @@
                     
                     let waveformHtml = '';
                     displayPeaks.forEach(p => {
-                        const height = Math.max(3, Math.min(32, p / 2));
-                        waveformHtml += `<div class="wave-bar" style="height:${height}px;"></div>`;
+                        const height = Math.max(3, Math.min(24, p / 2));
+                        waveformHtml += `<div class="wave-bar" style="width:2.5px; height:${height}px; background:currentColor; opacity:0.4; border-radius:2px; transition:0.1s;"></div>`;
                     });
                     
+                    // This DOM strictly matches the hooks required by App.toggleVoicePlay!
                     inner += `
-                    <div class="audio-message" onclick="event.stopPropagation();">
-                        <!-- Fixed class hooks play-voice-btn alongside audio-play-btn -->
-                        <button class="play-voice-btn audio-play-btn" onclick="App.toggleVoicePlay('${m.id}', '${m.content}')">
-                            <svg class="play-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;"><path d="M8 5v14l11-7z"/></svg>
-                            <svg class="pause-icon" viewBox="0 0 24 24" style="display:none; width: 18px; height: 18px; fill: currentColor;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    <div class="voice-player" style="display:flex; align-items:center; gap:10px; min-width:200px; padding:4px 0;" onclick="event.stopPropagation();">
+                        <button class="play-voice-btn" style="width:36px; height:36px; border-radius:50%; background:var(--primary); color:white; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;" onclick="App.toggleVoicePlay('${m.id}', '${m.content}')">
+                            <svg class="play-icon" viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor; margin-left:2px;"><path d="M8 5v14l11-7z"/></svg>
+                            <svg class="pause-icon" viewBox="0 0 24 24" style="display:none; width:16px; height:16px; fill:currentColor;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                         </button>
-                        <div class="audio-waveform-container">
-                            <div class="waveform" id="demoWaveform_${m.id}">
-                                ${waveformHtml}
-                            </div>
-                            <div class="audio-meta">
-                                <span class="audio-play-progress" id="audio-progress-${m.id}">0:00 / 0:00</span>
-                                <span>voice note</span>
-                            </div>
+                        <div class="waveform-bars" style="display:flex; align-items:center; gap:2px; height:30px; flex:1;">
+                            ${waveformHtml}
                         </div>
-                    </div>
-                    `;
+                    </div>`;
                 }
                 else if (m.type === 'video_note') {
                     inner += `
-                    <div class="video-note-message" onclick="event.stopPropagation(); App.toggleVideoNotePlay(this)">
-                        <video class="video-note-player" loop playsinline>
-                            <source src="${m.content}" type="video/webm">
+                    <div class="video-note-container" style="position:relative; width:180px; height:180px; border-radius:50%; overflow:hidden; border:2px solid var(--primary); background:#000;" onclick="event.stopPropagation(); App.toggleVideoNotePlay(this)">
+                        <video class="video-note-player" loop playsinline style="width:100%; height:100%; object-fit:cover;">
                             <source src="${m.content}" type="video/mp4">
                         </video>
-                        <div class="video-note-progress">
-                            <svg viewBox="0 0 200 200">
-                                <circle cx="100" cy="100" r="88" style="stroke-dasharray: 552; stroke-dashoffset: 552;" />
-                            </svg>
+                        <div class="video-note-overlay" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.3); transition:0.2s;">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                         </div>
-                    </div>
-                    `;
+                    </div>`;
                 }
                 else {
                     inner += cleanTxt;
@@ -5879,37 +5754,31 @@
                 }
             
                 if(m.caption && m.type !== 'voice') {
-                    inner += `<div class="msg-caption">${formatText(m.caption)}</div>`;
+                    inner += `<div class="msg-caption" style="margin-top:6px;">${formatText(m.caption)}</div>`;
                 }
             
+                // Reaction Stack
                 inner += renderReactionChains(m.reactions, m.id);
                         
-                let viewsH = (chatType === 'channel' && m.views) ? `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>` : '';
+                // Meta Info (Views & Read Ticks)
+                let viewsH = (chatType === 'channel' && m.views) ? `<span style="margin-left:6px;">👁 ${m.views}</span>` : '';
                 
-                // Sleek dual ticks instead of heavy circular checkmarks
-                const tickHtml = isMine ? `
-                <svg class="tick-icon-inside" viewBox="0 0 24 24" width="16" height="16" style="fill: none; stroke: ${m.is_read ? '#4ade80' : 'rgba(255,255,255,0.6)'}; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;">
-                    ${m.is_read ? `
-                        <path d="M4 12l4 4L18 6" />
-                        <path d="M9 12l4 4L23 6" />
-                    ` : `
-                        <path d="M6 12l4 4L20 6" />
-                    `}
-                </svg>` : '';
+                // Sleek, minimal read ticks
+                const tickHtml = isMine ? `<span class="msg-tick ${m.is_read?'read':''}" style="margin-left:4px; font-size:11px; letter-spacing:-2px; ${m.is_read ? 'color:var(--success);' : 'opacity:0.7;'}">${m.is_read ? '✓✓' : '✓'}</span>` : '';
             
-                const senderName = (!isMine && chatType !== 'dm') ? `<span class="msg-sender">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</span>` : '';
+                const senderName = (!isMine && chatType !== 'dm') ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px;">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
                 const bubbleStyle = (m.type === 'sticker' || m.type === 'video_note') ? 'background: transparent !important; padding: 0 !important; box-shadow: none !important; border: none !important;' : '';
             
+                // ROOT RENDER: Reverts to original YukiChat DOM expectations (`msg-bubble`)
                 return `
-                <div class="msg-container">
+                <div class="msg-bubble" style="${bubbleStyle}" ${rawAttr} onclick="App.handleBubbleClick(event, ${m.id}, ${isMine})">
                     ${senderName}
-                    <div class="msg-bubble" style="${bubbleStyle}" ${rawAttr} onclick="App.handleBubbleClick(event, ${m.id}, ${isMine})">
-                        ${inner}
-                        ${isMine && m.type !== 'sticker' && m.type !== 'video_note' ? `<div class="msg-status-inside">${tickHtml}</div>` : ''}
+                    ${inner}
+                    <div class="msg-timestamp" style="font-size:10px; opacity:0.6; text-align:right; margin-top:4px; float:right; padding-left:8px; line-height:1.2;">
+                        ${UI.formatTime(m.created_at)}${tickHtml}${viewsH}
                     </div>
-                    <div class="msg-time-outer">${UI.formatTime(m.created_at)}${viewsH}</div>
-                </div>
-                `;
+                    <div style="clear:both;"></div>
+                </div>`;
             },
             renderGraphs() {
                 const containers = document.querySelectorAll('.desmos-graph-container:not(.graph-loaded)');
