@@ -452,9 +452,175 @@
         .msg-row.sent { justify-content: flex-end; }
         .msg-row.received { justify-content: flex-start; }
         
-        .msg-bubble { max-width: 75%; padding: 12px 16px; font-size: var(--msg-size); position: relative; word-break: break-word; line-height: 1.4; border-radius: 20px; }
+        /* --- MESSAGE BUBBLES & TIMESTAMPS OUTSIDE --- */
+        .msg-bubble { 
+            max-width: 75%; 
+            padding: 12px 16px; 
+            font-size: var(--msg-size); 
+            position: relative; 
+            word-break: break-word; 
+            line-height: 1.4; 
+            border-radius: 20px; 
+        }
         .msg-row.sent .msg-bubble { background: var(--msg-sent); color: var(--msg-sent-txt); border-bottom-right-radius: 4px; }
         .msg-row.received .msg-bubble { background: var(--msg-recv); color: var(--msg-recv-txt); border-bottom-left-radius: 4px; }
+        
+        /* Safe outside timestamp styling (independent of reaction wrapping) */
+        .msg-bubble > .msg-timestamp { 
+            position: absolute; 
+            bottom: -20px; 
+            font-size: 11px !important; 
+            color: var(--text-muted) !important; 
+            opacity: 1 !important; 
+            width: max-content; 
+            z-index: 10;
+        }
+        .msg-row.sent .msg-bubble > .msg-timestamp { right: 4px; text-align: right; }
+        .msg-row.received .msg-bubble > .msg-timestamp { left: 4px; text-align: left; }
+        
+        .msg-tick { font-size: 11px; margin-left: 4px; letter-spacing: -2px; }
+        .msg-tick.read { color: var(--success) !important; }
+        
+        /* --- PREMIUM INTERACTIVE MEDIA ELEMENTS --- */
+        
+        /* Custom Video Player inside bubble */
+        .custom-video-player {
+            position: relative;
+            width: 100%;
+            max-width: 320px;
+            border-radius: var(--radius-inner);
+            overflow: hidden;
+            background: #000;
+            aspect-ratio: 16 / 9;
+            margin-top: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .custom-video-player video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .video-controls-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.85));
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            opacity: 0;
+            transform: translateY(5px);
+            transition: opacity 0.2s, transform 0.2s;
+            z-index: 10;
+        }
+        .custom-video-player:hover .video-controls-overlay {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .video-seek-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+        }
+        .video-seek-progress {
+            height: 100%;
+            background: var(--primary);
+            border-radius: inherit;
+            width: 0%;
+        }
+        
+        /* Code Block Container with Copy Header */
+        .code-block-container {
+            border-radius: var(--radius-inner);
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border);
+            margin: 8px 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        .code-block-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 12px;
+            background: rgba(0, 0, 0, 0.15);
+            border-bottom: 1px solid var(--border);
+            font-size: 11px;
+            font-family: monospace;
+            color: var(--text-muted);
+        }
+        .copy-code-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .copy-code-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .copy-code-btn svg {
+            width: 13px;
+            height: 13px;
+        }
+        
+        /* Call History Card Log */
+        .call-history-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 230px;
+            max-width: 270px;
+            padding: 4px 0;
+        }
+        .call-hist-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .call-hist-completed .call-hist-icon {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+        .call-hist-missed .call-hist-icon {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+        }
+        .call-hist-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+        .call-hist-info {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        .call-hist-title {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .call-hist-meta {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 1px;
+        }
         
         /* Injecting timestamp outside via CSS trick */
         .msg-bubble > .msg-timestamp { position: absolute; bottom: -20px; font-size: 11px !important; color: var(--text-muted) !important; opacity: 1 !important; width: max-content; }
@@ -5280,7 +5446,6 @@
                     Router.pop(); Router.pop(); this.openChat(d.chat_id);
                 } catch(e) { UI.toast('Handle taken or error'); }
             },
-            // --- NEW HELPERS ---
             buildMsgHTML(m, isMine, chatType) {
                 let inner = '';
                 if (m.reply_to_id) {
@@ -5296,23 +5461,35 @@
                 let safeContent = m.content || '';
                 const rawAttr = m.type === 'text' ? `data-raw="${safeContent.replace(/"/g, '&quot;')}"` : '';
 
-                // Универсальная функция парсинга маркдауна (пуленепробиваемая)
                 const formatText = (text) => {
                     if (!text) return '';
                     let t = String(text).replace(/</g,'&lt;');
 
-                    // --- GRAPH BUILDER PARSER (Updated to prevent flex collapse) ---
+                    // Graph Parser
                     t = t.replace(/\[graph\]([\s\S]*?)\[\/graph\]/g, (match, p1) => {
                         const uniqueId = 'graph_' + Math.random().toString(36).substring(2, 9);
                         const escapedLatex = p1.replace(/"/g, '&quot;').trim();
                         return `<div class="desmos-graph-container" id="${uniqueId}" data-latex="${escapedLatex}" style="width: 320px; max-width: 100%; height: 250px; border-radius: 16px; border: 1px solid var(--border); overflow: hidden; margin: 8px 0; background: #fff; display: block;" onclick="event.stopPropagation();"></div>`;
                     });
         
-                    // 1. Code Blocks
-                    t = t.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;white-space:pre-wrap;">$1</pre>');
+                    // Code Blocks with Copy Button Header
+                    t = t.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+                        const displayLang = lang || 'code';
+                        return `
+                        <div class="code-block-container" onclick="event.stopPropagation();">
+                            <div class="code-block-header">
+                                <span>${displayLang}</span>
+                                <button class="copy-code-btn" onclick="App.copyInlineCode(this)">
+                                    <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path></svg>
+                                    <span class="copy-text">Copy</span>
+                                </button>
+                            </div>
+                            <pre><code>${code.trim()}</code></pre>
+                        </div>`;
+                    });
                     t = t.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
                 
-                    // 4. Tables Parser
+                    // Tables Parser
                     const lines = t.split('\n');
                     let inTable = false;
                     let tableHtml = '';
@@ -5351,10 +5528,10 @@
                     }
                     t = lines.filter(l => l !== '').join('\n');
                 
-                    // 5. Images Parser
+                    // Images Parser
                     t = t.replace(/!\[([^\]]*)\]\((https?:\/\/[^\s\)]+)\)/g, '<div style="margin: 8px 0; text-align: center;"><img src="$2" alt="$1" style="max-width: 100%; max-height: 250px; border-radius: 8px;" onclick="event.stopPropagation(); App.openMedia(\'$2\')"><span style="display:block; font-size:11px; color:var(--text-muted); margin-top:2px;">$1</span></div>');
                 
-                    // 6. Blockquotes and Lists
+                    // Blockquotes and Lists
                     t = t.split('\n').map(line => {
                         let trimmed = line.trim();
                         if (trimmed.startsWith('&gt;')) {
@@ -5370,14 +5547,12 @@
                         return line;
                     }).join('\n');
                 
-                    // 7. Core Markdown Formatting
+                    // Format bold, italics, tags, and links
                     t = t.replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>');
                     t = t.replace(/\*([\s\S]*?)\*/g, '<em>$1</em>');
                     t = t.replace(/^### (.*$)/gim, '<h3 style="margin:12px 0 6px;font-size:15px;font-weight:600;">$1</h3>');
                     t = t.replace(/^## (.*$)/gim, '<h2 style="margin:14px 0 6px;font-size:17px;font-weight:600;">$1</h2>');
-                    
                     t = t.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
-                    
                     t = t.replace(/(https?:\/\/[^\s<]+)/g, (url) => {
                         if (url.match(/\.(jpeg|jpg|gif|png|webp)/i)) return url; 
                         return `<a href="${url}" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">${url}</a><div class="link-preview" data-url="${url}"></div>`;
@@ -5386,9 +5561,7 @@
                     return t;
                 };
 
-                // Prevents link preview engine from parsing the raw S3 audio/video URLs [1]
                 let cleanTxt = (m.type === 'text') ? formatText(safeContent) : '';
-                // --- Premium Animated Emojis parsing ---
                 const useAnim = localStorage.getItem('y_anim_react') !== 'false';
                 if (useAnim && window.REACTION_LOTTIES && m.type === 'text') {
                     Object.keys(window.REACTION_LOTTIES).forEach(em => {
@@ -5407,12 +5580,11 @@
                     let audioTitle = "Audio File";
                     let audioArtist = "Unknown Artist";
 
-                    // Fallback parsing from the S3 filename
                     if (m.content) {
                         try {
                             const urlObj = new URL(m.content);
                             let decoded = decodeURIComponent(urlObj.pathname.split('/').pop());
-                            decoded = decoded.replace(/^yuki_\d+[\._]/, ''); // Strip timestamp prefixes
+                            decoded = decoded.replace(/^yuki_\d+[\._]/, ''); 
                             if (decoded) {
                                 const parts = decoded.split(" - ");
                                 if (parts.length > 1) {
@@ -5425,7 +5597,6 @@
                         } catch(e) {}
                     }
 
-                    // Trigger metadata parsing in the background asynchronously
                     if (m.content && !m.content.startsWith("__E2EE__") && !m.content.startsWith("🔒")) {
                         setTimeout(() => {
                             App.loadAudioMetadata(m.id, m.content);
@@ -5433,7 +5604,7 @@
                     }
 
                     inner += `
-                    <div class="audio-msg-card" id="audio-card-${m.id}" onclick="event.stopPropagation();" style="display: flex; align-items: center; gap: 12px; background: var(--bg-input); padding: 12px; border-radius: 16px; min-width: 240px; max-width: 320px; margin-top: 4px;">
+                    <div class="audio-msg-card" id="audio-card-${m.id}" onclick="event.stopPropagation();">
                         <div style="position: relative; width: 44px; height: 44px; flex-shrink: 0; background: #333; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border);">
                             <div class="audio-cover-container" style="position: absolute; inset: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
                                 <span style="font-size: 18px;">🎵</span>
@@ -5446,7 +5617,7 @@
                             <span class="audio-title" style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${audioTitle}</span>
                             <span class="audio-artist" style="font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${audioArtist}</span>
                         </div>
-                    </div>`.replace(/\s+/g, ' ');
+                    </div>`;
                 }
                 else if (m.type === 'video') {
                     inner += `
@@ -5466,7 +5637,7 @@
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
                             </button>
                         </div>
-                    </div>`.replace(/\s+/g, ' ');
+                    </div>`;
                 } 
                 else if (m.type === 'file') {
                     const title = m.caption || "Attachment Document";
@@ -5477,16 +5648,14 @@
                             <span style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${title}</span>
                             <span style="font-size:11px; color:var(--text-muted);">Open / Download File</span>
                         </div>
-                    </a>`.replace(/\s+/g, ' ');
+                    </a>`;
                 } 
                 else if (m.type === 'voice') {
                     let peaks = [];
                     try {
                         let parsed = JSON.parse(m.caption || '{}');
                         peaks = parsed.peaks || [];
-                    } catch(e) {
-                        peaks = [];
-                    }
+                    } catch(e) { peaks = []; }
                     
                     const targetBars = 35;
                     let displayPeaks = [];
@@ -5518,7 +5687,7 @@
                             <svg class="pause-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
                         </button>
                         <div class="waveform-bars">${waveformHtml}</div>
-                    </div>`.replace(/\s+/g, ' ');
+                    </div>`;
                 }
                 else if (m.type === 'video_note') {
                     inner += `
@@ -5530,7 +5699,25 @@
                         <div class="video-note-overlay">
                             <svg class="play-icon" width="28" height="28" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                         </div>
-                    </div>`.replace(/\s+/g, ' ');
+                    </div>`;
+                }
+                else if (m.type === 'call') {
+                    const isMissed = m.content && m.content.toLowerCase().includes('missed');
+                    const callIcon = isMissed 
+                        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="23" y1="1" x2="1" y2="23"></line><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>`
+                        : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>`;
+                    
+                    const titleStr = isMissed ? "Missed Call" : "Voice Call";
+                    const metaStr = m.content || "Call Ended";
+                    
+                    inner += `
+                    <div class="call-history-card ${isMissed ? 'call-hist-missed' : 'call-hist-completed'}">
+                        <div class="call-hist-icon">${callIcon}</div>
+                        <div class="call-hist-info">
+                            <span class="call-hist-title">${titleStr}</span>
+                            <span class="call-hist-meta">${metaStr}</span>
+                        </div>
+                    </div>`;
                 }
                 else {
                     inner += cleanTxt;
@@ -5555,14 +5742,17 @@
                     inner += `<div class="msg-caption">${formatText(m.caption)}</div>`;
                 }
 
-                // Render the cascading stack chains recursively [1]
                 inner += renderReactionChains(m.reactions, m.id);
                         
                 let viewsH = (chatType === 'channel' && m.views) ? `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>` : '';
+                
+                // Original read tick formatting logic maintained exactly as is
                 const tickHtml = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
+                
                 const senderName = (!isMine && chatType !== 'dm') ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
                 const bubbleStyle = (m.type === 'sticker' || m.type === 'video_note') ? 'background: transparent !important; padding: 0 !important; box-shadow: none !important; border: none !important;' : '';
 
+                // Time markup with original inline styles preserved
                 return `<div class="msg-bubble" style="${bubbleStyle}" ${rawAttr} onclick="App.handleBubbleClick(event, ${m.id}, ${isMine})">${senderName}${inner}<div class="msg-timestamp" style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tickHtml}${viewsH}</div></div>`;
             },
             renderGraphs() {
@@ -6087,6 +6277,20 @@
                     localStorage.setItem('y_pref_dark', current);
                     this.setTheme('light');
                 }
+            },
+            copyInlineCode(btn) {
+                const container = btn.closest('.code-block-container');
+                const code = container.querySelector('code');
+                if (!code) return;
+                navigator.clipboard.writeText(code.innerText).then(() => {
+                    const textSpan = btn.querySelector('.copy-text');
+                    textSpan.innerText = 'Copied!';
+                    btn.style.color = 'var(--success)';
+                    setTimeout(() => {
+                        textSpan.innerText = 'Copy';
+                        btn.style.color = '';
+                    }, 2000);
+                });
             },
             switchTab(tab) {
                 if (tab === 'chats' && Router.stack[Router.stack.length-1] !== 'panel-root') {
