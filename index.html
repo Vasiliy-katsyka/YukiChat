@@ -1840,17 +1840,20 @@
             z-index: calc(10 - var(--depth));
         }
 
-        /* --- PREMIUM MESSAGE LAYOUT SYSTEM --- */
+        /* --- FIXED PREMIUM MESSAGE LAYOUT SYSTEM --- */
         .msg-container {
-            max-width: 85%;
+            max-width: 75%;
+            width: fit-content;
             display: flex;
             flex-direction: column;
         }
         .msg-row.sent .msg-container {
             align-items: flex-end;
+            margin-left: auto; /* Push container to the right */
         }
         .msg-row.received .msg-container {
             align-items: flex-start;
+            margin-right: auto; /* Push container to the left */
         }
         .msg-sender {
             font-size: 12px;
@@ -1880,250 +1883,26 @@
             position: absolute;
             bottom: 5px;
             right: 8px;
-            display: flex;
+            display: inline-flex;
             align-items: center;
         }
         .tick-icon-inside {
-            width: 14px;
-            height: 14px;
-            color: rgba(255, 255, 255, 0.7);
+            display: inline-block;
+            vertical-align: middle;
         }
         
-        /* Extra right padding for sent messages to accommodate inside status */
+        /* Honors your active selected themes beautifully */
         .msg-row.sent .msg-bubble {
-            padding-right: 32px !important;
+            background: var(--msg-sent) !important;
+            color: var(--msg-sent-txt) !important;
+            padding-right: 32px !important; /* Space for the status ticks */
+        }
+        .msg-row.received .msg-bubble {
+            background: var(--msg-recv) !important;
+            color: var(--msg-recv-txt) !important;
         }
         
-        /* --- PREMIUM CODE BLOCKS --- */
-        .code-block-container {
-            border-radius: var(--radius, 12px);
-            background: rgba(0, 0, 0, 0.25);
-            border: 1px solid var(--border);
-            margin: 8px 0;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            max-width: 480px;
-            text-align: left;
-        }
-        .code-block-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 12px;
-            background: rgba(0, 0, 0, 0.15);
-            border-bottom: 1px solid var(--border);
-            font-size: 11px;
-            font-family: monospace;
-            color: var(--text-muted);
-        }
-        .copy-code-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-        .copy-code-btn:hover {
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.05);
-        }
-        .code-block-container pre {
-            margin: 0;
-            padding: 12px;
-            overflow-x: auto;
-            font-family: "Fira Code", monospace;
-            font-size: 13px;
-            color: #cbd5e1;
-            line-height: 1.4;
-        }
-        
-        /* --- PREMIUM HTML5 VIDEO PLAYER --- */
-        .custom-video-player {
-            width: 100%;
-            max-width: 440px;
-            border-radius: var(--radius, 12px);
-            overflow: hidden;
-            position: relative;
-            background: #000;
-            aspect-ratio: 16 / 9;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-        }
-        .custom-video-player video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        .video-controls-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
-            display: flex;
-            flex-direction: column;
-            padding: 10px 14px;
-            gap: 8px;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: opacity 0.3s, transform 0.3s;
-            z-index: 10;
-        }
-        .custom-video-player:hover .video-controls-bar,
-        .custom-video-player:focus-within .video-controls-bar {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .video-control-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-        .video-control-group {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .video-progress-slider {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100%;
-            height: 4px;
-            border-radius: 2px;
-            background: rgba(255, 255, 255, 0.3);
-            outline: none;
-            cursor: pointer;
-            transition: height 0.1s;
-        }
-        .video-progress-slider:hover {
-            height: 6px;
-        }
-        .video-progress-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--primary);
-            cursor: pointer;
-        }
-        .video-progress-slider::-moz-range-thumb {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--primary);
-            cursor: pointer;
-            border: none;
-        }
-        .vid-btn {
-            background: none;
-            border: none;
-            color: #fff;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 4px;
-            border-radius: 4px;
-            transition: background-color 0.2s, color 0.2s;
-        }
-        .vid-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            color: var(--primary);
-        }
-        .vid-btn svg {
-            width: 18px;
-            height: 18px;
-        }
-        .volume-control-widget {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .volume-slider {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 0;
-            height: 4px;
-            border-radius: 2px;
-            background: rgba(255, 255, 255, 0.3);
-            outline: none;
-            transition: width 0.2s ease-in-out;
-            cursor: pointer;
-        }
-        .volume-control-widget:hover .volume-slider,
-        .volume-slider:focus {
-            width: 60px;
-        }
-        .volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #fff;
-            cursor: pointer;
-        }
-        .speed-badge {
-            font-size: 11px;
-            font-weight: 700;
-            background: rgba(255, 255, 255, 0.15);
-            padding: 2px 6px;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .video-timer {
-            font-size: 11px;
-            color: #e2e8f0;
-            font-family: monospace;
-            user-select: none;
-        }
-        .video-center-play-overlay {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.2);
-            transition: opacity 0.3s;
-            z-index: 5;
-            cursor: pointer;
-        }
-        .video-center-play-overlay.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-        .video-center-play-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: #fff;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-            transition: transform 0.2s;
-        }
-        .video-center-play-overlay:hover .video-center-play-btn {
-            transform: scale(1.1);
-        }
-        .video-center-play-btn svg {
-            width: 22px;
-            height: 22px;
-            margin-left: 2px;
-        }
-        
-        /* --- PREMIUM AUDIO VOICE PLAYER --- */
+        /* --- FIXED AUDIO VOICE PLAYER --- */
         .audio-message {
             display: flex;
             align-items: center;
@@ -2148,10 +1927,6 @@
         }
         .audio-play-btn:active {
             transform: scale(0.92);
-        }
-        .audio-play-btn svg {
-            width: 18px;
-            height: 18px;
         }
         .audio-waveform-container {
             display: flex;
@@ -2178,7 +1953,7 @@
             opacity: 1;
         }
         .msg-row.sent .wave-bar.active {
-            background-color: #ffffff;
+            background-color: var(--msg-sent-txt, #ffffff);
             opacity: 1;
         }
         .audio-meta {
@@ -2188,176 +1963,7 @@
             opacity: 0.8;
         }
         
-        /* --- PREMIUM DOCUMENTS --- */
-        .document-message {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            width: 290px;
-            padding: 4px 0;
-            text-align: left;
-        }
-        .doc-icon-box {
-            width: 44px;
-            height: 44px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: var(--radius, 12px);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            flex-shrink: 0;
-        }
-        .doc-icon-box svg {
-            width: 24px;
-            height: 24px;
-            color: var(--primary);
-        }
-        .doc-ext {
-            font-size: 8px;
-            font-weight: 800;
-            text-transform: uppercase;
-            position: absolute;
-            bottom: 4px;
-            background: var(--bg-base);
-            padding: 1px 3px;
-            border-radius: 3px;
-        }
-        .doc-details {
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-            overflow: hidden;
-        }
-        .doc-name {
-            font-size: 14px;
-            font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .doc-meta {
-            font-size: 11px;
-            opacity: 0.7;
-            margin-top: 2px;
-        }
-        .doc-download-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding: 4px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.2s;
-        }
-        .doc-download-btn:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-main);
-        }
-        .doc-download-btn svg {
-            width: 20px;
-            height: 20px;
-        }
-        
-        /* --- PREMIUM TELEGRAM-STYLE VIDEO NOTES --- */
-        .video-note-message {
-            position: relative;
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            overflow: hidden;
-            background: #000;
-            border: 2px solid var(--border);
-            box-shadow: var(--shadow);
-        }
-        .video-note-message video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .video-note-progress {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-        }
-        .video-note-progress svg {
-            width: 100%;
-            height: 100%;
-            transform: rotate(-90deg);
-        }
-        .video-note-progress circle {
-            fill: none;
-            stroke: var(--primary);
-            stroke-width: 4;
-            stroke-linecap: round;
-            transition: stroke-dashoffset 0.1s;
-        }
-        
-        /* --- PREMIUM INTERACTIVE CALL CARDS --- */
-        .call-message {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            min-width: 230px;
-            max-width: 270px;
-            padding: 2px 0;
-            text-align: left;
-        }
-        .call-icon-box {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .call-completed .call-icon-box {
-            background: rgba(16, 185, 129, 0.15);
-            color: var(--success);
-        }
-        .call-missed .call-icon-box {
-            background: rgba(239, 68, 68, 0.15);
-            color: var(--danger);
-        }
-        .call-icon-box svg {
-            width: 18px;
-            height: 18px;
-        }
-        .call-info {
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-        }
-        .call-title {
-            font-size: 14px;
-            font-weight: 600;
-        }
-        .call-meta {
-            font-size: 11px;
-            opacity: 0.7;
-            margin-top: 1px;
-        }
-        .call-back-btn {
-            background: rgba(255, 255, 255, 0.08);
-            border: none;
-            color: var(--text-main);
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-        .call-back-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-        }
-        
-        /* --- UNWANTED MARGIN/PADDING RESETS --- */
+        /* Clean up old absolute timestamp rules */
         .msg-bubble > .msg-timestamp {
             display: none !important;
         }
@@ -5905,7 +5511,6 @@
                     Router.pop(); Router.pop(); this.openChat(d.chat_id);
                 } catch(e) { UI.toast('Handle taken or error'); }
             },
-            // --- NEW HELPERS ---
             buildMsgHTML(m, isMine, chatType) {
                 let inner = '';
                 if (m.reply_to_id) {
@@ -6222,7 +5827,8 @@
                     
                     inner += `
                     <div class="audio-message" onclick="event.stopPropagation();">
-                        <button class="audio-play-btn" onclick="App.toggleVoicePlay('${m.id}', '${m.content}')">
+                        <!-- Fixed class hooks play-voice-btn alongside audio-play-btn -->
+                        <button class="play-voice-btn audio-play-btn" onclick="App.toggleVoicePlay('${m.id}', '${m.content}')">
                             <svg class="play-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;"><path d="M8 5v14l11-7z"/></svg>
                             <svg class="pause-icon" viewBox="0 0 24 24" style="display:none; width: 18px; height: 18px; fill: currentColor;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                         </button>
@@ -6280,9 +5886,15 @@
                         
                 let viewsH = (chatType === 'channel' && m.views) ? `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>` : '';
                 
+                // Sleek dual ticks instead of heavy circular checkmarks
                 const tickHtml = isMine ? `
-                <svg class="tick-icon-inside" viewBox="0 0 24 24" style="color: ${m.is_read ? 'var(--success)' : 'rgba(255,255,255,0.7)'};">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/>
+                <svg class="tick-icon-inside" viewBox="0 0 24 24" width="16" height="16" style="fill: none; stroke: ${m.is_read ? '#4ade80' : 'rgba(255,255,255,0.6)'}; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;">
+                    ${m.is_read ? `
+                        <path d="M4 12l4 4L18 6" />
+                        <path d="M9 12l4 4L23 6" />
+                    ` : `
+                        <path d="M6 12l4 4L20 6" />
+                    `}
                 </svg>` : '';
             
                 const senderName = (!isMine && chatType !== 'dm') ? `<span class="msg-sender">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</span>` : '';
