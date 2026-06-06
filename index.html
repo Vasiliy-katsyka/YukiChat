@@ -457,7 +457,7 @@
         .msg-row.received .msg-bubble { background: var(--msg-recv); color: var(--msg-recv-txt); border-bottom-left-radius: 4px; }
         
         /* Injecting timestamp outside via CSS trick */
-        .msg-bubble > div:last-child { position: absolute; bottom: -20px; font-size: 11px !important; color: var(--text-muted) !important; opacity: 1 !important; width: max-content; }
+        .msg-bubble > .msg-timestamp { position: absolute; bottom: -20px; font-size: 11px !important; color: var(--text-muted) !important; opacity: 1 !important; width: max-content; }
         .msg-row.sent .msg-bubble > div:last-child { right: 4px; text-align: right; }
         .msg-row.received .msg-bubble > div:last-child { left: 4px; text-align: left; }
         .msg-tick { font-size: 11px; margin-left: 4px; letter-spacing: -2px; }
@@ -705,7 +705,7 @@
         body.compact-mode .msg-bubble { padding: 6px 12px; }
         body.compact-mode .avatar { width: 40px; height: 40px; }
         body.compact-mode .user-item { padding: 8px 20px; }
-        body.compact-mode .msg-bubble > div:last-child { position: static; text-align: right; margin-top: 2px !important; bottom: auto; display: inline-block; float: right; margin-left: 8px; font-size: 10px !important;}
+        body.compact-mode .msg-bubble > .msg-timestamp { position: static; text-align: right; margin-top: 2px !important; bottom: auto; display: inline-block; float: right; margin-left: 8px; font-size: 10px !important;}
         /* Add these 6 new unique themes below [data-theme="dracula"] */[data-theme="ocean"] { --bg-base: #082f49; --bg-panel: #0c4a6e; --bg-input: #0284c7; --border: #38bdf8; --primary: #7dd3fc; --text-main: #f0f9ff; --text-muted: #bae6fd; --msg-sent: #0284c7; --msg-sent-txt: #f0f9ff; --msg-recv: #082f49; --msg-recv-txt: #e0f2fe; --chat-bg: #082f49; }
         [data-theme="forest"] { --bg-base: #14532d; --bg-panel: #166534; --bg-input: #15803d; --border: #4ade80; --primary: #86efac; --text-main: #f0fdf4; --text-muted: #bbf7d0; --msg-sent: #15803d; --msg-sent-txt: #f0fdf4; --msg-recv: #14532d; --msg-recv-txt: #dcfce7; --chat-bg: #14532d; }[data-theme="sunset"] { --bg-base: #450a0a; --bg-panel: #7f1d1d; --bg-input: #991b1b; --border: #f87171; --primary: #fca5a5; --text-main: #fef2f2; --text-muted: #fecaca; --msg-sent: #991b1b; --msg-sent-txt: #fef2f2; --msg-recv: #450a0a; --msg-recv-txt: #fee2e2; --chat-bg: #450a0a; }
         [data-theme="cyber"] { --bg-base: #09090b; --bg-panel: #18181b; --bg-input: #27272a; --border: #ec4899; --primary: #06b6d4; --text-main: #fdf2f8; --text-muted: #a1a1aa; --msg-sent: #ec4899; --msg-sent-txt: #09090b; --msg-recv: #27272a; --msg-recv-txt: #06b6d4; --chat-bg: #09090b; }
@@ -1761,11 +1761,11 @@
         
         /* We style the offsets dynamically: depth 0 is newest, 1 is middle, 2 is oldest */
         .rx-stack-pill[data-depth] {
-            z-index: calc(10 - var(--depth));
             transform: 
-                scale(calc(1 - (var(--depth) * 0.15))) 
-                translate(calc(var(--depth) * -12px), calc(var(--depth) * -6px));
-            opacity: calc(1 - (var(--depth) * 0.3));
+                scale(calc(1 - (var(--depth) * 0.08))) 
+                translate(calc(var(--depth) * -5px), calc(var(--depth) * 2px));
+            opacity: calc(1 - (var(--depth) * 0.2));
+            z-index: calc(10 - var(--depth));
         }
         
         .rx-stack-pill.active-reaction {
@@ -5563,7 +5563,7 @@
                 const senderName = (!isMine && chatType !== 'dm') ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
                 const bubbleStyle = (m.type === 'sticker' || m.type === 'video_note') ? 'background: transparent !important; padding: 0 !important; box-shadow: none !important; border: none !important;' : '';
 
-                return `<div class="msg-bubble" style="${bubbleStyle}" ${rawAttr} onclick="App.handleBubbleClick(event, ${m.id}, ${isMine})">${senderName}${inner}<div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tickHtml}${viewsH}</div></div>`;
+                return `<div class="msg-bubble" style="${bubbleStyle}" ${rawAttr} onclick="App.handleBubbleClick(event, ${m.id}, ${isMine})">${senderName}${inner}<div class="msg-timestamp" style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tickHtml}${viewsH}</div></div>`;
             },
             renderGraphs() {
                 const containers = document.querySelectorAll('.desmos-graph-container:not(.graph-loaded)');
@@ -7952,7 +7952,8 @@
                     // Activate Lotties if enabled
                     const animOn = localStorage.getItem('y_anim_react') !== 'false';
                     if (animOn && window.lottie) {
-                        bubble.querySelectorAll('.rx-stack-pill [data-url], .rx-pill [data-url]').forEach(el => {
+                        bubble.querySelectorAll('.rx-stack-pill [data-url]:not([data-loaded]), .rx-pill [data-url]:not([data-loaded])').forEach(el => {
+                            el.setAttribute('data-loaded', 'true');
                             lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
                         });
                     }
