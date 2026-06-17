@@ -1895,36 +1895,61 @@
             border-radius: 16px !important;
         }
         
-        /* Markdown Code Container Layout */
+        /* --- COMPACT & SLEEK CODE CONTAINERS --- */
         .code-container {
-            background: rgba(15, 23, 42, 0.05);
-            border-radius: 12px;
+            background: #0f172a !important; /* Unified clean dark-slate background across all themes */
+            border-radius: 8px !important;
             overflow: hidden;
-            border: 1px solid var(--border);
-            margin: 10px 0;
-        }
-        [data-theme^="dark"] .code-container, [data-theme="oled"] .code-container, [data-theme="dracula"] .code-container, [data-theme="midnight"] .code-container {
-            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            margin: 6px 0 !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+            max-width: 100%;
         }
         .code-header {
-            background: rgba(15, 23, 42, 0.08);
-            padding: 6px 12px;
+            background: #1e293b !important;
+            padding: 4px 8px !important;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
         }
-        .code-dots { display: flex; gap: 6px; align-items: center; }
-        .code-dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
+        .code-dots { display: flex; gap: 4px; align-items: center; }
+        .code-dot { width: 6px; height: 6px; border-radius: 50%; background: #475569; }
         .code-dot.red { background: #ef4444; }
         .code-dot.yellow { background: #f59e0b; }
         .code-dot.green { background: #10b981; }
+        
         .code-copy-btn {
-            background: none; border: none; color: var(--text-muted);
-            font-size: 11px; font-weight: 600; cursor: pointer;
-            display: flex; align-items: center; gap: 4px; transition: color 0.2s;
+            background: none !important; border: none !important; 
+            color: #94a3b8 !important; font-size: 10px !important; 
+            font-weight: 600 !important; cursor: pointer;
+            display: flex; align-items: center; gap: 3px; 
+            transition: color 0.15s;
+            padding: 2px 6px !important;
+            border-radius: 4px !important;
         }
-        .code-copy-btn:hover { color: var(--primary); }
+        .code-copy-btn:hover { color: #f1f5f9 !important; background: rgba(255,255,255,0.05) !important; }
+        
+        pre { 
+            padding: 8px 12px !important; 
+            overflow-x: auto; 
+            font-family: 'Courier New', Courier, monospace !important; 
+            font-size: 11.5px !important; /* Extremely clean, compact sizing */
+            line-height: 1.45 !important;
+            white-space: pre-wrap; 
+            text-align: left; 
+            margin: 0; 
+            border: none; 
+            color: #cbd5e1 !important; 
+        }
+        code { 
+            font-family: 'Courier New', Courier, monospace !important; 
+            background: rgba(148, 163, 184, 0.15) !important; 
+            padding: 1px 4px !important; 
+            border-radius: 4px !important; 
+            font-size: 11px !important; 
+            color: inherit !important;
+        }
     </style>
 </head>
 <body>
@@ -5397,22 +5422,24 @@
                 let safeContent = m.content || '';
                 const rawAttr = m.type === 'text' ? `data-raw="${safeContent.replace(/"/g, '&quot;')}"` : '';
 
-                // Универсальная функция парсинга маркдауна (пуленепробиваемая)
                 const formatText = (text) => {
                     if (!text) return '';
-                    let t = String(text).replace(/</g,'&lt;');
-
-                    // --- GRAPH BUILDER PARSER (Updated to prevent flex collapse) ---
+                    let t = String(text).replace(/</g, '&lt;');
+                
+                    const placeholders = [];
+                    
+                    // 1. Protect & Parse Desmos Graph Blocks
                     t = t.replace(/\[graph\]([\s\S]*?)\[\/graph\]/g, (match, p1) => {
                         const uniqueId = 'graph_' + Math.random().toString(36).substring(2, 9);
                         const escapedLatex = p1.replace(/"/g, '&quot;').trim();
-                        return `<div class="desmos-graph-container" id="${uniqueId}" data-latex="${escapedLatex}" style="width: 320px; max-width: 100%; height: 250px; border-radius: 16px; border: 1px solid var(--border); overflow: hidden; margin: 8px 0; background: #fff; display: block;" onclick="event.stopPropagation();"></div>`;
+                        const html = `<div class="desmos-graph-container" id="${uniqueId}" data-latex="${escapedLatex}" style="width: 320px; max-width: 100%; height: 250px; border-radius: 16px; border: 1px solid var(--border); overflow: hidden; margin: 8px 0; background: #fff; display: block;" onclick="event.stopPropagation();"></div>`;
+                        placeholders.push(html);
+                        return `__YUKI_PLACEHOLDER_${placeholders.length - 1}__`;
                     });
-        
-                    // 1. Code Blocks
-                    // 1. Code Blocks (With Mock Header & Copy Capabilities)
+                
+                    // 2. Protect & Parse Code Blocks (Sleek, Compact UI with Copy Button)
                     t = t.replace(/```([\s\S]*?)```/g, (match, p1) => {
-                        return `
+                        const html = `
                         <div class="code-container" onclick="event.stopPropagation();">
                             <div class="code-header">
                                 <div class="code-dots">
@@ -5427,10 +5454,32 @@
                             </div>
                             <pre>${p1.trim()}</pre>
                         </div>`;
+                        placeholders.push(html);
+                        return `__YUKI_PLACEHOLDER_${placeholders.length - 1}__`;
                     });
-                    t = t.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
                 
-                    // 4. Tables Parser
+                    // 3. Protect Inline Code Blocks
+                    t = t.replace(/`([^`]+)`/g, (match, p1) => {
+                        const html = `<code>${p1}</code>`;
+                        placeholders.push(html);
+                        return `__YUKI_PLACEHOLDER_${placeholders.length - 1}__`;
+                    });
+                
+                    // 4. Protect KaTeX Math blocks from markdown engines
+                    t = t.replace(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$)/g, (match) => {
+                        placeholders.push(match);
+                        return `__YUKI_PLACEHOLDER_${placeholders.length - 1}__`;
+                    });
+                
+                    // 5. Safe Link/URL parser (Prevents matching inside HTML attributes)
+                    t = t.replace(/(^|\s)(https?:\/\/[^\s<"']+)/g, (match, space, url) => {
+                        if (url.match(/\.(jpeg|jpg|gif|png|webp)/i)) return match; 
+                        const html = `${space}<a href="${url}" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">${url}</a><div class="link-preview" data-url="${url}"></div>`;
+                        placeholders.push(html);
+                        return `__YUKI_PLACEHOLDER_${placeholders.length - 1}__`;
+                    });
+                
+                    // 6. Tables Parser
                     const lines = t.split('\n');
                     let inTable = false;
                     let tableHtml = '';
@@ -5439,7 +5488,7 @@
                         if (line.startsWith('|') && line.endsWith('|')) {
                             if (!inTable) {
                                 inTable = true;
-                                tableHtml = '<table style="border-collapse: collapse; margin: 10px 0; width: 100%; font-size: 13px; line-height: 1.4;">';
+                                tableHtml = '<table>';
                             }
                             let cells = line.split('|').map(c => c.trim()).filter((c, idx, arr) => idx > 0 && idx < arr.length - 1);
                             if (cells.every(c => /^:-*|-*:|:-*:|-+$/.test(c))) {
@@ -5447,11 +5496,10 @@
                                 continue; 
                             }
                             let isHeader = (tableHtml.match(/<tr>/g) || []).length === 0;
-                            tableHtml += '<tr style="border-bottom: 1px solid var(--border);">';
+                            tableHtml += '<tr>';
                             cells.forEach(cell => {
                                 let tag = isHeader ? 'th' : 'td';
-                                let style = isHeader ? 'font-weight: 600; background: color-mix(in srgb, var(--bg-input) 40%, transparent);' : '';
-                                tableHtml += `<${tag} style="padding: 6px 10px; border: 1px solid var(--border); ${style}">${cell}</${tag}>`;
+                                tableHtml += `<${tag}>${cell}</${tag}>`;
                             });
                             tableHtml += '</tr>';
                             lines[i] = ''; 
@@ -5469,38 +5517,37 @@
                     }
                     t = lines.filter(l => l !== '').join('\n');
                 
-                    // 5. Images Parser
+                    // 7. Images Parser
                     t = t.replace(/!\[([^\]]*)\]\((https?:\/\/[^\s\)]+)\)/g, '<div style="margin: 8px 0; text-align: center;"><img src="$2" alt="$1" style="max-width: 100%; max-height: 250px; border-radius: 8px;" onclick="event.stopPropagation(); App.openMedia(\'$2\')"><span style="display:block; font-size:11px; color:var(--text-muted); margin-top:2px;">$1</span></div>');
                 
-                    // 6. Blockquotes and Lists
+                    // 8. Blockquotes and Lists
                     t = t.split('\n').map(line => {
                         let trimmed = line.trim();
                         if (trimmed.startsWith('&gt;')) {
-                            return `<blockquote style="border-left: 3px solid var(--primary); padding-left: 10px; margin: 8px 0; color: var(--text-muted); font-style: italic;">${trimmed.substring(4).trim()}</blockquote>`;
+                            return `<blockquote>${trimmed.substring(4).trim()}</blockquote>`;
                         }
                         if (trimmed.startsWith('* ')) {
-                            return `<li style="margin-left: 16px; list-style-type: disc; padding-left: 4px;">${trimmed.substring(2).trim()}</li>`;
+                            return `<li>${trimmed.substring(2).trim()}</li>`;
                         }
                         if (/^\d+\.\s/.test(trimmed)) {
                             let dotIdx = trimmed.indexOf('.');
-                            return `<li style="margin-left: 16px; list-style-type: decimal; padding-left: 4px;">${trimmed.substring(dotIdx + 1).trim()}</li>`;
+                            return `<li>${trimmed.substring(dotIdx + 1).trim()}</li>`;
                         }
                         return line;
                     }).join('\n');
                 
-                    // 7. Core Markdown Formatting
+                    // 9. Standard Text Formatting
                     t = t.replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>');
                     t = t.replace(/\*([\s\S]*?)\*/g, '<em>$1</em>');
-                    t = t.replace(/^### (.*$)/gim, '<h3 style="margin:12px 0 6px;font-size:15px;font-weight:600;">$1</h3>');
-                    t = t.replace(/^## (.*$)/gim, '<h2 style="margin:14px 0 6px;font-size:17px;font-weight:600;">$1</h2>');
-                    
+                    t = t.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+                    t = t.replace(/^## (.*$)/gim, '<h2>$1</h2>');
                     t = t.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span style="color:#0088cc;cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); App.handleMention(\'$2\')">@$2</span>');
-                    
-                    t = t.replace(/(https?:\/\/[^\s<]+)/g, (url) => {
-                        if (url.match(/\.(jpeg|jpg|gif|png|webp)/i)) return url; 
-                        return `<a href="${url}" target="_blank" onclick="event.stopPropagation()" style="color:#0088cc; text-decoration:underline;">${url}</a><div class="link-preview" data-url="${url}"></div>`;
-                    });
-                    
+                
+                    // 10. Restore Protected Placeholders
+                    for (let i = placeholders.length - 1; i >= 0; i--) {
+                        t = t.replace(`__YUKI_PLACEHOLDER_${i}__`, placeholders[i]);
+                    }
+                
                     return t;
                 };
 
@@ -5883,6 +5930,7 @@
                             const innerHTML = App.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
                             
                             cont.insertAdjacentHTML('beforeend', `<div class="msg-row ${isMine ? 'sent' : 'received'}" id="msg-${m.id}">${innerHTML}</div>`);
+                            App.renderMath();
                             if (isAtBottom) cont.scrollTop = cont.scrollHeight;
                             
                             State.lastMsgId = m.id;
