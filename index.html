@@ -1839,6 +1839,92 @@
             opacity: calc(1 - (var(--depth) * 0.25));
             z-index: calc(10 - var(--depth));
         }
+        /* ========================================================
+           YUKICHAT DESIGN OVERRIDES (.N- SERIES)
+           ======================================================== */
+        
+        /* Asymmetrical message bubble geometry */
+        .msg-row.sent .msg-bubble {
+            border-radius: 18px 18px 4px 18px !important;
+            background: var(--msg-sent) !important;
+            box-shadow: 0 4px 15px -3px var(--primary-glow) !important;
+        }
+        .msg-row.received .msg-bubble {
+            border-radius: 18px 18px 18px 4px !important;
+            border: 1px solid var(--border) !important;
+            background: var(--msg-recv) !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02) !important;
+        }
+        
+        /* Redesigned clean tables */
+        table {
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+            margin: 12px 0 !important;
+            width: 100% !important;
+            font-size: 13px !important;
+            line-height: 1.5 !important;
+            border-radius: 12px !important;
+            border: 1px solid var(--border) !important;
+            overflow: hidden !important;
+        }
+        tr { border-bottom: 1px solid var(--border) !important; }
+        tr:last-child { border-bottom: none !important; }
+        th, td { 
+            padding: 8px 12px !important; 
+            border-right: 1px solid var(--border) !important; 
+            border-bottom: 1px solid var(--border) !important; 
+        }
+        th:last-child, td:last-child { border-right: none !important; }
+        tr:last-child td { border-bottom: none !important; }
+        th { 
+            font-weight: 600 !important; 
+            background: rgba(150,150,150,0.06) !important; 
+            color: var(--text-main) !important; 
+        }
+        
+        /* Audio Player Layout: Play button on the left */
+        .audio-msg-card {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 14px !important;
+            padding: 12px !important;
+            background: var(--bg-input) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 16px !important;
+        }
+        
+        /* Markdown Code Container Layout */
+        .code-container {
+            background: rgba(15, 23, 42, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            margin: 10px 0;
+        }
+        [data-theme^="dark"] .code-container, [data-theme="oled"] .code-container, [data-theme="dracula"] .code-container, [data-theme="midnight"] .code-container {
+            background: rgba(0, 0, 0, 0.25);
+        }
+        .code-header {
+            background: rgba(15, 23, 42, 0.08);
+            padding: 6px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .code-dots { display: flex; gap: 6px; align-items: center; }
+        .code-dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
+        .code-dot.red { background: #ef4444; }
+        .code-dot.yellow { background: #f59e0b; }
+        .code-dot.green { background: #10b981; }
+        .code-copy-btn {
+            background: none; border: none; color: var(--text-muted);
+            font-size: 11px; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 4px; transition: color 0.2s;
+        }
+        .code-copy-btn:hover { color: var(--primary); }
     </style>
 </head>
 <body>
@@ -4637,6 +4723,21 @@
                     }
                 });
             },
+            copyCodeBlock(button) {
+                const container = button.closest('.code-container');
+                const codeText = container.querySelector('pre').innerText;
+                navigator.clipboard.writeText(codeText).then(() => {
+                    const originalHTML = button.innerHTML;
+                    button.innerHTML = `✓ Copied!`;
+                    button.style.color = 'var(--success)';
+                    setTimeout(() => {
+                        button.innerHTML = originalHTML;
+                        button.style.color = '';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Copy failed: ', err);
+                });
+            },
             updateMessageReactionsDOM(msgId, reactions) {
                 const msgEl = document.getElementById(`msg-${msgId}`);
                 if (!msgEl) return;
@@ -5309,7 +5410,24 @@
                     });
         
                     // 1. Code Blocks
-                    t = t.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(150,150,150,0.1);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;font-family:monospace;font-size:13px;white-space:pre-wrap;">$1</pre>');
+                    // 1. Code Blocks (With Mock Header & Copy Capabilities)
+                    t = t.replace(/```([\s\S]*?)```/g, (match, p1) => {
+                        return `
+                        <div class="code-container" onclick="event.stopPropagation();">
+                            <div class="code-header">
+                                <div class="code-dots">
+                                    <div class="code-dot red"></div>
+                                    <div class="code-dot yellow"></div>
+                                    <div class="code-dot green"></div>
+                                </div>
+                                <button class="code-copy-btn" onclick="App.copyCodeBlock(this)">
+                                    <svg viewBox="0 0 24 24" style="width:12px; height:12px; fill:currentColor;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path></svg>
+                                    Copy
+                                </button>
+                            </div>
+                            <pre>${p1.trim()}</pre>
+                        </div>`;
+                    });
                     t = t.replace(/`([^`]+)`/g, '<code style="background:rgba(150,150,150,0.1);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
                 
                     // 4. Tables Parser
@@ -5793,7 +5911,7 @@
                     // --- UPDATE THE WEBSOCKET LISTENER BLOCK ---
                     if (data.type === 'message_action' && State.chat == data.chat_id) {
                         req(`/api/messages/${data.chat_id}?after=0`).then(async msgs => {
-                            let updatedAny = false; // <--- 1. Track if any message is modified
+                            let updatedAny = false;
                             
                             for (let m of msgs) {
                                 if (m.content && m.content.startsWith("__E2EE__:")) {
@@ -5803,28 +5921,28 @@
                                 if (m.caption && m.caption.startsWith("__E2EE__:")) {
                                     m.caption = await E2EE.decrypt(data.chat_id, m.caption);
                                 }
+                                
                                 const existingMsg = document.getElementById(`msg-${m.id}`);
                                 if (existingMsg) {
-                                    const isMine = m.sender_id === State.u.userId;
-                                    const newHTML = App.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
+                                    const bubble = existingMsg.querySelector('.msg-bubble');
+                                    const oldRaw = bubble ? bubble.getAttribute('data-raw') : '';
                                     
-                                    if (existingMsg.innerHTML !== newHTML) {
-                                        existingMsg.innerHTML = newHTML;
-                                        updatedAny = true; // <--- 2. Mark as updated
-                                        if (!isMine) FX.check(m.content, `msg-${m.id}`);
-                                        
-                                        // FIX: Re-initialize Lottie for updated reaction pills!
-                                        if (localStorage.getItem('y_anim_react') !== 'false' && window.lottie) {
-                                            existingMsg.querySelectorAll('.rx-stack-pill [data-url]:not([data-loaded]), .rx-pill [data-url]:not([data-loaded])').forEach(el => {
-                                                el.setAttribute('data-loaded', 'true');
-                                                lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.url });
-                                            });
+                                    // Only rewrite the core HTML if the actual decrypted text has changed
+                                    if (oldRaw !== m.content) {
+                                        const isMine = m.sender_id === State.u.userId;
+                                        existingMsg.innerHTML = App.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
+                                        updatedAny = true;
+                                    } else {
+                                        // Update metadata (reactions & read ticks) without disrupting KaTeX/Desmos
+                                        App.updateMessageReactionsDOM(m.id, m.reactions);
+                                        const tick = existingMsg.querySelector('.msg-tick');
+                                        if (tick && m.is_read) {
+                                            tick.classList.add('read');
+                                            tick.innerText = '✓✓';
                                         }
                                     }
                                 }
                             }
-                            
-                            // 3. Re-run compilers if any HTML was rebuilt [2]
                             if (updatedAny) {
                                 App.renderMath(); 
                             }
