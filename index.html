@@ -5569,6 +5569,14 @@
                 if (m.type === 'photo') {
                     inner += `<img src="${m.content}" class="msg-media" onclick="event.stopPropagation(); App.openMedia('${m.content}')">`;
                 } 
+                else if (m.type === 'divider') {
+                    return `
+                    <div style="width:100%; text-align:center; margin: 16px 0; display:flex; align-items:center; gap:16px; color:var(--text-muted); font-size:12px; font-weight:600; user-select:none; pointer-events:none;">
+                        <div style="flex:1; height:1px; background:var(--border); opacity:0.7;"></div>
+                        <span>${m.content}</span>
+                        <div style="flex:1; height:1px; background:var(--border); opacity:0.7;"></div>
+                    </div>`;
+                }
                 else if (m.type === 'sticker') {
                     inner += `<img src="${m.content}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${m.content}')">`;
                 } 
