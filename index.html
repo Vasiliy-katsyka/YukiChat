@@ -3634,7 +3634,7 @@
             myPrivateKey: null,
             myPublicKeyJwk: null,
             sharedKeys: {}, // Cache of derived symmetric keys by chatId
-
+        
             async deriveBackupKey(passphrase, salt) {
                 const enc = new TextEncoder();
                 const keyMaterial = await window.crypto.subtle.importKey(
@@ -3647,53 +3647,53 @@
                     false, ["encrypt", "decrypt"]
                 );
             },
-
+        
             async backupKeys(passphrase) {
                 if (!passphrase || !this.myPublicKeyJwk) return;
                 const keyName = `y_e2ee_keys_${State.u.userId}`;
                 const localKeys = await localforage.getItem(keyName);
                 if (!localKeys) return;
-
+        
                 const enc = new TextEncoder();
                 const salt = window.crypto.getRandomValues(new Uint8Array(16));
                 const key = await this.deriveBackupKey(passphrase, salt);
                 const iv = window.crypto.getRandomValues(new Uint8Array(12));
-
+        
                 const encryptedBuffer = await window.crypto.subtle.encrypt(
                     { name: "AES-GCM", iv: iv },
                     key,
                     enc.encode(JSON.stringify(localKeys))
                 );
-
+        
                 const saltB64 = btoa(String.fromCharCode(...salt));
                 const ivB64 = btoa(String.fromCharCode(...iv));
                 const cipherB64 = btoa(String.fromCharCode(...new Uint8Array(encryptedBuffer)));
-
+        
                 const escrowBlob = `${saltB64}:${ivB64}:${cipherB64}`;
                 await req('/api/e2ee/escrow', 'POST', { escrow_key: escrowBlob });
                 console.log("[E2EE] Keys backed up securely in zero-knowledge cloud escrow.");
             },
-
+        
             async restoreKeys(passphrase) {
                 try {
                     const res = await req('/api/e2ee/escrow');
                     if (!res || !res.escrow_key) return false;
-
+        
                     const parts = res.escrow_key.split(':');
                     const salt = new Uint8Array(atob(parts[0]).split('').map(c => c.charCodeAt(0)));
                     const iv = new Uint8Array(atob(parts[1]).split('').map(c => c.charCodeAt(0)));
                     const ciphertext = new Uint8Array(atob(parts[2]).split('').map(c => c.charCodeAt(0)));
-
+        
                     const key = await this.deriveBackupKey(passphrase, salt);
                     const decryptedBuffer = await window.crypto.subtle.decrypt(
                         { name: "AES-GCM", iv: iv },
                         key,
                         ciphertext
                     );
-
+        
                     const decodedStr = new TextDecoder().decode(decryptedBuffer);
                     const localKeys = JSON.parse(decodedStr);
-
+        
                     const keyName = `y_e2ee_keys_${State.u.userId}`;
                     await localforage.setItem(keyName, localKeys);
                     console.log("[E2EE] Keys restored successfully from zero-knowledge escrow!");
@@ -3703,11 +3703,10 @@
                     return false;
                 }
             },
-
+        
             async init() {
                 if (!State.t || !State.u || !State.u.userId) return;
                 
-                // SAFEGUARD FOR NON-HTTPS SECURE CONTEXTS
                 if (!window.crypto || !window.crypto.subtle) {
                     console.warn("E2EE disabled: SubtleCrypto is only available in Secure Contexts (HTTPS/Localhost).");
                     return;
@@ -3717,13 +3716,12 @@
                 let keys = await localforage.getItem(keyName);
                 
                 if (!keys) {
-                    // Try to restore from escrow backup if possible [1]
                     let restored = false;
                     if (State.rawPassword) {
                         restored = await this.restoreKeys(State.rawPassword);
                         if (restored) keys = await localforage.getItem(keyName);
                     }
-
+        
                     if (!restored) {
                         const keyPair = await window.crypto.subtle.generateKey(
                             { name: "ECDH", namedCurve: "P-256" },
@@ -3736,14 +3734,12 @@
                         
                         keys = { publicKey: pubJwk, privateKey: privJwk };
                         await localforage.setItem(keyName, keys);
-
-                        // Securely push backup directly after creation
+        
                         if (State.rawPassword) {
                             await this.backupKeys(State.rawPassword);
                         }
                     }
                 } else {
-                    // If keys are local but escrow is empty, push backup in the background
                     if (State.rawPassword) {
                         const escrowCheck = await req('/api/e2ee/escrow');
                         if (!escrowCheck || !escrowCheck.escrow_key) {
@@ -3758,32 +3754,33 @@
                     true, ["deriveKey"]
                 );
                 this.myPublicKeyJwk = keys.publicKey;
-
+        
                 try {
                     await req('/api/e2ee/key', 'POST', { public_key: JSON.stringify(this.myPublicKeyJwk) });
                 } catch (e) {
                     console.error("E2EE key registration error:", e);
                 }
             },
-
-            async getSharedKey(chatId) {
-                if (this.sharedKeys[chatId]) return this.sharedKeys[chatId];
+        
+            async getSharedKey(chatId, forceRefresh = false) {
+                if (!forceRefresh && this.sharedKeys[chatId]) return this.sharedKeys[chatId];
                 if (!window.crypto || !window.crypto.subtle || !this.myPrivateKey) return null;
                 
                 const cacheName = `derived_key_${State.u.userId}_${chatId}`;
                 try {
-                    // Check local key cache first [1]
-                    const cachedKeyJwk = await localforage.getItem(cacheName);
-                    if (cachedKeyJwk) {
-                        const importedKey = await window.crypto.subtle.importKey(
-                            "jwk", cachedKeyJwk,
-                            { name: "AES-GCM" },
-                            true, ["encrypt", "decrypt"]
-                        );
-                        this.sharedKeys[chatId] = importedKey;
-                        return importedKey;
+                    if (!forceRefresh) {
+                        const cachedKeyJwk = await localforage.getItem(cacheName);
+                        if (cachedKeyJwk) {
+                            const importedKey = await window.crypto.subtle.importKey(
+                                "jwk", cachedKeyJwk,
+                                { name: "AES-GCM" },
+                                true, ["encrypt", "decrypt"]
+                            );
+                            this.sharedKeys[chatId] = importedKey;
+                            return importedKey;
+                        }
                     }
-
+        
                     const res = await req(`/api/e2ee/key/${chatId}`);
                     if (!res || !res.public_key) return null;
                     
@@ -3804,14 +3801,14 @@
                     
                     const jwk = await window.crypto.subtle.exportKey("jwk", sharedKey);
                     await localforage.setItem(cacheName, jwk);
-
+        
                     this.sharedKeys[chatId] = sharedKey;
                     return sharedKey;
                 } catch (e) {
                     return null;
                 }
             },
-
+        
             async encrypt(chatId, plaintext) {
                 if (!plaintext) return plaintext;
                 if (!window.crypto || !window.crypto.subtle) return plaintext;
@@ -3833,15 +3830,15 @@
                 
                 return `__E2EE__:${ivB64}:${cipherB64}`;
             },
-
-            async decrypt(chatId, messageContent) {
+        
+            async decrypt(chatId, messageContent, isRetry = false) {
                 if (!messageContent || !messageContent.startsWith("__E2EE__:")) return messageContent;
                 if (!window.crypto || !window.crypto.subtle || !this.myPrivateKey) {
                     return "🔒 [Encrypted - HTTPS Required]";
                 }
                 
                 try {
-                    const key = await this.getSharedKey(chatId);
+                    const key = await this.getSharedKey(chatId, isRetry);
                     if (!key) return "🔒 [Encrypted - Key Unavailable]";
                     
                     const parts = messageContent.split(":");
@@ -3859,6 +3856,13 @@
                     
                     return new TextDecoder().decode(decryptedBuffer);
                 } catch (e) {
+                    if (!isRetry) {
+                        // Decryption failed: invalidate cache locally and try once more with a fresh public key fetch
+                        const cacheName = `derived_key_${State.u.userId}_${chatId}`;
+                        await localforage.removeItem(cacheName);
+                        delete this.sharedKeys[chatId];
+                        return await this.decrypt(chatId, messageContent, true);
+                    }
                     return "🔒 [Encrypted Message - Decryption Failed]";
                 }
             }
@@ -7826,6 +7830,10 @@
                 const targetChat = State.chat;
                 if (!targetChat) return;
                 
+                // Check if the recipient chat is a direct message
+                const activeChatObj = State.chats.get(targetChat);
+                const isDM = targetChat !== 'ai' && activeChatObj && activeChatObj.type === 'dm';
+                
                 const uploadTasks = queue.map(async (item, i) => {
                     const currentCap = (i === 0) ? cap : '';
                     const tempId = 'temp-rec-' + Date.now() + '-' + i;
@@ -7846,9 +7854,11 @@
                     
                     try {
                         const s3Url = await this.uploadToS3(item.rawFile);
-                        const finalContent = await E2EE.encrypt(targetChat, s3Url);
+                        
+                        // Encrypt content and caption only if this is a DM chat
+                        const finalContent = isDM ? await E2EE.encrypt(targetChat, s3Url) : s3Url;
                         let finalCap = currentCap;
-                        if (currentCap) {
+                        if (currentCap && isDM) {
                             finalCap = await E2EE.encrypt(targetChat, currentCap);
                         }
                         
@@ -7897,22 +7907,24 @@
                 inp.value = '';
                 inp.style.height = '44px';
                 document.getElementById('input-ai-btn').style.display = 'none';
-        
+            
                 const tempId = 'temp-' + Date.now();
                 const msgsCont = document.getElementById('msgs');
                 const targetChat = State.chat; 
                 
-                // Encrypt payload if in a direct message
+                // Encrypt payload only if the recipient is a DM chat
                 let finalContent = txt;
                 let isEncrypted = false;
-                if (targetChat !== 'ai') {
+                
+                const activeChatObj = State.chats.get(targetChat);
+                if (targetChat !== 'ai' && activeChatObj && activeChatObj.type === 'dm') {
                     const encrypted = await E2EE.encrypt(targetChat, txt);
                     if (encrypted !== txt) {
                         finalContent = encrypted;
                         isEncrypted = true;
                     }
                 }
-        
+            
                 const fakeMsg = { 
                     id: tempId, content: txt, type: 'text', 
                     created_at: new Date().toISOString(), is_read: 0, 
@@ -7925,9 +7937,6 @@
                 App.renderMath();
                 msgsCont.scrollTop = msgsCont.scrollHeight;
                 
-                // ... REST OF App.sendText() ...
-                
-                // 2. INITIALIZE LOTTIE INSTANTLY FOR THE SENT MESSAGE
                 if (localStorage.getItem('y_anim_react') !== 'false' && window.lottie) {
                     document.getElementById(tempId).querySelectorAll('[data-url]:not([data-loaded])').forEach(el => {
                         el.setAttribute('data-loaded', 'true');
@@ -7936,10 +7945,10 @@
                 }
                 
                 FX.check(txt, tempId);
-        
+            
                 try { 
                     const res = await req(`/api/messages/${targetChat}`, 'POST', {
-                        content: finalContent, // Sends the ciphertext over the network
+                        content: finalContent, 
                         type: 'text', 
                         reply_to_id: State.replyTo
                     });
@@ -7948,10 +7957,10 @@
                     
                     if (State.chat === targetChat) {
                         const tempEl = document.getElementById(tempId);
-                        const alreadyAddedByPoll = document.getElementById(`msg-${res.id}`); // Race condition fix
+                        const alreadyAddedByPoll = document.getElementById(`msg-${res.id}`);
                         
                         if (alreadyAddedByPoll) {
-                            tempEl?.remove(); // Delete duplicate local copy
+                            tempEl?.remove();
                         } else if (tempEl && res && res.id) {
                             tempEl.id = `msg-${res.id}`;
                             tempEl.style.opacity = '1';
@@ -7965,7 +7974,6 @@
                 } catch(e) {
                     const tempEl = document.getElementById(tempId);
                     if (tempEl) {
-                        // Update visual layout of the bubble to denote a pending local queue item [1]
                         const loadingTxt = tempEl.querySelector('.msg-bubble > div:last-child');
                         if (loadingTxt) {
                             const originalTime = loadingTxt.innerText.split(' ')[0] || '';
@@ -7988,7 +7996,6 @@
                         queue.push(queueItem);
                         await localforage.setItem('y_offline_queue', queue);
                         
-                        // Save modified cached messages containing the pending state
                         if (msgsCont) {
                             await localforage.setItem(`y_cache_msgs_${targetChat}`, msgsCont.innerHTML);
                         }
