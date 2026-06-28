@@ -5787,8 +5787,8 @@
                     init();
                 }
             },
-            async uploadToS3(fileOrData, ext = 'bin', mimeType = 'application/octet-stream') {
-                console.log("[Upload] Starting binary FormData proxy upload to S3...");
+            async uploadToS3(fileOrData, ext = 'bin', mimeType = 'application/octet-stream', onProgress = null) {
+                console.log("[Upload] Starting binary XHR proxy upload to S3...");
                 try {
                     let blob;
                     if (fileOrData instanceof File || fileOrData instanceof Blob) {
@@ -5803,24 +5803,45 @@
                     } else {
                         throw new Error("Unsupported file upload type format");
                     }
-                    
+            
                     const fd = new FormData();
                     const filename = `yuki_${Date.now()}.${ext}`;
                     fd.append('file', blob, filename);
-                    
-                    const uploadRes = await fetch(API + '/api/upload', { 
-                        method: 'POST', 
-                        headers: { 'Authorization': `Bearer ${State.t}` },
-                        body: fd 
+            
+                    return new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('POST', API + '/api/upload');
+                        xhr.setRequestHeader('Authorization', `Bearer ${State.t}`);
+            
+                        // Progress Listener
+                        if (onProgress && xhr.upload) {
+                            xhr.upload.onprogress = (event) => {
+                                if (event.lengthComputable) {
+                                    const percent = Math.round((event.loaded / event.total) * 100);
+                                    onProgress(percent);
+                                }
+                            };
+                        }
+            
+                        xhr.onload = () => {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                try {
+                                    const data = JSON.parse(xhr.responseText);
+                                    if (data.success && data.url) resolve(data.url);
+                                    else reject(new Error(data.error || "No URL returned"));
+                                } catch (e) {
+                                    reject(e);
+                                }
+                            } else {
+                                reject(new Error(`Upload failed with status ${xhr.status}`));
+                            }
+                        };
+            
+                        xhr.onerror = () => reject(new Error("Network error during upload"));
+                        xhr.send(fd);
                     });
-                    
-                    if (!uploadRes.ok) throw new Error("S3 multipart uploading failed");
-                    const data = await uploadRes.json();
-                    if (!data.success || !data.url) throw new Error(data.error || "No URL returned");
-                    
-                    return data.url;
                 } catch (err) {
-                    console.error("[Upload] S3 multipart uploading exception:", err);
+                    console.error("[Upload] S3 upload exception:", err);
                     UI.toast("Direct S3 upload failed");
                     throw err;
                 }
@@ -7838,7 +7859,6 @@
                 const targetChat = State.chat;
                 if (!targetChat) return;
                 
-                // Check if the recipient chat is a direct message
                 const activeChatObj = State.chats.get(targetChat);
                 const isDM = targetChat !== 'ai' && activeChatObj && activeChatObj.type === 'dm';
                 
@@ -7846,13 +7866,72 @@
                     const currentCap = (i === 0) ? cap : '';
                     const tempId = 'temp-rec-' + Date.now() + '-' + i;
                     
+                    // 1. Generate Custom Optimistic UI Card HTML for each type
+                    let customPlaceholderHtml = '';
+                    const localUrl = item.rawFile ? URL.createObjectURL(item.rawFile) : '';
+            
+                    if (item.type === 'photo') {
+                        customPlaceholderHtml = `
+                            <div style="position:relative; max-width:250px; border-radius:12px; overflow:hidden;">
+                                <img src="${localUrl}" style="width:100%; height:auto; max-height:150px; object-fit:cover; filter:blur(4px); opacity:0.6;">
+                                <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px; background:rgba(0,0,0,0.3);">
+                                    <span class="upload-txt" style="font-size:11px; color:#fff; font-weight:600; text-shadow:0 1px 3px rgba(0,0,0,0.5);">Preparing Photo...</span>
+                                </div>
+                            </div>`;
+                    } 
+                    else if (item.type === 'video') {
+                        customPlaceholderHtml = `
+                            <div style="position:relative; width:200px; height:150px; border-radius:12px; overflow:hidden; background:#000;">
+                                <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px; background:rgba(0,0,0,0.4);">
+                                    <span style="font-size:24px; margin-bottom:4px;">📹</span>
+                                    <span class="upload-txt" style="font-size:11px; color:#fff; font-weight:600;">Preparing Video...</span>
+                                </div>
+                            </div>`;
+                    } 
+                    else if (item.type === 'audio') {
+                        customPlaceholderHtml = `
+                            <div style="display:flex; align-items:center; gap:12px; background:var(--bg-input); padding:12px; border-radius:16px; min-width:240px; opacity:0.7;">
+                                <span style="font-size:20px;">🎵</span>
+                                <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; text-align:left;">
+                                    <span style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.filename}</span>
+                                    <span class="upload-txt" style="font-size:11px; color:var(--text-muted);">Preparing Audio...</span>
+                                </div>
+                            </div>`;
+                    } 
+                    else if (item.type === 'voice') {
+                        customPlaceholderHtml = `
+                            <div style="display:flex; align-items:center; gap:12px; padding:6px 0; opacity:0.7;">
+                                <div style="width:34px; height:34px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; color:white;">🎤</div>
+                                <div style="display:flex; flex-direction:column; text-align:left;">
+                                    <span class="upload-txt" style="font-size:12px; font-weight:600;">Recording Voice...</span>
+                                </div>
+                            </div>`;
+                    }
+                    else if (item.type === 'video_note') {
+                        customPlaceholderHtml = `
+                            <div style="width:150px; height:150px; border-radius:50%; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; opacity:0.7; border:2px solid var(--primary);">
+                                <span style="font-size:24px; margin-bottom:4px;">👁️</span>
+                                <span class="upload-txt" style="font-size:10px; color:#fff;">Preparing Video Note...</span>
+                            </div>`;
+                    }
+                    else { // fallback file/document
+                        customPlaceholderHtml = `
+                            <div style="display:flex; align-items:center; gap:12px; background:var(--bg-input); padding:12px; border-radius:16px; min-width:240px; opacity:0.7;">
+                                <span style="font-size:20px;">📄</span>
+                                <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; text-align:left;">
+                                    <span style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.filename}</span>
+                                    <span class="upload-txt" style="font-size:11px; color:var(--text-muted);">Preparing Document...</span>
+                                </div>
+                            </div>`;
+                    }
+            
                     if (State.chat === targetChat) {
                         msgsCont.insertAdjacentHTML('beforeend', `
-                            <div class="msg-row sent" id="${tempId}" style="opacity: 0.6;">
-                                <div class="msg-bubble">
-                                    <div style="display:flex; align-items:center; gap:10px;">
-                                        <div class="loader" style="width:20px;height:20px;border-color:var(--text-muted);border-top-color:var(--primary);"></div>
-                                        <span style="font-size:12px;color:var(--text-muted);">Uploading ${item.filename || 'media'}...</span>
+                            <div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
+                                <div class="msg-bubble" style="background:transparent; padding:0; box-shadow:none;">
+                                    ${customPlaceholderHtml}
+                                    <div style="width: 100%; max-width: 240px; background: rgba(150,150,150,0.2); height: 4px; border-radius: 2px; margin-top: 8px; overflow:hidden;">
+                                        <div class="upload-progress-bar" style="width: 0%; background: var(--primary); height: 100%; transition: width 0.15s ease;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -7861,7 +7940,21 @@
                     }
                     
                     try {
-                        const s3Url = await this.uploadToS3(item.rawFile);
+                        // Upload to S3 with individual progress updates
+                        const s3Url = await this.uploadToS3(item.rawFile, 'bin', 'application/octet-stream', (percent) => {
+                            if (State.chat !== targetChat) return;
+                            const card = document.getElementById(tempId);
+                            if (card) {
+                                const progressBar = card.querySelector('.upload-progress-bar');
+                                const progressText = card.querySelector('.upload-txt');
+                                
+                                if (progressBar) progressBar.style.width = `${percent}%`;
+                                if (progressText) {
+                                    const capitalizedType = item.type.charAt(0).toUpperCase() + item.type.slice(1);
+                                    progressText.innerText = `Uploading ${capitalizedType === 'File' ? 'Document' : capitalizedType} (${percent}%)`;
+                                }
+                            }
+                        });
                         
                         // Encrypt content and caption only if this is a DM chat
                         const finalContent = isDM ? await E2EE.encrypt(targetChat, s3Url) : s3Url;
@@ -7897,8 +7990,16 @@
                             App.fastPoll();
                         }
                     } catch(err) {
-                        document.getElementById(tempId)?.remove();
-                        UI.toast("Failed to deliver attachment");
+                        console.error("Upload failure for element:", tempId, err);
+                        const tempEl = document.getElementById(tempId);
+                        if (tempEl) {
+                            tempEl.innerHTML = `
+                                <div class="msg-bubble" style="background:var(--danger); color:white; font-size:12px; padding:8px 12px; border-radius:12px;">
+                                    ⚠️ Failed to send ${item.filename || 'file'}
+                                </div>`;
+                        }
+                    } finally {
+                        if (localUrl) URL.revokeObjectURL(localUrl);
                     }
                 });
                 
