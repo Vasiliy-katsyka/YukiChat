@@ -5959,16 +5959,16 @@
                         }
                         
                         // 2. Update online dot in the Sidebar Chat list
-                        const itemEl = document.querySelector(`.user-item[data-chat-id]`);
+                        const itemEl = document.querySelector('.user-item[data-chat-id]');
                         State.chats.forEach(chat => {
                             if (chat.dm_user_id == data.user_id) {
                                 chat.dm_online = isOnline ? 1 : 0;
-                                const dotEl = document.querySelector(`.user-item[data-chat-id="${chat.id}"] .online-dot`);
+                                const dotEl = document.querySelector('.user-item[data-chat-id="' + chat.id + '"] .online-dot');
                                 if (dotEl) {
                                     dotEl.style.display = isOnline ? 'block' : 'none';
                                 } else if (isOnline) {
                                     // Append online-dot wrapper dynamically if not present
-                                    const avWrap = document.querySelector(`.user-item[data-chat-id="${chat.id}"] .avatar-wrap`);
+                                    const avWrap = document.querySelector('.user-item[data-chat-id="' + chat.id + '"] .avatar-wrap');
                                     if (avWrap) avWrap.insertAdjacentHTML('beforeend', '<div class="online-dot"></div>');
                                 }
                             }
