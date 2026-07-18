@@ -6083,7 +6083,7 @@
                 const isDM = c.type === 'dm';
                 const isOnline = isDM && c.dm_last_seen && (new Date() - new Date(c.dm_last_seen + (c.dm_last_seen.includes('Z')?'':'Z')) < 60000);
 
-                if (c.type === 'channel') statusEl.innerHTML = `${c.sub_count} subscribers`;
+                if (c.type === 'channel') statusEl.innerHTML = c.sub_count + ' subscribers';
                 else if (c.is_bot) statusEl.innerHTML = 'Bot';
                 else if (isDM && c.dm_typing == c.id) statusEl.innerHTML = 'typing...';
                 else if (!isDM && c.is_typing == c.id) statusEl.innerHTML = 'typing...';
