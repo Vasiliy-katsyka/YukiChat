@@ -2271,7 +2271,7 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>
                 </button>
                 <button class="icon-btn n-clear" id="btn-call-audio" style="color:var(--text-main); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" onclick="RTC.startCall()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72(12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                 </button>
                 <button class="icon-btn n-clear" id="btn-chat-menu" style="color:var(--text-main); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" onclick="App.toggleChatMenu(event)">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
@@ -2418,7 +2418,7 @@
             <button class="btn" onclick="App.confirmCrop()">Crop & Attach</button>
         </div>
     </div>
-    <!-- SETTINGS PANEL -->
+    <!-- SETTINGS PANEL 232 -->
     <div id="panel-settings" class="panel">
         <div class="panel-header">
             <button class="icon-btn" onclick="Router.pop()">
@@ -5735,19 +5735,21 @@
                         ? `<img src="${audioCover}" style="width:100%; height:100%; object-fit:cover;">` 
                         : `<span style="font-size: 18px;">🎵</span>`;
 
+                    const safeTitleEscaped = String(audioTitle || "Audio File").replace(/'/g, "\\'");
+
                     inner += `
                     <div class="audio-msg-card" id="audio-card-${m.id}" onclick="event.stopPropagation();" style="display: flex; align-items: center; gap: 12px; background: var(--bg-input); padding: 12px; border-radius: 16px; min-width: 240px; max-width: 320px; margin-top: 4px;">
                         <div style="position: relative; width: 44px; height: 44px; flex-shrink: 0; background: #333; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border);">
                             <div class="audio-cover-container" style="position: absolute; inset: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
                                 ${coverHtml}
                             </div>
-                            <button class="btn" style="position: absolute; inset: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); color: white; display: flex; align-items: center; justify-content: center; border-radius: 10px; z-index: 2;" onclick="MusicPlayer.initTrack('${m.content}', '${audioTitle.replace(/'/g, "\\'")}')">
+                            <button class="btn" style="position: absolute; inset: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); color: white; display: flex; align-items: center; justify-content: center; border-radius: 10px; z-index: 2;" onclick="MusicPlayer.initTrack('${m.content}', '${safeTitleEscaped}')">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 1px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                             </button>
                         </div>
                         <div class="audio-card-details" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left;">
-                            <span class="audio-title" style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${audioTitle}</span>
-                            <span class="audio-artist" style="font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${audioArtist}</span>
+                            <span class="audio-title" style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${audioTitle || "Audio File"}</span>
+                            <span class="audio-artist" style="font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${audioArtist || "Unknown Artist"}</span>
                         </div>
                     </div>`.replace(/\s+/g, ' ');
                 }
