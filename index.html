@@ -20,8 +20,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
@@ -1604,17 +1604,41 @@
         /* --- APP-WIDE TOP MINI MUSIC PLAYER --- */
         .mini-player-top {
             position: absolute;
-            top: calc(60px + var(--safe-top));
-            left: 0;
-            right: 0;
-            height: 48px;
+            top: calc(68px + var(--safe-top));
+            left: 16px;
+            right: 16px;
+            height: 44px;
+            border-radius: 22px;
             z-index: 49;
             display: none;
             align-items: center;
             justify-content: space-between;
-            padding: 0 20px;
-            border-bottom: 1px solid var(--border);
+            padding: 0 16px;
             cursor: pointer;
+            border: 1px solid var(--border) !important;
+            box-shadow: var(--shadow);
+        }
+        .icon-btn.n-clear::before, .icon-btn.n-clear::after {
+            display: none !important;
+        }
+        .msg-bubble blockquote {
+            border-left: 3px solid var(--primary);
+            padding-left: 8px;
+            margin: 4px 0;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        .msg-bubble ul, .msg-bubble ol {
+            padding-left: 20px;
+            margin: 4px 0;
+        }
+        .msg-bubble li {
+            margin: 2px 0;
+        }
+        .msg-bubble h2, .msg-bubble h3 {
+            margin: 6px 0 2px 0;
+            font-size: 1.1em;
+            font-weight: 600;
         }
         .mini-player-info {
             display: flex;
@@ -2243,17 +2267,16 @@
 
             <!-- Pill 3: Call & Menu Actions -->
             <div class="liquid-glass n-liquid n-glass-border" style="height: 44px; border-radius: 22px; display: flex; align-items: center; padding: 0 2px; gap: 2px; pointer-events: auto; flex-shrink: 0;">
-                <button class="icon-btn" id="ai-clear-btn" onclick="App.clearAI()" style="display:none; color:var(--danger); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                <button class="icon-btn n-clear" id="ai-clear-btn" onclick="App.clearAI()" style="display:none; color:var(--danger); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>
                 </button>
-                <button class="icon-btn" id="btn-call-audio" style="color:var(--text-main); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" onclick="RTC.startCall()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                <button class="icon-btn n-clear" id="btn-call-audio" style="color:var(--text-main); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" onclick="RTC.startCall()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72(12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                 </button>
-                <button class="icon-btn" id="btn-chat-menu" style="color:var(--text-main); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" onclick="App.toggleChatMenu(event)">
+                <button class="icon-btn n-clear" id="btn-chat-menu" style="color:var(--text-main); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" onclick="App.toggleChatMenu(event)">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
                 </button>
             </div>
-        </div>
         <!-- Persistent Top Mini Music Player -->
         <div class="mini-player-top liquid-glass n-liquid" id="music-mini-player" onclick="MusicPlayer.openDashboard()">
             <div class="mini-player-info">
@@ -2694,16 +2717,16 @@
         <div class="profile-status-fade"></div>
         
         <!-- Modified headers dynamically matching liquid glass styling -->
-        <div class="panel-header liquid-glass n-liquid profile-content-wrap" style="background: transparent; border-bottom: none;">
-            <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+        <div class="panel-header profile-content-wrap" style="background: transparent; border-bottom: none; box-shadow: none !important;">
+            <button class="icon-btn n-clear" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
             <div class="panel-title">Contact Info</div>
             <div style="width:40px"></div>
         </div>
         
         <div class="panel-body profile-content-wrap" style="padding: 32px 20px; text-align:center;">
-            <div class="profile-av-wrap" style="width:130px; height:130px; margin:20px auto; position:relative; overflow:visible; background:transparent;">
+            <div class="profile-av-wrap" style="width:130px; height:130px; margin:20px auto; position:relative; overflow:visible; background:transparent; display:flex !important; align-items:center; justify-content:center;">
                 <canvas class="visualizer-canvas" id="pfp-soundwave-canvas"></canvas>
-                <img id="prof-av" class="avatar" style="width:110px; height:110px; margin: 10px; position: relative; z-index: 6;">
+                <img id="prof-av" class="avatar" style="width:110px; height:110px; position: relative; z-index: 6; border-radius: 50% !important; margin:0;">
             </div>
             <h2 id="prof-name" style="font-size:24px; margin-bottom:4px;">Name</h2>
             <div id="prof-handle" style="color:var(--text-muted); font-size:15px; margin-bottom:16px;"></div>
@@ -4596,6 +4619,7 @@
                     }
             
                     const canvas = document.getElementById('pfp-soundwave-canvas');
+                    if (!canvas) return;
                     this.canvasCtx = canvas.getContext('2d');
                     canvas.width = 130;
                     canvas.height = 130;
@@ -4976,18 +5000,33 @@
                 
                 this.toggleFolders(State.foldersEnabled, true);
             },
-            renderMath() {
-                const cont = document.getElementById('msgs');
+            renderMath(targetEl = null) {
+                const cont = targetEl || document.getElementById('msgs');
                 if (cont && window.renderMathInElement) {
-                    window.renderMathInElement(cont, {
-                        delimiters: [
-                            {left: '$$', right: '$$', display: true},
-                            {left: '$', right: '$', display: false}
-                        ],
-                        throwOnError: false
-                    });
+                    if (!targetEl) {
+                        const bubbles = cont.querySelectorAll('.msg-bubble:not(.math-rendered)');
+                        bubbles.forEach(b => {
+                            window.renderMathInElement(b, {
+                                delimiters: [
+                                    {left: '$$', right: '$$', display: true},
+                                    {left: '$', right: '$', display: false}
+                                ],
+                                throwOnError: false
+                            });
+                            b.classList.add('math-rendered');
+                        });
+                    } else {
+                        window.renderMathInElement(cont, {
+                            delimiters: [
+                                {left: '$$', right: '$$', display: true},
+                                {left: '$', right: '$', display: false}
+                            ],
+                            throwOnError: false
+                        });
+                        cont.classList.add('math-rendered');
+                    }
                 }
-                App.renderGraphs(); // <--- ADD THIS LINE HERE
+                App.renderGraphs();
             },
             setDevTab(tab) {
                 document.querySelectorAll('#panel-devtools .ai-tab').forEach(el => el.classList.remove('active'));
@@ -5655,9 +5694,20 @@
                 else if (m.type === 'audio') {
                     let audioTitle = "Audio File";
                     let audioArtist = "Unknown Artist";
+                    let audioCover = "";
 
-                    // Fallback parsing from the S3 filename
-                    if (m.content) {
+                    // Attempt to parse metadata from the JSON caption
+                    if (m.caption && m.caption.startsWith("{")) {
+                        try {
+                            const meta = JSON.parse(m.caption);
+                            audioTitle = meta.title || audioTitle;
+                            audioArtist = meta.artist || audioArtist;
+                            audioCover = meta.cover || "";
+                        } catch(e) {}
+                    }
+
+                    // Fallback parsing from the S3 filename if JSON parse failed or was empty
+                    if (audioTitle === "Audio File" && m.content) {
                         try {
                             const urlObj = new URL(m.content);
                             let decoded = decodeURIComponent(urlObj.pathname.split('/').pop());
@@ -5674,18 +5724,22 @@
                         } catch(e) {}
                     }
 
-                    // Trigger metadata parsing in the background asynchronously
-                    if (m.content && !m.content.startsWith("__E2EE__") && !m.content.startsWith("🔒")) {
+                    // Trigger fallback metadata parsing in the background asynchronously if cover is still missing
+                    if (!audioCover && m.content && !m.content.startsWith("__E2EE__") && !m.content.startsWith("🔒")) {
                         setTimeout(() => {
                             App.loadAudioMetadata(m.id, m.content);
                         }, 50);
                     }
 
+                    const coverHtml = audioCover 
+                        ? `<img src="${audioCover}" style="width:100%; height:100%; object-fit:cover;">` 
+                        : `<span style="font-size: 18px;">🎵</span>`;
+
                     inner += `
                     <div class="audio-msg-card" id="audio-card-${m.id}" onclick="event.stopPropagation();" style="display: flex; align-items: center; gap: 12px; background: var(--bg-input); padding: 12px; border-radius: 16px; min-width: 240px; max-width: 320px; margin-top: 4px;">
                         <div style="position: relative; width: 44px; height: 44px; flex-shrink: 0; background: #333; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border);">
                             <div class="audio-cover-container" style="position: absolute; inset: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
-                                <span style="font-size: 18px;">🎵</span>
+                                ${coverHtml}
                             </div>
                             <button class="btn" style="position: absolute; inset: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); color: white; display: flex; align-items: center; justify-content: center; border-radius: 10px; z-index: 2;" onclick="MusicPlayer.initTrack('${m.content}', '${audioTitle.replace(/'/g, "\\'")}')">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 1px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -5801,7 +5855,16 @@
                 }
 
                 if(m.caption && m.type !== 'voice') {
-                    inner += `<div class="msg-caption">${formatText(m.caption)}</div>`;
+                    let displayCaption = m.caption;
+                    if (m.type === 'audio' && m.caption.startsWith("{")) {
+                        try {
+                            const meta = JSON.parse(m.caption);
+                            displayCaption = meta.userCaption || "";
+                        } catch(e) {}
+                    }
+                    if (displayCaption) {
+                        inner += `<div class="msg-caption">${formatText(displayCaption)}</div>`;
+                    }
                 }
 
                 // Render the cascading stack chains recursively [1]
@@ -7926,21 +7989,31 @@
                             previewSrc = URL.createObjectURL(f);
                             document.getElementById('media-preview-img').src = previewSrc;
                         } else if (inferredType === 'audio') {
-                            // Extract preview cover art from local file
+                            // Extract preview cover art and metadata from local file
                             if (window.jsmediatags) {
                                 jsmediatags.read(f, {
                                     onSuccess: (tag) => {
+                                        const title = tag.tags.title || f.name.replace(/\.[^/.]+$/, "");
+                                        const artist = tag.tags.artist || "Unknown Artist";
+                                        let coverUrl = "";
                                         if (tag.tags.picture) {
                                             const { data, format } = tag.tags.picture;
                                             let base64String = "";
                                             for (let i = 0; i < data.length; i++) {
                                                 base64String += String.fromCharCode(data[i]);
                                             }
-                                            previewSrc = `data:${format};base64,${btoa(base64String)}`;
+                                            coverUrl = `data:${format};base64,${btoa(base64String)}`;
+                                            previewSrc = coverUrl;
                                             document.getElementById('media-preview-img').src = previewSrc;
                                         }
+                                        queueItem.audioMeta = { title, artist, cover: coverUrl };
+                                    },
+                                    onError: () => {
+                                        queueItem.audioMeta = { title: f.name.replace(/\.[^/.]+$/, ""), artist: "Unknown Artist", cover: "" };
                                     }
                                 });
+                            } else {
+                                queueItem.audioMeta = { title: f.name.replace(/\.[^/.]+$/, ""), artist: "Unknown Artist", cover: "" };
                             }
                         }
                         
@@ -8110,8 +8183,27 @@
                         // Encrypt content and caption only if this is a DM chat
                         const finalContent = isDM ? await E2EE.encrypt(targetChat, s3Url) : s3Url;
                         let finalCap = currentCap;
-                        if (currentCap && isDM) {
-                            finalCap = await E2EE.encrypt(targetChat, currentCap);
+                        
+                        if (item.type === 'audio' && item.audioMeta) {
+                            let coverS3Url = "";
+                            if (item.audioMeta.cover && item.audioMeta.cover.startsWith("data:")) {
+                                try {
+                                    coverS3Url = await this.uploadToS3(item.audioMeta.cover);
+                                } catch(e) {
+                                    console.warn("Failed to upload cover art to S3, falling back", e);
+                                }
+                            }
+                            const metaPayload = {
+                                title: item.audioMeta.title,
+                                artist: item.audioMeta.artist,
+                                cover: coverS3Url,
+                                userCaption: currentCap
+                            };
+                            finalCap = JSON.stringify(metaPayload);
+                        }
+                        
+                        if (finalCap && isDM) {
+                            finalCap = await E2EE.encrypt(targetChat, finalCap);
                         }
                         
                         const res = await req(`/api/messages/${targetChat}`, 'POST', {
