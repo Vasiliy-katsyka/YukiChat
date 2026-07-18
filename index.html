@@ -7109,12 +7109,113 @@
                 r.onload = ev => {
                     const dataUrl = ev.target.result;
                     // Apply it directly to the chat background
-                    document.getElementById('chat-area-bg').style.backgroundImage = `url(${dataUrl})`;
+                    document.getElementById('chat-area-bg').style.backgroundImage = 'url(' + dataUrl + ')';
                     // Save to localStorage just like the original logic did
                     localStorage.setItem('y_wall', dataUrl);
                     UI.toast('Wallpaper Updated');
                 };
                 r.readAsDataURL(f);
+            },
+            applyChatWallpaper(w) {
+                const globalWall = localStorage.getItem('y_wall') || '';
+                const activeWall = w || globalWall;
+                const areaBg = document.getElementById('chat-area-bg');
+                if (areaBg) {
+                    areaBg.style.backgroundImage = activeWall ? 'url(' + activeWall + ')' : 'none';
+                }
+            },
+            toggleChatMorePopover() {
+                const pop = document.getElementById('chat-more-popover');
+                if (!pop) return;
+                
+                if (pop.style.display === 'block') {
+                    pop.style.display = 'none';
+                    return;
+                }
+                
+                const c = State.chats.get(State.chat);
+                if (!c) return;
+                
+                // Hide attachments popover if open
+                const attachPop = document.getElementById('attach-popover');
+                if (attachPop) attachPop.style.display = 'none';
+                
+                // Determine dynamic visibility of actions
+                const isRealDM = c.type === 'dm' && !c.is_bot;
+                document.getElementById('menu-video-call').style.display = isRealDM ? 'flex' : 'none';
+                document.getElementById('menu-block-user').style.display = isRealDM ? 'flex' : 'none';
+                document.getElementById('menu-report-user').style.display = isRealDM ? 'flex' : 'none';
+                
+                // Set dynamic block text
+                if (isRealDM) {
+                    document.getElementById('menu-block-user').innerText = c.is_blocked ? '🚫 Unblock User' : '🚫 Block User';
+                }
+                
+                pop.style.display = 'block';
+            },
+            menuVideoCall() {
+                document.getElementById('chat-more-popover').style.display = 'none';
+                RTC.startCall(true);
+            },
+            menuChangeWallpaper() {
+                document.getElementById('chat-more-popover').style.display = 'none';
+                document.getElementById('chat-wall-file').click();
+            },
+            async setChatWallpaperFile(e) {
+                const f = e.target.files[0];
+                if (!f) return;
+                UI.toast("Uploading wallpaper...");
+                try {
+                    const s3Url = await this.uploadToS3(f);
+                    await req('/api/chats/' + State.chat + '/background', 'POST', { background_url: s3Url });
+                    
+                    const c = State.chats.get(State.chat);
+                    if (c) {
+                        c.background_url = s3Url;
+                    }
+                    App.applyChatWallpaper(s3Url);
+                    UI.toast("Wallpaper updated for this chat");
+                } catch(err) {
+                    UI.toast("Wallpaper upload failed");
+                }
+            },
+            async menuReportUser() {
+                document.getElementById('chat-more-popover').style.display = 'none';
+                if (!confirm("Are you sure you want to report this user to the administrator?")) return;
+                
+                try {
+                    await req('/api/chats/' + State.chat + '/report', 'POST');
+                    UI.toast("User reported successfully");
+                } catch(err) {
+                    UI.toast("Report failed");
+                }
+            },
+            async menuClearChat() {
+                document.getElementById('chat-more-popover').style.display = 'none';
+                if (!confirm("Are you sure you want to permanently clear the chat history?")) return;
+                
+                try {
+                    await req('/api/chats/' + State.chat + '/clear', 'POST');
+                    UI.toast("Chat history cleared");
+                } catch(err) {
+                    UI.toast("Failed to clear chat");
+                }
+            },
+            async menuBlockUser() {
+                document.getElementById('chat-more-popover').style.display = 'none';
+                const c = State.chats.get(State.chat);
+                if (!c) return;
+                
+                const actionText = c.is_blocked ? 'unblock' : 'block';
+                if (!confirm('Are you sure you want to ' + actionText + ' this user?')) return;
+                
+                try {
+                    const res = await req('/api/chats/' + State.chat + '/block', 'POST');
+                    c.is_blocked = res.blocked ? 1 : 0;
+                    UI.toast(res.blocked ? "User blocked" : "User unblocked");
+                } catch(err) {
+                    UI.toast("Action failed");
+                }
             },
             applyChatWallpaper(w) {
                 const globalWall = localStorage.getItem('y_wall') || '';
