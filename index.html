@@ -5908,7 +5908,7 @@
                 if (State.ws && State.ws.readyState === WebSocket.OPEN) return;
                 
                 App.setMainTitle('Connecting...');
-                const wsUrl = API.replace(/^http/, 'ws') + `/api/ws?token=${State.t}`;
+                const wsUrl = API.replace(/^http/, 'ws') + '/api/ws?token=' + State.t;
                 State.ws = new WebSocket(wsUrl);
                 
                 State.ws.onopen = () => {
