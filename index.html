@@ -780,8 +780,8 @@
         
         .n-messages-absolute {
             position: absolute !important; inset: 0 !important;
-            /* FIX: Reduced from 80px to 64px to perfectly fit the chat header */
-            padding-top: calc(64px + var(--safe-top)) !important;
+            /* FIX: Adjusted to perfectly fit the floating 3-island header */
+            padding-top: calc(68px + var(--safe-top)) !important;
             padding-bottom: calc(100px + var(--safe-bottom)) !important;
             overflow-y: auto !important;
         }
@@ -1897,56 +1897,56 @@
         
         /* --- COMPACT & SLEEK CODE CONTAINERS --- */
         .code-container {
-            background: #0f172a !important; /* Unified clean dark-slate background across all themes */
-            border-radius: 8px !important;
+            background: #181825 !important; /* Modern Catppuccin-inspired dark base */
+            border-radius: 10px !important;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            margin: 6px 0 !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            margin: 8px 0 !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
             max-width: 100%;
         }
         .code-header {
-            background: #1e293b !important;
-            padding: 4px 8px !important;
+            background: #11111b !important;
+            padding: 6px 12px !important;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
         }
-        .code-dots { display: flex; gap: 4px; align-items: center; }
-        .code-dot { width: 6px; height: 6px; border-radius: 50%; background: #475569; }
-        .code-dot.red { background: #ef4444; }
-        .code-dot.yellow { background: #f59e0b; }
-        .code-dot.green { background: #10b981; }
+        .code-dots { display: flex; gap: 5px; align-items: center; }
+        .code-dot { width: 7px; height: 7px; border-radius: 50%; background: #45475a; }
+        .code-dot.red { background: #f38ba8; }
+        .code-dot.yellow { background: #f9e2af; }
+        .code-dot.green { background: #a6e3a1; }
         
         .code-copy-btn {
             background: none !important; border: none !important; 
-            color: #94a3b8 !important; font-size: 10px !important; 
+            color: #a6adc8 !important; font-size: 11px !important; 
             font-weight: 600 !important; cursor: pointer;
-            display: flex; align-items: center; gap: 3px; 
-            transition: color 0.15s;
-            padding: 2px 6px !important;
-            border-radius: 4px !important;
+            display: flex; align-items: center; gap: 4px; 
+            transition: color 0.15s, background-color 0.15s;
+            padding: 3px 8px !important;
+            border-radius: 6px !important;
         }
-        .code-copy-btn:hover { color: #f1f5f9 !important; background: rgba(255,255,255,0.05) !important; }
+        .code-copy-btn:hover { color: #cdd6f4 !important; background: rgba(255,255,255,0.06) !important; }
         
         pre { 
-            padding: 8px 12px !important; 
+            padding: 10px 14px !important; 
             overflow-x: auto; 
-            font-family: 'Courier New', Courier, monospace !important; 
-            font-size: 11.5px !important; /* Extremely clean, compact sizing */
-            line-height: 1.45 !important;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace !important;
+            font-size: 12px !important; /* Perfect modern compact size */
+            line-height: 1.5 !important;
             white-space: pre-wrap; 
             text-align: left; 
             margin: 0; 
             border: none; 
-            color: #cbd5e1 !important; 
+            color: #cdd6f4 !important; 
         }
         code { 
-            font-family: 'Courier New', Courier, monospace !important; 
-            background: rgba(148, 163, 184, 0.15) !important; 
-            padding: 1px 4px !important; 
-            border-radius: 4px !important; 
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace !important;
+            background: rgba(148, 163, 184, 0.12) !important; 
+            padding: 2px 5px !important; 
+            border-radius: 6px !important; 
             font-size: 11px !important; 
             color: inherit !important;
         }
@@ -2224,33 +2224,34 @@
     <!-- ACTIVE CHAT -->
     <div id="panel-chat" class="panel n-panel-fix">
         <!-- Added n-glass-header -->
-        <!-- Transparent Glass Header for Chat Window ONLY (matches Navigation Bar) -->
-        <div class="panel-header liquid-glass n-glass-header" style="justify-content: space-between; border-bottom: none;">
-            <div style="display:flex; align-items:center; gap:12px; cursor:pointer;" onclick="App.viewProfile(State.chat)">
-                <button class="icon-btn" onclick="event.stopPropagation(); Router.pop()" style="margin-left:-8px">
+        <!-- Transparent Floating 3-Island Header for Chat Window -->
+        <div class="panel-header n-glass-header" style="position: absolute; top: calc(12px + var(--safe-top)); left: 16px; right: 16px; z-index: 50; background: transparent !important; border: none !important; box-shadow: none !important; display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 0; height: auto; pointer-events: none;">
+            <!-- Pill 1: Back Button -->
+            <div class="liquid-glass n-liquid n-glass-border" style="width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; pointer-events: auto; flex-shrink: 0;">
+                <button class="icon-btn" onclick="Router.pop()" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
                 </button>
-                <div class="avatar-wrap" style="width:40px;height:40px;"><img src="" id="chat-av" class="avatar" style="width:100%;height:100%;"></div>
-                <div>
-                    <div class="panel-title" id="chat-title" style="text-align:left; font-size:16px;">Chat</div>
-                    <div style="font-size: 12px; color: var(--text-muted); font-weight: 500;" id="chat-status">Connecting...</div>
-                </div>
-            <!-- FIX: Added flex-shrink:0 to prevent squishing, reduced gap from 16px to 8px -->
-            <div style="display:flex; gap:8px; align-items:center; flex-shrink: 0;">
-                <button class="icon-btn" id="ai-clear-btn" onclick="App.clearAI()" style="display:none; color:var(--danger); flex-shrink: 0;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>
-                </button>
-                <!-- START CALL BUTTONS -->
-                <button class="icon-btn" id="btn-call-audio" style="color:var(--text-main); flex-shrink: 0;" onclick="RTC.startCall()">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                </button>
-                <button class="icon-btn" id="btn-chat-menu" style="color:var(--text-main); flex-shrink: 0;" onclick="App.toggleChatMenu(event)">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
-                </button>
             </div>
+
+            <!-- Pill 2: Profile Info -->
+            <div class="liquid-glass n-liquid n-glass-border" onclick="App.viewProfile(State.chat)" style="flex: 1; min-width: 0; height: 44px; border-radius: 22px; display: flex; align-items: center; padding: 0 12px; gap: 10px; pointer-events: auto; cursor: pointer;">
+                <div class="avatar-wrap" style="width: 32px; height: 32px; flex-shrink: 0;"><img src="" id="chat-av" class="avatar" style="width: 100%; height: 100%;"></div>
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; text-align: left;">
+                    <div class="panel-title" id="chat-title" style="text-align: left; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;">Chat</div>
+                    <div style="font-size: 10px; color: var(--text-muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;" id="chat-status">Connecting...</div>
+                </div>
+            </div>
+
+            <!-- Pill 3: Call & Menu Actions -->
+            <div class="liquid-glass n-liquid n-glass-border" style="height: 44px; border-radius: 22px; display: flex; align-items: center; padding: 0 4px; gap: 4px; pointer-events: auto; flex-shrink: 0;">
+                <button class="icon-btn" id="ai-clear-btn" onclick="App.clearAI()" style="display:none; color:var(--danger); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>
                 </button>
-                <button class="icon-btn" id="btn-chat-menu" style="color:var(--text-main); flex-shrink: 0;" onclick="App.toggleChatMenu(event)">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                <button class="icon-btn" id="btn-call-audio" style="color:var(--text-main); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;" onclick="RTC.startCall()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </button>
+                <button class="icon-btn" id="btn-chat-menu" style="color:var(--text-main); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;" onclick="App.toggleChatMenu(event)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
                 </button>
             </div>
         </div>
@@ -2275,7 +2276,7 @@
             <div id="dom-fx-layer" style="position:absolute; inset:0; z-index:40; pointer-events:none; overflow:hidden;"></div>
             <canvas id="fx-canvas" style="position:absolute; inset:0; z-index:100; pointer-events:none; width:100%; height:100%;"></canvas>
             <!-- Added absolute positioning to pinned messages so it sits under the header -->
-            <div id="pinned-msg" class="pinned-bar n-liquid" style="display:none; position:absolute; top:calc(60px + var(--safe-top)); left:0; right:0; z-index:45; margin:0; border-radius:0; border-bottom:1px solid var(--border);" onclick="App.scrollToPin()">
+            <div id="pinned-msg" class="pinned-bar n-liquid" style="display:none; position:absolute; top:calc(68px + var(--safe-top)); left:0; right:0; z-index:45; margin:0; border-radius:0; border-bottom:1px solid var(--border);" onclick="App.scrollToPin()">
                 <div style="font-weight:600; font-size:12px; color:var(--primary)">📌 Pinned</div>
                 <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-left:12px; color:var(--text-muted)" id="pinned-text"></div>
             </div>
