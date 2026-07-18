@@ -6092,12 +6092,12 @@
             },
             async previewStickerPack(name) {
                 try {
-                    const pack = await req(`/api/stickers/${name}`);
+                    const pack = await req('/api/stickers/' + name);
                     pack.name = name; // Save internal name for updates
                     State.previewPack = pack;
                     document.getElementById('sp-title').innerText = pack.title || name;
                     let html = '';
-                    pack.stickers.forEach(s => html += `<img class="sticker-item" src="${s.file_url}">`);
+                    pack.stickers.forEach(s => html += '<img class="sticker-item" src="' + s.file_url + '">');
                     document.getElementById('sp-grid').innerHTML = html;
                     Router.push('panel-stickerpack');
                 } catch(e) { UI.toast('Sticker pack not found'); }
@@ -6627,10 +6627,10 @@
                 // Instantly update local UI
                 const channelBar = document.getElementById('channel-bar');
                 if (channelBar && State.chat === id) {
-                    channelBar.innerHTML = `<button class="btn btn-outline" style="border-radius:12px; padding:10px; width:100%" onclick="App.toggleMute(${c.id})">${c.muted ? '🔇 Unmute Channel' : '🔊 Mute Channel'}</button>`;
+                    channelBar.innerHTML = '<button class="btn btn-outline" style="border-radius:12px; padding:10px; width:100%" onclick="App.toggleMute(' + c.id + ')">' + (c.muted ? '🔇 Unmute Channel' : '🔊 Mute Channel') + '</button>';
                 }
                 
-                const itemEl = document.querySelector(`.user-item[data-chat-id="${id}"]`);
+                const itemEl = document.querySelector('.user-item[data-chat-id="' + id + '"]');
                 if (itemEl) {
                     const badge = itemEl.querySelector('.badge');
                     if (badge) {
@@ -6722,7 +6722,7 @@
             },
             // Change your existing setWallpaper function to this:
             setWallpaper(w) { 
-                document.getElementById('chat-area-bg').style.backgroundImage = w ? `url(${w})` : 'none'; 
+                document.getElementById('chat-area-bg').style.backgroundImage = w ? 'url(' + w + ')' : 'none'; 
                 localStorage.setItem('y_wall', w); 
                 
                 // Check if the element exists before trying to set its value
@@ -8494,7 +8494,7 @@
                 const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
                 const av = canSeePfp ? (isDM ? (c.dm_avatar || defAv) : (c.avatar || defAv)) : defAv;
                 const name = isDM ? c.dm_username : c.name;
-                const handleText = c.username ? `@${c.username}` : (isDM ? `@${c.dm_username}` : '');
+                const handleText = c.username ? '@' + c.username : (isDM ? '@' + c.dm_username : '');
                 
                 document.getElementById('prof-av').src = av;
                 document.getElementById('prof-name').innerText = name;
@@ -8505,7 +8505,7 @@
                 const musicPill = document.getElementById('profile-music-pill');
                 
                 if (isDM && c.dm_status_music_url) {
-                    bgImg.style.backgroundImage = `url(${c.dm_status_music_art || av})`;
+                    bgImg.style.backgroundImage = 'url(' + (c.dm_status_music_art || av) + ')';
                     document.getElementById('profile-status-song-title').innerText = c.dm_status_music_title || "Starboy";
                     musicPill.style.display = 'flex';
                     
@@ -8520,8 +8520,8 @@
 
                 let acts = '';
                 if (c.type === 'channel' || c.type === 'group') {
-                    const link = c.is_private ? `${window.location.origin}${window.location.pathname}?channel=${c.invite_hash}` : `${window.location.origin}${window.location.pathname}?channel=${c.username}`;
-                    acts += `<button class="btn btn-outline" onclick="navigator.clipboard.writeText('${link}'); UI.toast('Link Copied!')">🔗 Copy Link</button>`;
+                    const link = c.is_private ? window.location.origin + window.location.pathname + '?channel=' + c.invite_hash : window.location.origin + window.location.pathname + '?channel=' + c.username;
+                    acts += '<button class="btn btn-outline" onclick="navigator.clipboard.writeText(\'' + link + '\'); UI.toast(\'Link Copied!\')">🔗 Copy Link</button>';
                 }
                 
                 document.getElementById('prof-actions').innerHTML = acts;
@@ -8534,14 +8534,14 @@
                 const grid = document.getElementById('prof-media-grid');
                 grid.innerHTML = '<span style="font-size:12px; color:var(--text-muted)">Loading...</span>';
                 try {
-                    const media = await req(`/api/chats/${chatId}/media`);
+                    const media = await req('/api/chats/' + chatId + '/media');
                     if (media.length === 0) {
                         grid.innerHTML = '<span style="font-size:12px; color:var(--text-muted)">No media shared yet</span>';
                         return;
                     }
                     let html = '';
                     media.forEach(m => {
-                        html += `<img src="${m.content}" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; cursor:pointer;" onclick="App.openMedia('${m.content}')">`;
+                        html += '<img src="' + m.content + '" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; cursor:pointer;" onclick="App.openMedia(\'' + m.content + '\')">';
                     });
                     grid.innerHTML = html;
                 } catch(e) { grid.innerHTML = ''; }
