@@ -786,12 +786,12 @@
         }
         
         .n-chat-area-relative { 
-            position: relative !important; display: block !important; 
+            position: relative !important; display: flex !important; flex-direction: column !important; height: 100% !important;
         }
 
         /* Ensures the background of the panel itself doesn't block the glass */
         .n-panel-fix { 
-            background: transparent !important; 
+            background: var(--bg-base) !important; 
         }
         
         /* --- 3. INPUT BAR CONTAINER FLOATING --- */
