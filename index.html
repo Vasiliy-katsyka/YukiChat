@@ -1548,7 +1548,7 @@
             z-index: 1000;
             padding: 6px 0;
         }
-        #attach-popover .ctx-item {
+        #attach-popover .ctx-item, #chat-more-popover .ctx-item {
             padding: 10px 16px;
             font-size: 14px;
             font-weight: 500;
@@ -1557,7 +1557,7 @@
             gap: 12px;
             cursor: pointer;
         }
-        #attach-popover .ctx-item:active {
+        #attach-popover .ctx-item:active, #chat-more-popover .ctx-item:active {
             background: var(--bg-hover);
         }
 
@@ -2242,13 +2242,14 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>
                 </button>
                 <!-- START CALL BUTTONS -->
-                <button class="icon-btn" id="btn-call-video" style="color:var(--text-main); flex-shrink: 0;" onclick="RTC.startCall(true)">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
-                </button>
                 <button class="icon-btn" id="btn-call-audio" style="color:var(--text-main); flex-shrink: 0;" onclick="RTC.startCall()">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                 </button>
+                <button class="icon-btn" id="btn-chat-more" style="color:var(--text-main); flex-shrink: 0; display: none;" onclick="event.stopPropagation(); App.toggleChatMorePopover()">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
+                </button>
             </div>
+```
         </div>
         <!-- Persistent Top Mini Music Player -->
         <div class="mini-player-top liquid-glass n-liquid" id="music-mini-player" onclick="MusicPlayer.openDashboard()">
@@ -2265,8 +2266,29 @@
             </div>
         </div>
         <!-- Added n-chat-area-relative -->
+        <!-- NEW CHAT MORE POPOVER -->
+        <div id="chat-more-popover" class="n-liquid" style="display: none; position: absolute; top: calc(64px + var(--safe-top)); right: 20px; width: 220px; border-radius: 18px; box-shadow: var(--shadow); border: 1px solid var(--border); z-index: 1000; padding: 6px 0; background: var(--bg-panel);">
+            <div class="ctx-item" id="menu-video-call" onclick="App.menuVideoCall()">
+                📹 Video Call
+            </div>
+            <div class="ctx-item" onclick="App.menuChangeWallpaper()">
+                🖼️ Change Wallpaper
+            </div>
+            <div class="ctx-item" id="menu-report-user" onclick="App.menuReportUser()">
+                ⚠️ Report User
+            </div>
+            <div class="ctx-item" style="color: var(--danger);" onclick="App.menuClearChat()">
+                🗑️ Clear Chat History
+            </div>
+            <div class="ctx-item" id="menu-block-user" style="color: var(--danger);" onclick="App.menuBlockUser()">
+                🚫 Block User
+            </div>
+        </div>
+        <input type="file" id="chat-wall-file" hidden accept="image/*" onchange="App.setChatWallpaperFile(event)">
+
         <div class="chat-area n-chat-area-relative" id="chat-area-bg">
             <canvas id="bg-canvas" style="position:absolute; inset:0; z-index:1; pointer-events:none; width:100%; height:100%;"></canvas>
+```
             <div id="drop-zone-overlay">Drop files here to send</div>
             <div id="dom-fx-layer" style="position:absolute; inset:0; z-index:40; pointer-events:none; overflow:hidden;"></div>
             <canvas id="fx-canvas" style="position:absolute; inset:0; z-index:100; pointer-events:none; width:100%; height:100%;"></canvas>
@@ -3875,7 +3897,8 @@
             notifiedMsgs: new Set(),
             notifiedCalls: new Set(),
             settingsTaps: 0,
-            rawPassword: "" // Escrow uses this temporary session-lifetime variable to derive backing storage keys
+            rawPassword: "",
+            isSyncing: false
         };
 
         const req = async (path, m='GET', b=null) => {
@@ -5903,10 +5926,27 @@
                 
                 State.ws.onmessage = async (e) => {
                     const data = JSON.parse(e.data);
+                    if (data.type === 'chat_bg_change') {
+                        const c = State.chats.get(data.chat_id);
+                        if (c) {
+                            c.background_url = data.background_url;
+                        }
+                        if (State.chat == data.chat_id) {
+                            App.applyChatWallpaper(data.background_url);
+                        }
+                    }
+                    if (data.type === 'chat_cleared') {
+                        if (State.chat == data.chat_id) {
+                            document.getElementById('msgs').innerHTML = '';
+                            State.lastMsgId = 0;
+                            localforage.removeItem(`y_cache_msgs_${data.chat_id}`);
+                        }
+                    }
                     // Add this inside the WebSocket onmessage handler (around line 2000):
                     if (data.type === 'message_reaction' && State.chat == data.chat_id) {
                         App.updateMessageReactionsDOM(data.msg_id, data.reactions);
                     }
+```
                     if (data.type === 'presence') {
                         // Dynamically update user online presence badges [1]
                         const isOnline = data.status === 'online';
@@ -7076,6 +7116,107 @@
                 };
                 r.readAsDataURL(f);
             },
+            applyChatWallpaper(w) {
+                const globalWall = localStorage.getItem('y_wall') || '';
+                const activeWall = w || globalWall;
+                const areaBg = document.getElementById('chat-area-bg');
+                if (areaBg) {
+                    areaBg.style.backgroundImage = activeWall ? `url(${activeWall})` : 'none';
+                }
+            },
+            toggleChatMorePopover() {
+                const pop = document.getElementById('chat-more-popover');
+                if (!pop) return;
+                
+                if (pop.style.display === 'block') {
+                    pop.style.display = 'none';
+                    return;
+                }
+                
+                const c = State.chats.get(State.chat);
+                if (!c) return;
+                
+                // Hide attachments popover if open
+                const attachPop = document.getElementById('attach-popover');
+                if (attachPop) attachPop.style.display = 'none';
+                
+                // Determine dynamic visibility of actions
+                const isRealDM = c.type === 'dm' && !c.is_bot;
+                document.getElementById('menu-video-call').style.display = isRealDM ? 'flex' : 'none';
+                document.getElementById('menu-block-user').style.display = isRealDM ? 'flex' : 'none';
+                document.getElementById('menu-report-user').style.display = isRealDM ? 'flex' : 'none';
+                
+                // Set dynamic block text
+                if (isRealDM) {
+                    document.getElementById('menu-block-user').innerText = c.is_blocked ? '🚫 Unblock User' : '🚫 Block User';
+                }
+                
+                pop.style.display = 'block';
+            },
+            menuVideoCall() {
+                document.getElementById('chat-more-popover').style.display = 'none';
+                RTC.startCall(true);
+            },
+            menuChangeWallpaper() {
+                document.getElementById('chat-more-popover').style.display = 'none';
+                document.getElementById('chat-wall-file').click();
+            },
+            async setChatWallpaperFile(e) {
+                const f = e.target.files[0];
+                if (!f) return;
+                UI.toast("Uploading wallpaper...");
+                try {
+                    const s3Url = await this.uploadToS3(f);
+                    await req('/api/chats/' + State.chat + '/background', 'POST', { background_url: s3Url });
+                    
+                    const c = State.chats.get(State.chat);
+                    if (c) {
+                        c.background_url = s3Url;
+                    }
+                    App.applyChatWallpaper(s3Url);
+                    UI.toast("Wallpaper updated for this chat");
+                } catch(err) {
+                    UI.toast("Wallpaper upload failed");
+                }
+            },
+            async menuReportUser() {
+                document.getElementById('chat-more-popover').style.display = 'none';
+                if (!confirm("Are you sure you want to report this user to the administrator?")) return;
+                
+                try {
+                    await req('/api/chats/' + State.chat + '/report', 'POST');
+                    UI.toast("User reported successfully");
+                } catch(err) {
+                    UI.toast("Report failed");
+                }
+            },
+            async menuClearChat() {
+                document.getElementById('chat-more-popover').style.display = 'none';
+                if (!confirm("Are you sure you want to permanently clear the chat history?")) return;
+                
+                try {
+                    await req('/api/chats/' + State.chat + '/clear', 'POST');
+                    UI.toast("Chat history cleared");
+                } catch(err) {
+                    UI.toast("Failed to clear chat");
+                }
+            },
+            async menuBlockUser() {
+                document.getElementById('chat-more-popover').style.display = 'none';
+                const c = State.chats.get(State.chat);
+                if (!c) return;
+                
+                const actionText = c.is_blocked ? "unblock" : "block";
+                if (!confirm(`Are you sure you want to ${actionText} this user?`)) return;
+                
+                try {
+                    const res = await req('/api/chats/' + State.chat + '/block', 'POST');
+                    c.is_blocked = res.blocked ? 1 : 0;
+                    UI.toast(res.blocked ? "User blocked" : "User unblocked");
+                } catch(err) {
+                    UI.toast("Action failed");
+                }
+            },
         
             showPush(title, body, icon, isCall = false) {
                 if (!('Notification' in window) || Notification.permission !== 'granted') {
@@ -7104,23 +7245,24 @@
             
             // --- REAL-TIME SYNC ---
             async sync() {
-                let isSyncing = false;
+                if (State.isSyncing) return;
+                State.isSyncing = true;
+
+                let isSyncingLocal = false;
                 const syncTimer = setTimeout(() => {
-                    if (isSyncing && State.ws && State.ws.readyState === WebSocket.OPEN) App.setMainTitle('Updating...');
-                }, 400); // Only show "Updating..." if the network takes longer than 400ms (prevents annoying flickering)
-                isSyncing = true;
+                    if (isSyncingLocal && State.ws && State.ws.readyState === WebSocket.OPEN) App.setMainTitle('Updating...');
+                }, 400); 
+                isSyncingLocal = true;
 
                 try {
                     const isTyping = State.chat && document.getElementById('msg-input') && document.getElementById('msg-input').value.trim().length > 0;
                     const d = await req('/api/sync', 'POST', {typingIn: isTyping ? State.chat : null});
                     
-                    // Server-driven sticker packs persistence
                     if (d.sticker_packs) {
                         localStorage.setItem('y_packs', JSON.stringify(d.sticker_packs));
                         if (!State.updatingStickers) this.loadStickerKeyboard();
                     }
         
-                    // Pinning & Recency Sorting
                     d.chats.sort((a, b) => {
                         if (a.id === 'ai') return -1;
                         if (b.id === 'ai') return 1;
@@ -7129,7 +7271,6 @@
                         return new Date(b.last_msg_time || 0) - new Date(a.last_msg_time || 0);
                     });
         
-                    // --- DECRYPT LAST MESSAGE PREVIEWS IN PARALLEL ---
                     await Promise.all(d.chats.map(async (c) => {
                         if (c.last_msg && c.last_msg.startsWith("__E2EE__:")) {
                             try {
@@ -7139,7 +7280,6 @@
                             }
                         }
                     }));
-                    // -------------------------------------------------
         
                     const searchInput = document.querySelector('.search-bar input');
                     const isSearching = searchInput && searchInput.value.trim().length > 0 && Router.stack[Router.stack.length-1] === 'panel-root';
@@ -7147,7 +7287,6 @@
                     let totalUnread = 0;
                     let html = '';
                     
-                    // --- APPLY FOLDER FILTERS ---
                     let filteredChats = d.chats;
                     if (State.foldersEnabled && State.chatFilter !== 'all') {
                         const folder = State.folders.find(x => x.id === State.chatFilter);
@@ -7176,24 +7315,18 @@
                         const bage = c.unread > 0 ? `<span class="badge">${c.unread}</span>` : '';
                         totalUnread += c.unread || 0; 
 
-                        // --- NEW: INSTANT LIVE CHAT & NOTIFICATIONS ---
                         if (c.last_msg_id) {
-                            // 1. If we are in this chat, and there's a new message, fetch it NOW bypassing delays
                             if (State.chat === c.id && c.last_msg_id > State.lastMsgId) {
                                 App.fastPoll();
                             }
                             
-                            // 2. Instant Browser Notifications for new messages
-                            // 2. Instant Browser Notifications for new messages
                             if (c.unread > 0 && !State.notifiedMsgs.has(c.last_msg_id)) {
                                 State.notifiedMsgs.add(c.last_msg_id);
-                                // Added the !c.muted check here so you do not receive push notifications for muted chats
                                 if (!c.muted && (State.chat !== c.id || document.visibilityState !== 'visible')) {
                                     App.showPush(n, prevH.replace(/<[^>]*>?/gm, ''), av);
                                 }
                             }
                         }
-                        // ----------------------------------------------
                         
                         const hasCall = d.calls.find(x => x.chat_id === c.id && (x.status === 'ringing' || x.status === 'connected'));
                         const isVid = (hasCall && hasCall.init_data) ? JSON.parse(hasCall.init_data).video : false;
@@ -7208,7 +7341,6 @@
                             document.getElementById('call-view-active').style.display = 'none';
                             document.getElementById('call-view-incoming').style.display = 'flex';
                             document.getElementById('panel-call').style.transform = 'translateY(0)';
-                            // Add this line:
                             document.getElementById('panel-call').classList.add('active');
                         
                             if (!State.notifiedCalls.has(hasCall.id)) {
@@ -7222,7 +7354,6 @@
                             if(RTC.ringtone) { RTC.ringtone.pause(); RTC.ringtone.currentTime = 0; }
                             if(document.getElementById('call-view-incoming').style.display === 'flex') {
                                 document.getElementById('panel-call').style.transform = 'translateY(100%)';
-                                // Add this line:
                                 document.getElementById('panel-call').classList.remove('active');
                             }
                             RTC.incomingCallId = null; RTC.incomingChat = null;
@@ -7231,7 +7362,6 @@
                         const isOnline = isDM && c.dm_online === 1;
                         const onlineDot = isOnline ? `<div class="online-dot"></div>` : '';
         
-                        // NEW: Inject selection and pin classes
                         const isSelected = State.selectedChats?.has(c.id);
                         const aiItemClass = c.id === 'ai' ? ' ai-chat' : '';
                         const pinClass = c.is_pinned ? ' pinned-chat' : '';
@@ -7240,7 +7370,6 @@
                         
                         const tickHtml = (isDM && c.dm_verified) || (!isDM && c.is_verified) || (c.id === 'ai') ? verifiedTick : '';
                         
-                        // NEW: Added long press (oncontextmenu) and click handlers
                         html += `<div class="user-item${aiItemClass}${pinClass}${selectClass}" data-chat-id="${c.id}" onclick="App.handleChatClick(event, '${c.id}')" oncontextmenu="event.preventDefault(); App.toggleChatSelect('${c.id}')">
                                     <div class="avatar-wrap${c.id === 'ai' ? ' ai-wrap' : ''}" style="width:50px;height:50px;"><img src="${av}" class="avatar${c.id === 'ai' ? ' ai-avatar' : ''}" style="width:100%;height:100%;">${onlineDot}</div>
                                     <div class="user-info"><div class="user-name"><span>${n} ${tickHtml}</span> <div style="display:flex; align-items:center; gap:6px;">${pinIconHtml}${bage}</div></div><div class="user-last-msg">${prevH}</div></div>
@@ -7271,8 +7400,9 @@
                         console.error("Sync Error: ", e); 
                     }
                 } finally {
-                    isSyncing = false;
+                    isSyncingLocal = false;
                     clearTimeout(syncTimer);
+                    State.isSyncing = false;
                     if (State.ws && State.ws.readyState === WebSocket.OPEN) App.setMainTitle('Messages');
                 }
             },
@@ -7426,9 +7556,12 @@
                 UI.toast('Opening chat...'); 
                 try {
                     const d = await req('/api/chats', 'POST', {type:'dm', target_user_id:id}); 
-                    await this.sync(); // WAIT for sync to populate State.chats
+                    if (d.chat) {
+                        State.chats.set(d.chat_id, d.chat);
+                    }
                     Router.pop(); 
                     this.openChat(d.chat_id); 
+                    App.sync();
                 } catch(e) { UI.toast('Failed to open chat'); }
             },
             
@@ -7436,9 +7569,12 @@
                 UI.toast('Joining...'); 
                 try {
                     const d = await req('/api/chats/join', 'POST', {handle}); 
-                    await this.sync(); // WAIT for sync
+                    if (d.chat) {
+                        State.chats.set(d.chat_id, d.chat);
+                    }
                     Router.pop(); 
                     this.openChat(d.chat_id); 
+                    App.sync();
                 } catch(e) { UI.toast(e.message); }
             },
             
@@ -7465,6 +7601,8 @@
                 
                 const c = State.chats.get(id); 
                 if (!c) return; 
+                
+                App.applyChatWallpaper(c.background_url);
             
                 // Instant local unread clearing
                 // Instant local unread clearing
@@ -7494,11 +7632,12 @@
                 const canSeePfp = isDM ? UI.checkPriv(c.dm_pfp_privacy, State.u.username) : true;
                 const isVerified = isDM ? c.dm_verified : c.is_verified;
                 const canCall = isDM && !c.is_bot && id !== 'ai';
-                const btnVideo = document.getElementById('btn-call-video');
                 const btnAudio = document.getElementById('btn-call-audio');
-                if(btnVideo) btnVideo.style.display = canCall ? 'flex' : 'none';
+                const btnChatMore = document.getElementById('btn-chat-more');
                 if(btnAudio) btnAudio.style.display = canCall ? 'flex' : 'none';
+                if(btnChatMore) btnChatMore.style.display = (id === 'ai') ? 'none' : 'flex';
                 document.getElementById('chat-title').innerHTML = (isDM ? c.dm_username : c.name) + (isVerified || c.id === 'ai' ? verifiedTick : '');
+```
                 document.getElementById('chat-av').src = canSeePfp ? (isDM ? (c.dm_avatar||getDefAv(c.dm_username)) : (c.avatar||getDefAv(c.name))) : getDefAv('?');
                 
                 const chatAv = document.getElementById('chat-av');
@@ -8840,6 +8979,14 @@
                     document.getElementById('send-btn-el').style.display = hasText ? 'flex' : 'none';
                 });
             }
+            
+            // Document click listener to close popovers on outside click
+            document.addEventListener('click', (e) => {
+                const pop = document.getElementById('chat-more-popover');
+                if (pop && pop.style.display === 'block') {
+                    pop.style.display = 'none';
+                }
+            });
         });
         
         // --- iOS-STYLE EDGE SWIPE TO GO BACK ---
