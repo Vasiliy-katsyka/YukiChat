@@ -5989,7 +5989,7 @@
                             }
                             
                             // 1. If this is the sender's optimistic bubble, update it to the server's placeholder!
-                            const existingMsg = document.getElementById(`msg-${m.id}`);
+                            const existingMsg = document.getElementById('msg-' + m.id);
                             if (existingMsg) {
                                 const isMine = m.sender_id === State.u.userId;
                                 existingMsg.innerHTML = App.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
@@ -6002,14 +6002,14 @@
                             const isMine = m.sender_id === State.u.userId;
                             const innerHTML = App.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
                             
-                            cont.insertAdjacentHTML('beforeend', `<div class="msg-row ${isMine ? 'sent' : 'received'}" id="msg-${m.id}">${innerHTML}</div>`);
+                            cont.insertAdjacentHTML('beforeend', '<div class="msg-row ' + (isMine ? 'sent' : 'received') + '" id="msg-' + m.id + '">' + innerHTML + '</div>');
                             App.renderMath();
                             if (isAtBottom) cont.scrollTop = cont.scrollHeight;
                             
                             State.lastMsgId = m.id;
-                            localforage.setItem(`y_cache_msgs_${State.chat}`, cont.innerHTML);
+                            localforage.setItem('y_cache_msgs_' + State.chat, cont.innerHTML);
                             
-                            req(`/api/messages/${m.id}/action`, 'POST', {action: 'read'});
+                            req('/api/messages/' + m.id + '/action', 'POST', {action: 'read'});
                         } else {
                             App.sync();
                         }
@@ -6031,7 +6031,7 @@
                 
                     // --- UPDATE THE WEBSOCKET LISTENER BLOCK ---
                     if (data.type === 'message_action' && State.chat == data.chat_id) {
-                        req(`/api/messages/${data.chat_id}?after=0`).then(async msgs => {
+                        req('/api/messages/' + data.chat_id + '?after=0').then(async msgs => {
                             let updatedAny = false;
                             
                             for (let m of msgs) {
@@ -6043,7 +6043,7 @@
                                     m.caption = await E2EE.decrypt(data.chat_id, m.caption);
                                 }
                                 
-                                const existingMsg = document.getElementById(`msg-${m.id}`);
+                                const existingMsg = document.getElementById('msg-' + m.id);
                                 if (existingMsg) {
                                     const bubble = existingMsg.querySelector('.msg-bubble');
                                     const oldRaw = bubble ? bubble.getAttribute('data-raw') : '';
