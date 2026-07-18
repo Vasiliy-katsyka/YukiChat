@@ -3059,6 +3059,7 @@
         <div class="ctx-item" onclick="App.msgAct('pin')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Pin / Unpin</div>
         <div class="ctx-item" id="ctx-ai-tools" onclick="AITools.open('msg')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 7l-5-5-5 5"></path></svg> AI Tools</div>
         <div class="ctx-item" id="ctx-copy" onclick="App.copyTargetText()"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path></svg> Copy Text</div>
+        <div class="ctx-item" id="ctx-share-link" onclick="App.copyMessageLink()"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg> Copy Message Link</div>
         <div class="ctx-item" id="ctx-save-media" onclick="App.downloadMedia()" style="display:none;"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Save to Gallery</div>
         <div class="ctx-item danger" id="ctx-del" onclick="App.msgAct('delete')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg> Delete Message</div>
     </div>
@@ -3244,11 +3245,15 @@
         
         // --- YUKICHAT MEET SSO BRIDGE ---
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('sso') === 'meet') {
+        const meetParam = urlParams.get('meet');
+        if (urlParams.get('sso') === 'meet' || meetParam) {
             const token = localStorage.getItem('y_t');
             if (token) {
-                window.location.href = `https://meet.yukichat.lol/?sso_token=${token}`;
+                window.location.href = `https://meet.yukichat.lol/?sso_token=${token}${meetParam ? `&meet=${meetParam}` : ''}`;
             } else {
+                if (meetParam) {
+                    sessionStorage.setItem('pending_meet', meetParam);
+                }
                 UI.toast("Please log in first to use Meet.");
                 // Clean URL so they can log in normally
                 window.history.replaceState({}, document.title, "/"); 
@@ -4449,6 +4454,8 @@
         const MusicPlayer = {
             activeTrack: null,
             activeTitle: "Status Music",
+            activeArtist: "Unknown Artist",
+            activeCover: "",
             audioObj: null,
             queue: [],
             queueIndex: -1,
@@ -4493,30 +4500,41 @@
                 this.queue = audioElements.map(el => {
                     const playBtn = el.querySelector('button');
                     // Reverse-engineer variables from string handler
-                    const match = playBtn.getAttribute('onclick').match(/'([^']+)'/g);
-                    return {
-                        url: match[0].replace(/'/g, ''),
-                        title: match[1].replace(/'/g, '')
-                    };
-                });
+                    const match = playBtn ? playBtn.getAttribute('onclick').match(/'([^']+)'/g) : null;
+                    if (!match) return null;
+                    const url = match[0].replace(/'/g, '');
+                    const title = match[1].replace(/'/g, '');
+                    
+                    const artistEl = el.querySelector('.audio-artist');
+                    const artist = artistEl ? artistEl.innerText : "Unknown Artist";
+                    const img = el.querySelector('.audio-cover-container img');
+                    const cover = img ? img.src : "";
+                    
+                    return { url, title, artist, cover };
+                }).filter(Boolean);
             },
 
             initTrack(url, title) {
                 this.buildQueue();
                 this.queueIndex = this.queue.findIndex(item => item.url === url);
-                this.play(url, title);
+                const current = this.queue[this.queueIndex] || { url, title, artist: "Unknown Artist", cover: "" };
+                this.play(current.url, current.title, current.artist, current.cover);
             },
 
-            play(url, title) {
+            play(url, title, artist = "Unknown Artist", cover = "") {
                 this.activeTrack = url;
                 this.activeTitle = title;
+                this.activeArtist = artist;
+                this.activeCover = cover;
                 this.audioObj.src = url;
                 this.audioObj.play().catch(err => console.log("Audio play blocked: require interaction", err));
 
+                const finalCover = cover || 'https://via.placeholder.com/150/333333/FFFFFF?text=Music';
+
                 // Display active top play bars
                 document.getElementById('music-mini-player').style.display = 'flex';
-                document.getElementById('mini-player-thumb-img').src = 'https://via.placeholder.com/150/333333/FFFFFF?text=Music';
-                document.getElementById('mini-player-title-artist').innerText = title;
+                document.getElementById('mini-player-thumb-img').src = finalCover;
+                document.getElementById('mini-player-title-artist').innerText = artist && artist !== "Unknown Artist" ? `${artist} - ${title}` : title;
                 
                 document.getElementById('mini-player-play-icon').style.display = 'none';
                 document.getElementById('mini-player-pause-icon').style.display = 'block';
@@ -4550,14 +4568,14 @@
                 if (this.queue.length === 0 || this.queueIndex === -1) return;
                 this.queueIndex = (this.queueIndex + 1) % this.queue.length;
                 const nextTrack = this.queue[this.queueIndex];
-                this.play(nextTrack.url, nextTrack.title);
+                this.play(nextTrack.url, nextTrack.title, nextTrack.artist, nextTrack.cover);
             },
 
             prev() {
                 if (this.queue.length === 0 || this.queueIndex === -1) return;
                 this.queueIndex = (this.queueIndex - 1 + this.queue.length) % this.queue.length;
                 const prevTrack = this.queue[this.queueIndex];
-                this.play(prevTrack.url, prevTrack.title);
+                this.play(prevTrack.url, prevTrack.title, prevTrack.artist, prevTrack.cover);
             },
 
             seek(e) {
@@ -4568,9 +4586,10 @@
             },
 
             openDashboard() {
-                document.getElementById('dash-album-art').src = 'https://via.placeholder.com/150/333333/FFFFFF?text=Music';
+                const finalCover = this.activeCover || 'https://via.placeholder.com/150/333333/FFFFFF?text=Music';
+                document.getElementById('dash-album-art').src = finalCover;
                 document.getElementById('dash-track-title').innerText = this.activeTitle;
-                document.getElementById('dash-track-artist').innerText = "YukiChat Track";
+                document.getElementById('dash-track-artist').innerText = this.activeArtist || "YukiChat Track";
                 
                 this.setPlayingState(!this.audioObj.paused);
                 Router.push('panel-music-dashboard');
@@ -4590,7 +4609,7 @@
                         bio: document.getElementById('set-bio').value,
                         status_music_url: this.activeTrack,
                         status_music_title: this.activeTitle,
-                        status_music_art: 'https://via.placeholder.com/150/333333/FFFFFF?text=Status'
+                        status_music_art: this.activeCover || 'https://via.placeholder.com/150/333333/FFFFFF?text=Status'
                     });
                     this.statusMusicUrl = this.activeTrack;
                     this.statusMusicTitle = this.activeTitle;
@@ -4602,7 +4621,7 @@
 
             playStatusTrack() {
                 if (this.statusMusicUrl) {
-                    this.play(this.statusMusicUrl, this.statusMusicTitle);
+                    this.play(this.statusMusicUrl, this.statusMusicTitle, "Status Music", State.chats.get(State.chat)?.dm_status_music_art || "");
                 }
             },
 
@@ -5138,7 +5157,10 @@
                     if(f.id === 'all') return; // Can't edit default "All"
                     html += `<div class="settings-row" style="cursor:pointer;" onclick="App.openEditFolder('${f.id}')">
                                 <div><b>${f.icon||'📁'} ${f.name}</b></div>
-                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                <div style="display:flex; gap:12px; align-items:center;" onclick="event.stopPropagation();">
+                                    <button class="icon-btn" onclick="App.copyFolderLink('${f.id}')" style="width:30px; height:30px;"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></button>
+                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                </div>
                              </div>`;
                 });
                 list.innerHTML = html;
@@ -6865,7 +6887,17 @@
 
             // --- INITIALIZATION ---
             // --- INITIALIZATION ---
-            start() {
+            async start() {
+                // Check for pending meet redirect
+                const pendingMeet = sessionStorage.getItem('pending_meet');
+                if (pendingMeet) {
+                    sessionStorage.removeItem('pending_meet');
+                    if (State.t) {
+                        window.location.href = `https://meet.yukichat.lol/?sso_token=${State.t}&meet=${pendingMeet}`;
+                        return;
+                    }
+                }
+
                 // Mirror token to localforage so the Service Worker can authenticate background fetches [2]
                 if (State.t) {
                     localforage.setItem('y_t', State.t).catch(err => console.error(err));
@@ -6878,7 +6910,11 @@
                 this.initFolders();
 
                 // Initialize End-to-End Encryption
-                E2EE.init().catch(console.error);
+                try {
+                    await E2EE.init();
+                } catch (e) {
+                    console.error("E2EE Initialization Failed:", e);
+                }
                 
                 // --- NEW: Keyboard Shortcuts ---
                 document.addEventListener('keydown', (e) => {
@@ -7041,22 +7077,6 @@
                 
                 let skels=''; for(let i=0;i<6;i++) skels+=`<div class="user-item"><div class="skel-av skeleton"></div><div class="user-info"><div class="skel-text skeleton"></div><div class="skel-text short skeleton"></div></div></div>`;
                 document.getElementById('chat-list').innerHTML = skels;
-
-                const p = new URLSearchParams(window.location.search);
-                const basePath = window.location.pathname;
-
-                if(p.get('channel') || p.get('group')) {
-                    const h = p.get('channel') || p.get('group');
-                    req('/api/chats/join', 'POST', {handle: h}).then(r => this.openChat(r.chat_id)).catch(e=>UI.toast("Join failed"));
-                    window.history.replaceState({}, document.title, basePath);
-                } else if (p.get('stickerpack')) {
-                    const sp = p.get('stickerpack');
-                    this.previewStickerPack(sp);
-                    window.history.replaceState({}, document.title, basePath);
-                } else if (p.get('user')) {
-                    this.handleMention(p.get('user'));
-                    window.history.replaceState({}, document.title, basePath);
-                }
                 
                 this.loadStickerKeyboard();
                 if(State.u.username === 'vasiliy') document.getElementById('admin-panel').style.display = 'block';
@@ -7066,9 +7086,13 @@
                 document.getElementById('cache-size').innerText = (totalBytes / 1024).toFixed(1) + ' KB';
                 Weather.init();
                 
-                this.sync(); 
+                // Wait for the sync to complete so that State.chats is fully populated before routing deep links!
+                await this.sync(); 
 
                 App.connectWS();
+                
+                // Run deep linking routing
+                await this.handleDeepLinking();
                 
                 // Monitor native connectivity state transitions
                 window.addEventListener('online', () => App.processOfflineQueue());
@@ -7083,6 +7107,100 @@
                         App.sync(); 
                     }
                 }, 8000);
+            },
+
+            async handleDeepLinking() {
+                const p = new URLSearchParams(window.location.search);
+                const basePath = window.location.pathname;
+                let routed = false;
+
+                if (p.get('channel') || p.get('group')) {
+                    const h = p.get('channel') || p.get('group');
+                    try {
+                        const r = await req('/api/chats/join', 'POST', {handle: h});
+                        await this.sync();
+                        this.openChat(r.chat_id);
+                        routed = true;
+                    } catch(e) { UI.toast("Join failed"); }
+                } 
+                else if (p.get('stickerpack')) {
+                    const sp = p.get('stickerpack');
+                    this.previewStickerPack(sp);
+                    routed = true;
+                } 
+                else if (p.get('user') || p.get('mention')) {
+                    const usr = p.get('user') || p.get('mention');
+                    this.handleMention(usr);
+                    routed = true;
+                } 
+                else if (p.get('chat')) {
+                    const chatId = Number(p.get('chat'));
+                    if (State.chats.has(chatId)) {
+                        this.openChat(chatId);
+                        
+                        // Handle message highlighting/scroll to
+                        const msgId = p.get('msg');
+                        if (msgId) {
+                            // Give messages a moment to render/poll
+                            setTimeout(() => {
+                                const msgEl = document.getElementById(`msg-${msgId}`);
+                                if (msgEl) {
+                                    msgEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    msgEl.style.outline = '2px solid var(--primary)';
+                                    msgEl.style.borderRadius = '20px';
+                                    setTimeout(() => { msgEl.style.outline = 'none'; }, 3000);
+                                }
+                            }, 1200);
+                        }
+                        routed = true;
+                    } else {
+                        UI.toast("Chat not found or no access");
+                    }
+                } 
+                else if (p.get('dm')) {
+                    const targetUserId = Number(p.get('dm'));
+                    this.startDM(targetUserId);
+                    routed = true;
+                }
+                else if (p.get('folder')) {
+                    const folderId = p.get('folder');
+                    const folderExists = State.folders.some(x => x.id === folderId);
+                    if (folderExists) {
+                        this.setFilter(folderId);
+                    } else {
+                        UI.toast("Folder not found");
+                    }
+                    routed = true;
+                }
+                else if (p.get('settings')) {
+                    Router.push('panel-settings');
+                    routed = true;
+                }
+
+                if (routed) {
+                    window.history.replaceState({}, document.title, basePath);
+                }
+            },
+
+            copyFolderLink(folderId) {
+                const link = `${window.location.origin}${window.location.pathname}?folder=${folderId}`;
+                navigator.clipboard.writeText(link).then(() => {
+                    UI.toast('Folder link copied!');
+                }).catch(() => {
+                    UI.toast('Failed to copy link');
+                });
+            },
+
+            copyMessageLink() {
+                if (State.chat && State.targetId) {
+                    const link = `${window.location.origin}${window.location.pathname}?chat=${State.chat}&msg=${State.targetId}`;
+                    navigator.clipboard.writeText(link).then(() => {
+                        UI.toast('Message link copied!');
+                    }).catch(() => {
+                        UI.toast('Failed to copy link');
+                    });
+                }
+                this.closeCtx();
             },
 
             showCtx(e, id, isMine, isMedia = false, mediaUrl = '') {
@@ -9051,6 +9169,9 @@
                 if (c.type === 'channel' || c.type === 'group') {
                     const link = c.is_private ? `${window.location.origin}${window.location.pathname}?channel=${c.invite_hash}` : `${window.location.origin}${window.location.pathname}?channel=${c.username}`;
                     acts += `<button class="btn btn-outline" onclick="navigator.clipboard.writeText('${link}'); UI.toast('Link Copied!')">🔗 Copy Link</button>`;
+                } else if (c.type === 'dm') {
+                    const link = `${window.location.origin}${window.location.pathname}?dm=${c.dm_user_id}`;
+                    acts += `<button class="btn btn-outline" onclick="navigator.clipboard.writeText('${link}'); UI.toast('Link Copied!')">🔗 Copy DM Link</button>`;
                 }
                 
                 document.getElementById('prof-actions').innerHTML = acts;
@@ -9532,22 +9653,6 @@
                 
                 let skels=''; for(let i=0;i<6;i++) skels+=`<div class="user-item"><div class="skel-av skeleton"></div><div class="user-info"><div class="skel-text skeleton"></div><div class="skel-text short skeleton"></div></div></div>`;
                 document.getElementById('chat-list').innerHTML = skels;
-
-                const p = new URLSearchParams(window.location.search);
-                const basePath = window.location.pathname;
-
-                if(p.get('channel') || p.get('group')) {
-                    const h = p.get('channel') || p.get('group');
-                    req('/api/chats/join', 'POST', {handle: h}).then(r => this.openChat(r.chat_id)).catch(e=>UI.toast("Join failed"));
-                    window.history.replaceState({}, document.title, basePath);
-                } else if (p.get('stickerpack')) {
-                    const sp = p.get('stickerpack');
-                    this.previewStickerPack(sp);
-                    window.history.replaceState({}, document.title, basePath);
-                } else if (p.get('user')) {
-                    this.handleMention(p.get('user'));
-                    window.history.replaceState({}, document.title, basePath);
-                }
                 
                 this.loadStickerKeyboard();
                 if(State.u.username === 'vasiliy') document.getElementById('admin-panel').style.display = 'block';
