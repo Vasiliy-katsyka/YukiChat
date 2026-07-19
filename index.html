@@ -1955,7 +1955,9 @@
         
         pre { 
             padding: 10px 14px !important; 
-            overflow-x: auto; 
+            overflow-x: auto !important; 
+            overflow-y: auto !important; 
+            max-height: 250px !important;
             font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace !important;
             font-size: 12px !important; /* Perfect modern compact size */
             line-height: 1.5 !important;
@@ -1964,6 +1966,114 @@
             margin: 0; 
             border: none; 
             color: #cdd6f4 !important; 
+        }
+
+        /* --- TELEGRAM-STYLE MEDIA LOADERS --- */
+        .media-blur-wrapper {
+            position: relative;
+            width: 240px;
+            height: 180px;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .media-blur-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: blur(15px);
+            transform: scale(1.1);
+            opacity: 0.6;
+        }
+        .download-progress-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.3);
+            z-index: 2;
+        }
+        .progress-circle-svg {
+            width: 50px;
+            height: 50px;
+            transform: rotate(-90deg);
+        }
+        .progress-circle-bg {
+            fill: none;
+            stroke: rgba(255,255,255,0.2);
+            stroke-width: 4;
+        }
+        .progress-circle-bar {
+            fill: none;
+            stroke: #fff;
+            stroke-width: 4;
+            stroke-dasharray: 126;
+            stroke-dashoffset: 126;
+            transition: stroke-dashoffset 0.1s;
+        }
+        .download-arrow-icon {
+            position: absolute;
+            color: #fff;
+            font-size: 20px;
+            pointer-events: none;
+        }
+
+        /* --- DYNAMIC SENDING MEDIA LAYOUTS --- */
+        .sending-media-wrapper {
+            position: relative;
+            width: 240px;
+            height: 180px;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sending-media-blur {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: blur(15px);
+            transform: scale(1.1);
+            opacity: 0.5;
+        }
+        .sending-media-loader-container {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3;
+        }
+        .sending-progress-circle {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            transform: rotate(-90deg);
+        }
+        .sending-circle-bg {
+            fill: rgba(0, 0, 0, 0.4);
+            stroke: rgba(255, 255, 255, 0.2);
+            stroke-width: 4;
+        }
+        .sending-circle-bar {
+            fill: none;
+            stroke: #fff;
+            stroke-width: 4;
+            transition: stroke-dashoffset 0.1s;
+        }
+        .sending-progress-icon {
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 4;
         }
         code { 
             font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace !important;
@@ -2714,17 +2824,20 @@
     <!-- PROFILE PANEL -->
     <!-- PROFILE PANEL (REPLACEMENT) -->
     <div id="panel-profile" class="panel">
-        <div class="profile-status-bg" id="profile-status-bg-img"></div>
+        <div class="profile-banner-container" id="profile-banner-container">
+            <img src="" id="prof-banner-img" class="profile-banner-img" style="display:none;">
+            <div id="prof-banner-gradient" class="profile-banner-gradient"></div>
+        </div>
         <div class="profile-status-fade"></div>
         
         <!-- Modified headers dynamically matching liquid glass styling -->
-        <div class="panel-header profile-content-wrap" style="background: transparent; border-bottom: none; box-shadow: none !important;">
+        <div class="panel-header profile-content-wrap" style="background: transparent; border-bottom: none; box-shadow: none !important; position: absolute; top: 0; left: 0; right: 0; z-index: 10;">
             <button class="icon-btn n-clear" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-            <div class="panel-title">Contact Info</div>
+            <div class="panel-title" style="color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6);">Contact Info</div>
             <div style="width:40px"></div>
         </div>
         
-        <div class="panel-body profile-content-wrap" style="padding: 32px 20px; text-align:center;">
+        <div class="panel-body profile-content-wrap" style="padding: 100px 20px 32px; text-align:center;">
             <div class="profile-av-wrap" style="width:130px; height:130px; margin:20px auto; position:relative; overflow:visible; background:transparent; display:flex !important; align-items:center; justify-content:center;">
                 <canvas class="visualizer-canvas" id="pfp-soundwave-canvas"></canvas>
                 <img id="prof-av" class="avatar" style="width:110px; height:110px; position: relative; z-index: 6; border-radius: 50% !important; margin:0;">
@@ -2732,6 +2845,9 @@
             <h2 id="prof-name" style="font-size:24px; margin-bottom:4px;">Name</h2>
             <div id="prof-handle" style="color:var(--text-muted); font-size:15px; margin-bottom:16px;"></div>
             <p id="prof-bio" style="font-size:15px; background:var(--bg-input); padding:16px; border-radius:16px; margin-bottom:16px; line-height:1.5;"></p>
+            
+            <!-- About Me Attributes pills -->
+            <div class="profile-attributes" id="profile-attributes-container"></div>
             
             <!-- Music Pill Status block -->
             <div id="profile-music-pill" style="display:none; justify-content:center; align-items:center; gap:8px; background:var(--bg-input); padding:10px 16px; border-radius:24px; margin: 0 auto 24px; max-width: 280px; cursor:pointer;" onclick="MusicPlayer.playStatusTrack()">
@@ -3953,7 +4069,8 @@
             notifiedMsgs: new Set(),
             notifiedCalls: new Set(),
             settingsTaps: 0,
-            rawPassword: "" // Escrow uses this temporary session-lifetime variable to derive backing storage keys
+            rawPassword: "", // Escrow uses this temporary session-lifetime variable to derive backing storage keys
+            loadedMedia: new Set()
         };
 
         const req = async (path, m='GET', b=null) => {
@@ -4815,6 +4932,50 @@
         }
         
         const App = {
+            // --- GROUP MESSAGES BY GROUP_ID ---
+            groupMessages(msgs) {
+                const grouped = [];
+                const groupMap = {};
+                
+                msgs.forEach(m => {
+                    if (m.group_id && m.group_id !== 'null' && m.group_id !== '') {
+                        if (!groupMap[m.group_id]) {
+                            const groupMsg = {
+                                id: m.id,
+                                chat_id: m.chat_id,
+                                sender_id: m.sender_id,
+                                sender_name: m.sender_name,
+                                sender_avatar: m.sender_avatar,
+                                sender_verified: m.sender_verified,
+                                type: 'media_group',
+                                group_id: m.group_id,
+                                created_at: m.created_at,
+                                is_read: m.is_read,
+                                views: m.views,
+                                reactions: m.reactions,
+                                reply_to_id: m.reply_to_id,
+                                reply_markup: m.reply_markup,
+                                caption: m.caption,
+                                items: []
+                            };
+                            grouped.push(groupMsg);
+                            groupMap[m.group_id] = groupMsg;
+                        }
+                        const targetGroup = groupMap[m.group_id];
+                        targetGroup.items.push(m);
+                        if (m.caption && !targetGroup.caption) {
+                            targetGroup.caption = m.caption;
+                        }
+                        if (m.id > targetGroup.id) {
+                            targetGroup.id = m.id;
+                        }
+                    } else {
+                        grouped.push(m);
+                    }
+                });
+                return grouped;
+            },
+
             // --- AUTHENTICATION ---
             toggleAuthMode() {
                 State.authMode = State.authMode === 'login' ? 'register' : 'login';
@@ -5694,8 +5855,36 @@
                     });
                 }
 
-                if (m.type === 'photo') {
-                    inner += `<img src="${m.content}" class="msg-media" onclick="event.stopPropagation(); App.openMedia('${m.content}')">`;
+                if (m.type === 'media_group') {
+                    const count = m.items.length;
+                    let cols = 2;
+                    if (count === 3) cols = 3;
+                    else if (count >= 4) cols = 2;
+                    let gridHtml = `<div class="media-group-grid" style="display: grid; grid-template-columns: repeat(${cols}, 1fr); gap: 6px; border-radius: 14px; overflow: hidden; max-width: 320px; width: 100%;">`;
+                    m.items.forEach(item => {
+                        const height = count <= 2 ? '150px' : '100px';
+                        gridHtml += `<img src="${item.content}" style="width: 100%; height: ${height}; object-fit: cover; cursor: pointer;" onclick="event.stopPropagation(); App.openMedia('${item.content}')">`;
+                    });
+                    gridHtml += `</div>`;
+                    inner += gridHtml;
+                }
+                else if (m.type === 'photo') {
+                    const isAuto = localStorage.getItem('y_auto_download') !== 'false';
+                    if (isAuto || State.loadedMedia?.has(m.id)) {
+                        inner += `<img src="${m.content}" class="msg-media" onclick="event.stopPropagation(); App.openMedia('${m.content}')">`;
+                    } else {
+                        inner += `
+                        <div class="media-blur-wrapper" id="blur-wrap-${m.id}" onclick="event.stopPropagation(); App.startMediaDownload(${m.id}, '${m.content}')">
+                            <img src="${m.content}" class="media-blur-img">
+                            <div class="download-progress-overlay">
+                                <svg class="progress-circle-svg">
+                                    <circle class="progress-circle-bg" cx="25" cy="25" r="20"></circle>
+                                    <circle class="progress-circle-bar" id="progress-bar-${m.id}" cx="25" cy="25" r="20"></circle>
+                                </svg>
+                                <span class="download-arrow-icon">⬇</span>
+                            </div>
+                        </div>`.replace(/\s+/g, ' ');
+                    }
                 } 
                 else if (m.type === 'divider') {
                     return `
@@ -6113,6 +6302,10 @@
                     if (data.type === 'new_message') {
                         const m = data.message;
                         if (State.chat == m.chat_id) {
+                            if (m.group_id && m.group_id !== 'null' && m.group_id !== '') {
+                                App.fastPoll(true);
+                                return;
+                            }
                             
                             // Decrypt real-time WebSocket incoming messages
                             if (m.content && m.content.startsWith("__E2EE__:")) {
@@ -7056,6 +7249,35 @@
                 const nameEl = document.getElementById('set-name');
                 if(nameEl.tagName === 'INPUT') nameEl.value = State.u.username; else nameEl.textContent = State.u.username;
                 document.getElementById('set-bio').value = State.u.bio || '';
+                if(document.getElementById('set-pronouns')) document.getElementById('set-pronouns').value = State.u.pronouns || '';
+                if(document.getElementById('set-location')) document.getElementById('set-location').value = State.u.location || '';
+                if(document.getElementById('set-birthday')) document.getElementById('set-birthday').value = State.u.birthday || '';
+                
+                if (State.u.profile_banner_url && document.getElementById('set-banner-preview')) {
+                    document.getElementById('set-banner-preview').src = State.u.profile_banner_url;
+                    document.getElementById('set-banner-preview').style.display = 'block';
+                    document.getElementById('set-banner-gradient').style.display = 'none';
+                }
+
+                // Initialize Bubble Style setting
+                const savedBubbleStyle = localStorage.getItem('y_bubble_style') || 'asymmetric';
+                this.setBubbleStyle(savedBubbleStyle);
+                if (document.getElementById('set-bubble-style')) {
+                    document.getElementById('set-bubble-style').value = savedBubbleStyle;
+                }
+
+                // Initialize Auto-Download setting
+                const isAutoDownload = localStorage.getItem('y_auto_download') !== 'false';
+                if (document.getElementById('set-auto-download')) {
+                    document.getElementById('set-auto-download').checked = isAutoDownload;
+                }
+
+                // Initialize Hide Online Status setting
+                const isOnlineStatusChecked = State.u.hide_online_status === 1;
+                if (document.getElementById('set-online-status')) {
+                    document.getElementById('set-online-status').checked = isOnlineStatusChecked;
+                }
+
                 // Initialize Animated Reactions Setting (Default to true)
                 const animReact = localStorage.getItem('y_anim_react') !== 'false';
                 if (document.getElementById('set-anim-react')) {
@@ -7855,8 +8077,9 @@
                             const olderMsgs = await req(`/api/messages/${State.chat}?before=${oldestId}`);
                             const oldHeight = msgsCont.scrollHeight;
                             
+                            const groupedOlder = App.groupMessages(olderMsgs);
                             // Decrypt older messages in a sequence
-                            for (let m of olderMsgs.reverse()) {
+                            for (let m of groupedOlder.reverse()) {
                                 if (m.content && m.content.startsWith("__E2EE__:")) {
                                     m.content = await E2EE.decrypt(State.chat, m.content);
                                     m.is_encrypted = true;
@@ -7997,7 +8220,9 @@
                     let htmlBatch = '';
                     let fxChecks =[];
                     
-                    msgs.forEach(m => {
+                    const groupedMsgs = App.groupMessages(msgs);
+                    
+                    groupedMsgs.forEach(m => {
                         if (m.is_pinned) pinned = m.content;
                         if (m.id > State.lastMsgId) State.lastMsgId = m.id;
                         
@@ -8006,7 +8231,7 @@
                         const isMine = m.sender_id === State.u.userId;
                         const innerHTML = this.buildMsgHTML(m, isMine, chat?.type);
                         htmlBatch += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
-                        if (!isMine) fxChecks.push({ content: m.content, id: `msg-${m.id}` });
+                        if (!isMine && m.content) fxChecks.push({ content: m.content, id: `msg-${m.id}` });
                         addedNew = true;
                     });
                     
@@ -8207,77 +8432,52 @@
                 const activeChatObj = State.chats.get(targetChat);
                 const isDM = targetChat !== 'ai' && activeChatObj && activeChatObj.type === 'dm';
                 
+                // Group ID for sending multiple photos/files together
+                const groupId = queue.length > 1 ? 'group_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9) : null;
+
                 const uploadTasks = queue.map(async (item, i) => {
                     const currentCap = (i === 0) ? cap : '';
                     const tempId = 'temp-rec-' + Date.now() + '-' + i;
                     
-                    // 1. Generate Custom Optimistic UI Card HTML for each type
+                    // 1. Generate Custom Unified Optimistic UI Placeholder HTML
                     let customPlaceholderHtml = '';
                     const localUrl = item.rawFile ? URL.createObjectURL(item.rawFile) : '';
-            
-                    if (item.type === 'photo') {
-                        customPlaceholderHtml = `
-                            <div style="position:relative; max-width:250px; border-radius:12px; overflow:hidden;">
-                                <img src="${localUrl}" style="width:100%; height:auto; max-height:150px; object-fit:cover; filter:blur(4px); opacity:0.6;">
-                                <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px; background:rgba(0,0,0,0.3);">
-                                    <span class="upload-txt" style="font-size:11px; color:#fff; font-weight:600; text-shadow:0 1px 3px rgba(0,0,0,0.5);">Preparing Photo...</span>
-                                </div>
-                            </div>`;
-                    } 
-                    else if (item.type === 'video') {
-                        customPlaceholderHtml = `
-                            <div style="position:relative; width:200px; height:150px; border-radius:12px; overflow:hidden; background:#000;">
-                                <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px; background:rgba(0,0,0,0.4);">
-                                    <span style="font-size:24px; margin-bottom:4px;">📹</span>
-                                    <span class="upload-txt" style="font-size:11px; color:#fff; font-weight:600;">Preparing Video...</span>
-                                </div>
-                            </div>`;
-                    } 
-                    else if (item.type === 'audio') {
-                        customPlaceholderHtml = `
-                            <div style="display:flex; align-items:center; gap:12px; background:var(--bg-input); padding:12px; border-radius:16px; min-width:240px; opacity:0.7;">
-                                <span style="font-size:20px;">🎵</span>
-                                <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; text-align:left;">
-                                    <span style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.filename}</span>
-                                    <span class="upload-txt" style="font-size:11px; color:var(--text-muted);">Preparing Audio...</span>
-                                </div>
-                            </div>`;
-                    } 
-                    else if (item.type === 'voice') {
-                        customPlaceholderHtml = `
-                            <div style="display:flex; align-items:center; gap:12px; padding:6px 0; opacity:0.7;">
-                                <div style="width:34px; height:34px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; color:white;">🎤</div>
-                                <div style="display:flex; flex-direction:column; text-align:left;">
-                                    <span class="upload-txt" style="font-size:12px; font-weight:600;">Recording Voice...</span>
-                                </div>
-                            </div>`;
+                    let previewBg = '';
+                    let placeholderIcon = '';
+                    
+                    if (item.type === 'photo' || item.type === 'video') {
+                        previewBg = `<img src="${localUrl}" class="sending-media-blur">`;
+                    } else if (item.type === 'audio') {
+                        placeholderIcon = `<div style="font-size:24px; margin-bottom:4px; z-index:2; color:#fff;">🎵</div>`;
+                    } else if (item.type === 'voice') {
+                        placeholderIcon = `<div style="font-size:24px; margin-bottom:4px; z-index:2; color:#fff;">🎤</div>`;
+                    } else if (item.type === 'video_note') {
+                        placeholderIcon = `<div style="font-size:24px; margin-bottom:4px; z-index:2; color:#fff;">👁️</div>`;
+                    } else {
+                        placeholderIcon = `<div style="font-size:24px; margin-bottom:4px; z-index:2; color:#fff;">📄</div>`;
                     }
-                    else if (item.type === 'video_note') {
-                        customPlaceholderHtml = `
-                            <div style="width:150px; height:150px; border-radius:50%; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; opacity:0.7; border:2px solid var(--primary);">
-                                <span style="font-size:24px; margin-bottom:4px;">👁️</span>
-                                <span class="upload-txt" style="font-size:10px; color:#fff;">Preparing Video Note...</span>
-                            </div>`;
-                    }
-                    else { // fallback file/document
-                        customPlaceholderHtml = `
-                            <div style="display:flex; align-items:center; gap:12px; background:var(--bg-input); padding:12px; border-radius:16px; min-width:240px; opacity:0.7;">
-                                <span style="font-size:20px;">📄</span>
-                                <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; text-align:left;">
-                                    <span style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.filename}</span>
-                                    <span class="upload-txt" style="font-size:11px; color:var(--text-muted);">Preparing Document...</span>
-                                </div>
-                            </div>`;
-                    }
+
+                    customPlaceholderHtml = `
+                        <div class="sending-media-wrapper" id="sending-media-wrap-${tempId}">
+                            ${previewBg}
+                            ${placeholderIcon}
+                            <div class="sending-media-loader-container">
+                                <svg class="sending-progress-circle">
+                                    <circle class="sending-circle-bg" cx="25" cy="25" r="20"></circle>
+                                    <circle class="sending-circle-bar" id="sending-bar-${tempId}" cx="25" cy="25" r="20" style="stroke-dasharray: 126; stroke-dashoffset: 126;"></circle>
+                                </svg>
+                                <span class="sending-progress-icon">⬆</span>
+                            </div>
+                            <div style="position:absolute; bottom:6px; left:0; right:0; text-align:center; z-index:3; font-size:10px; color:#fff; font-weight:600; text-shadow:0 1px 3px rgba(0,0,0,0.8);" class="upload-txt">
+                                Preparing...
+                            </div>
+                        </div>`;
             
                     if (State.chat === targetChat) {
                         msgsCont.insertAdjacentHTML('beforeend', `
                             <div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
                                 <div class="msg-bubble" style="background:transparent; padding:0; box-shadow:none;">
                                     ${customPlaceholderHtml}
-                                    <div style="width: 100%; max-width: 240px; background: rgba(150,150,150,0.2); height: 4px; border-radius: 2px; margin-top: 8px; overflow:hidden;">
-                                        <div class="upload-progress-bar" style="width: 0%; background: var(--primary); height: 100%; transition: width 0.15s ease;"></div>
-                                    </div>
                                 </div>
                             </div>
                         `);
@@ -8290,13 +8490,14 @@
                             if (State.chat !== targetChat) return;
                             const card = document.getElementById(tempId);
                             if (card) {
-                                const progressBar = card.querySelector('.upload-progress-bar');
+                                const sendingBar = document.getElementById(`sending-bar-${tempId}`);
+                                if (sendingBar) {
+                                    const offset = 126 - (percent / 100 * 126);
+                                    sendingBar.style.strokeDashoffset = offset;
+                                }
                                 const progressText = card.querySelector('.upload-txt');
-                                
-                                if (progressBar) progressBar.style.width = `${percent}%`;
                                 if (progressText) {
-                                    const capitalizedType = item.type.charAt(0).toUpperCase() + item.type.slice(1);
-                                    progressText.innerText = `Uploading ${capitalizedType === 'File' ? 'Document' : capitalizedType} (${percent}%)`;
+                                    progressText.innerText = `Uploading ${percent}%`;
                                 }
                             }
                         });
@@ -8331,7 +8532,8 @@
                             content: finalContent,
                             caption: finalCap,
                             type: item.type,
-                            reply_to_id: (i === 0 ? State.replyTo : null)
+                            reply_to_id: (i === 0 ? State.replyTo : null),
+                            group_id: groupId
                         });
                         
                         if (State.chat === targetChat) {
@@ -8347,7 +8549,8 @@
                                     type: item.type,
                                     created_at: new Date().toISOString(),
                                     is_read: 0,
-                                    sender_id: State.u.userId
+                                    sender_id: State.u.userId,
+                                    group_id: groupId
                                 };
                                 tempEl.innerHTML = this.buildMsgHTML(fakeMsg, true, State.chats.get(State.chat)?.type);
                             }
@@ -9148,19 +9351,34 @@
                 document.getElementById('prof-handle').innerText = handleText;
                 document.getElementById('prof-bio').innerText = isDM ? (c.dm_bio || 'No bio') : (c.description || 'No description');
                 
-                const bgImg = document.getElementById('profile-status-bg-img');
-                const musicPill = document.getElementById('profile-music-pill');
+                // Banner & Gradient Setup
+                const bannerImg = document.getElementById('prof-banner-img');
+                const bannerGrad = document.getElementById('prof-banner-gradient');
+                if (isDM && c.dm_profile_banner_url) {
+                    bannerImg.src = c.dm_profile_banner_url;
+                    bannerImg.style.display = 'block';
+                    bannerGrad.style.display = 'none';
+                } else {
+                    bannerImg.style.display = 'none';
+                    bannerGrad.style.display = 'block';
+                }
+
+                // Attributes Pills
+                const attrContainer = document.getElementById('profile-attributes-container');
+                attrContainer.innerHTML = '';
+                if (isDM) {
+                    if (c.dm_pronouns) attrContainer.insertAdjacentHTML('beforeend', `<div class="profile-attr-badge"><span>🏷️</span> ${c.dm_pronouns}</div>`);
+                    if (c.dm_location) attrContainer.insertAdjacentHTML('beforeend', `<div class="profile-attr-badge"><span>📍</span> ${c.dm_location}</div>`);
+                    if (c.dm_birthday) attrContainer.insertAdjacentHTML('beforeend', `<div class="profile-attr-badge"><span>🎂</span> ${c.dm_birthday}</div>`);
+                }
                 
+                const musicPill = document.getElementById('profile-music-pill');
                 if (isDM && c.dm_status_music_url) {
-                    bgImg.style.backgroundImage = `url(${c.dm_status_music_art || av})`;
                     document.getElementById('profile-status-song-title').innerText = c.dm_status_music_title || "Starboy";
                     musicPill.style.display = 'flex';
-                    
                     MusicPlayer.statusMusicUrl = c.dm_status_music_url;
                     MusicPlayer.statusMusicTitle = c.dm_status_music_title;
-                    MusicPlayer.extractAccentColors(c.dm_status_music_art || av);
                 } else {
-                    bgImg.style.backgroundImage = 'none';
                     musicPill.style.display = 'none';
                     MusicPlayer.statusMusicUrl = null;
                 }
@@ -9179,6 +9397,93 @@
                 this.loadGroupMedia(chatId);
                 
                 Router.push('panel-profile');
+            },
+            
+            toggleSettingsGroup(groupId) {
+                const content = document.getElementById(`group-content-${groupId}`);
+                if (!content) return;
+                const isAct = content.classList.contains('active');
+                
+                // Collapse all
+                document.querySelectorAll('.settings-group-content').forEach(el => el.classList.remove('active'));
+                
+                // Toggle current
+                if (!isAct) content.classList.add('active');
+            },
+            
+            setBubbleStyle(val) {
+                localStorage.setItem('y_bubble_style', val);
+                if (val === 'rounded') {
+                    document.body.classList.add('rounded-bubbles');
+                } else {
+                    document.body.classList.remove('rounded-bubbles');
+                }
+            },
+            
+            async setOnlineStatus(enabled) {
+                const val = enabled ? 1 : 0;
+                localStorage.setItem('y_hide_online', val);
+                try {
+                    await req('/api/user/profile', 'PUT', { hide_online_status: val });
+                    UI.toast("Online status visibility updated!");
+                } catch(e) {
+                    UI.toast("Failed to update status visibility");
+                }
+            },
+            
+            async startMediaDownload(msgId, url) {
+                const bar = document.getElementById(`progress-bar-${msgId}`);
+                if (!bar) return;
+                
+                // Hide download arrow icon
+                const overlay = document.querySelector(`#blur-wrap-${msgId} .download-progress-overlay`);
+                const arrow = overlay ? overlay.querySelector('.download-arrow-icon') : null;
+                if (arrow) arrow.style.display = 'none';
+
+                try {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('GET', url, true);
+                    xhr.responseType = 'blob';
+                    
+                    xhr.onprogress = (e) => {
+                        if (e.lengthComputable) {
+                            const pct = e.loaded / e.total;
+                            const offset = 126 - (pct * 126);
+                            bar.style.strokeDashoffset = offset;
+                        }
+                    };
+                    
+                    xhr.onload = () => {
+                        if (xhr.status === 200) {
+                            if (!State.loadedMedia) State.loadedMedia = new Set();
+                            State.loadedMedia.add(msgId);
+                            
+                            const wrap = document.getElementById(`blur-wrap-${msgId}`);
+                            if (wrap) {
+                                const bubble = wrap.closest('.msg-bubble');
+                                if (bubble) {
+                                    const row = bubble.closest('.msg-row');
+                                    if (row) {
+                                        const mId = parseInt(row.id.replace('msg-', ''));
+                                        req(`/api/messages/${State.chat}?after=0`).then(async msgs => {
+                                            const originalMsg = msgs.find(m => m.id === mId);
+                                            if (originalMsg) {
+                                                if (originalMsg.content && originalMsg.content.startsWith("__E2EE__:")) {
+                                                    originalMsg.content = await E2EE.decrypt(State.chat, originalMsg.content);
+                                                }
+                                                const isMine = originalMsg.sender_id === State.u.userId;
+                                                row.innerHTML = App.buildMsgHTML(originalMsg, isMine, State.chats.get(State.chat)?.type);
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    };
+                    xhr.send();
+                } catch(e) {
+                    if (arrow) arrow.style.display = 'block';
+                }
             },
             async loadGroupMedia(chatId) {
                 const grid = document.getElementById('prof-media-grid');
@@ -9238,36 +9543,67 @@
 
             async updateProfile(e, field) {
                 const body = {};
-                if(field === 'avatar') {
-                    const f = e.target.files[0]; if(!f) return;
-                    UI.toast("Uploading avatar...");
-                    try {
-                        const s3Url = await this.uploadToS3(f);
-                        body.avatar = s3Url;
-                        await req('/api/user/profile', 'PUT', body);
-                        State.u.avatar = s3Url;
-                        localStorage.setItem('y_u', JSON.stringify(State.u));
-                        document.getElementById('set-av').src = s3Url;
-                        document.getElementById('nav-av').src = s3Url;
-                        UI.toast('Profile updated');
-                    } catch(err) { UI.toast('Profile avatar update failed'); }
-                    return;
-                }
-                if(field === 'bio') {
-                    body.bio = document.getElementById('set-bio').value;
-                    State.u.bio = body.bio;
+if(field === 'avatar') {
+                const f = e.target.files[0]; if(!f) return;
+                UI.toast("Uploading avatar...");
+                try {
+                    const s3Url = await this.uploadToS3(f);
+                    body.avatar = s3Url;
+                    await req('/api/user/profile', 'PUT', body);
+                    State.u.avatar = s3Url;
                     localStorage.setItem('y_u', JSON.stringify(State.u));
-                }
-                if(field === 'username') {
-                    body.username = document.getElementById('set-name').value;
-                    State.u.username = body.username;
+                    document.getElementById('set-av').src = s3Url;
+                    document.getElementById('nav-av').src = s3Url;
+                    UI.toast('Profile updated');
+                } catch(err) { UI.toast('Profile avatar update failed'); }
+                return;
+            }
+            if(field === 'banner') {
+                const f = e.target.files[0]; if(!f) return;
+                UI.toast("Uploading banner...");
+                try {
+                    const s3Url = await this.uploadToS3(f);
+                    body.profile_banner_url = s3Url;
+                    await req('/api/user/profile', 'PUT', body);
+                    State.u.profile_banner_url = s3Url;
                     localStorage.setItem('y_u', JSON.stringify(State.u));
-                }
-                if(field === 'privacy') {
-                    body.call_privacy = document.getElementById('set-call').value;
-                    body.pfp_privacy = document.getElementById('set-pfp').value;
-                }
-                try { await req('/api/user/profile', 'PUT', body); UI.toast('Updated'); } catch(e){ UI.toast(e.message); }
+                    document.getElementById('set-banner-preview').src = s3Url;
+                    document.getElementById('set-banner-preview').style.display = 'block';
+                    document.getElementById('set-banner-gradient').style.display = 'none';
+                    UI.toast('Profile banner updated');
+                } catch(err) { UI.toast('Profile banner update failed'); }
+                return;
+            }
+            if(field === 'bio') {
+                body.bio = document.getElementById('set-bio').value;
+                State.u.bio = body.bio;
+                localStorage.setItem('y_u', JSON.stringify(State.u));
+            }
+            if(field === 'username') {
+                body.username = document.getElementById('set-name').value;
+                State.u.username = body.username;
+                localStorage.setItem('y_u', JSON.stringify(State.u));
+            }
+            if(field === 'pronouns') {
+                body.pronouns = document.getElementById('set-pronouns').value;
+                State.u.pronouns = body.pronouns;
+                localStorage.setItem('y_u', JSON.stringify(State.u));
+            }
+            if(field === 'location') {
+                body.location = document.getElementById('set-location').value;
+                State.u.location = body.location;
+                localStorage.setItem('y_u', JSON.stringify(State.u));
+            }
+            if(field === 'birthday') {
+                body.birthday = document.getElementById('set-birthday').value;
+                State.u.birthday = body.birthday;
+                localStorage.setItem('y_u', JSON.stringify(State.u));
+            }
+            if(field === 'privacy') {
+                body.call_privacy = document.getElementById('set-call').value;
+                body.pfp_privacy = document.getElementById('set-pfp').value;
+            }
+            try { await req('/api/user/profile', 'PUT', body); UI.toast('Updated'); } catch(e){ UI.toast(e.message); }
             },
             // --- SESSIONS & SECURITY ---
             async loadSessions() {
@@ -9634,6 +9970,35 @@
                 const nameEl = document.getElementById('set-name');
                 if(nameEl.tagName === 'INPUT') nameEl.value = State.u.username; else nameEl.textContent = State.u.username;
                 document.getElementById('set-bio').value = State.u.bio || '';
+                if(document.getElementById('set-pronouns')) document.getElementById('set-pronouns').value = State.u.pronouns || '';
+                if(document.getElementById('set-location')) document.getElementById('set-location').value = State.u.location || '';
+                if(document.getElementById('set-birthday')) document.getElementById('set-birthday').value = State.u.birthday || '';
+                
+                if (State.u.profile_banner_url && document.getElementById('set-banner-preview')) {
+                    document.getElementById('set-banner-preview').src = State.u.profile_banner_url;
+                    document.getElementById('set-banner-preview').style.display = 'block';
+                    document.getElementById('set-banner-gradient').style.display = 'none';
+                }
+
+                // Initialize Bubble Style setting
+                const savedBubbleStyle = localStorage.getItem('y_bubble_style') || 'asymmetric';
+                this.setBubbleStyle(savedBubbleStyle);
+                if (document.getElementById('set-bubble-style')) {
+                    document.getElementById('set-bubble-style').value = savedBubbleStyle;
+                }
+
+                // Initialize Auto-Download setting
+                const isAutoDownload = localStorage.getItem('y_auto_download') !== 'false';
+                if (document.getElementById('set-auto-download')) {
+                    document.getElementById('set-auto-download').checked = isAutoDownload;
+                }
+
+                // Initialize Hide Online Status setting
+                const isOnlineStatusChecked = State.u.hide_online_status === 1;
+                if (document.getElementById('set-online-status')) {
+                    document.getElementById('set-online-status').checked = isOnlineStatusChecked;
+                }
+
                 // Initialize Animated Reactions Setting (Default to true)
                 const animReact = localStorage.getItem('y_anim_react') !== 'false';
                 if (document.getElementById('set-anim-react')) {
