@@ -1023,7 +1023,7 @@
                 width: 100%;
             }
             /* Transform secondary panels into floating modals on PC */
-            #panel-settings, #panel-profile, #panel-new, #panel-create-channel, #panel-sessions, #panel-folders, #panel-edit-folder, #panel-devtools {
+            #panel-settings, #panel-profile, #panel-new, #panel-create-channel, #panel-sessions, #panel-folders, #panel-edit-folder, #panel-devtools, #panel-edit-group-channel {
                 position: fixed !important;
                 top: 50% !important;
                 left: 50% !important;
@@ -1041,7 +1041,7 @@
             }
             
             /* Active Modal State */
-            #panel-settings.active, #panel-profile.active, #panel-new.active, #panel-create-channel.active, #panel-sessions.active, #panel-folders.active, #panel-edit-folder.active, #panel-devtools.active {
+            #panel-settings.active, #panel-profile.active, #panel-new.active, #panel-create-channel.active, #panel-sessions.active, #panel-folders.active, #panel-edit-folder.active, #panel-devtools.active, #panel-edit-group-channel.active {
                 transform: translate(-50%, -50%) scale(1) !important;
                 opacity: 1;
                 visibility: visible !important;
@@ -1427,7 +1427,7 @@
         body.has-folders #chat-list { padding-top: calc(165px + var(--safe-top)); }
         @media (min-width: 768px) {
             /* Transform secondary panels into floating modals on PC */
-            #panel-settings, #panel-profile, #panel-new, #panel-create-channel, #panel-sessions, #panel-folders, #panel-edit-folder {
+            #panel-settings, #panel-profile, #panel-new, #panel-create-channel, #panel-sessions, #panel-folders, #panel-edit-folder, #panel-edit-group-channel {
                 position: fixed !important;
                 top: 50% !important;
                 left: 50% !important;
@@ -1445,14 +1445,14 @@
             }
             
             /* Active Modal State */
-            #panel-settings.active, #panel-profile.active, #panel-new.active, #panel-create-channel.active, #panel-sessions.active, #panel-folders.active, #panel-edit-folder.active {
+            #panel-settings.active, #panel-profile.active, #panel-new.active, #panel-create-channel.active, #panel-sessions.active, #panel-folders.active, #panel-edit-folder.active, #panel-edit-group-channel.active {
                 transform: translate(-50%, -50%) scale(1) !important;
                 opacity: 1;
                 visibility: visible !important;
             }
             
             /* Add a dark blur backdrop behind modals */
-            body:has(#panel-settings.active, #panel-profile.active, #panel-new.active, #panel-folders.active, #panel-edit-folder.active)::after {
+            body:has(#panel-settings.active, #panel-profile.active, #panel-new.active, #panel-folders.active, #panel-edit-folder.active, #panel-edit-group-channel.active)::after {
                 opacity: 1;
                 pointer-events: auto;
             }
@@ -2834,7 +2834,7 @@
         <div class="panel-header profile-content-wrap" style="background: transparent; border-bottom: none; box-shadow: none !important; position: absolute; top: 0; left: 0; right: 0; z-index: 10;">
             <button class="icon-btn n-clear" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
             <div class="panel-title" style="color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6);">Contact Info</div>
-            <div style="width:40px"></div>
+            <button class="icon-btn n-clear" id="prof-edit-btn" style="display:none;" onclick="App.editGroupOrChannel()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
         </div>
         
         <div class="panel-body profile-content-wrap" style="padding: 100px 20px 32px; text-align:center;">
@@ -2856,6 +2856,15 @@
             </div>
 
             <div id="prof-actions" style="display:flex; flex-direction:column; gap:12px;"></div>
+            
+            <!-- Members/Subscribers List Section -->
+            <div id="prof-subs-section" style="display:none; margin-top:24px; text-align:left;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <div style="font-size:14px; font-weight:600;" id="prof-subs-title">Subscribers</div>
+                    <button class="btn btn-outline" style="width:auto; padding:6px 12px; font-size:12px; border-radius:10px;" id="prof-add-mem-btn" onclick="App.addMember(State.chat)">+ Add Member</button>
+                </div>
+                <div id="prof-subs-list" style="max-height: 250px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
             
             <div id="prof-media-gallery" style="display:none; margin-top: 24px;">
                 <div style="text-align:left; font-size:14px; font-weight:600; margin-bottom: 12px;">Shared Media</div>
@@ -2927,6 +2936,43 @@
             </div>
             
             <button class="btn" style="margin-top: 24px;" onclick="App.submitChannel()">Create Channel</button>
+        </div>
+    </div>
+
+    <div id="panel-edit-group-channel" class="panel">
+        <div class="panel-header">
+            <button class="icon-btn" onclick="Router.pop()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+            <div class="panel-title" id="edit-gc-title">Edit Chat</div>
+            <div style="width:40px"></div>
+        </div>
+        <div class="panel-body" style="padding: 20px;">
+            <label class="profile-av-wrap" style="display:block; cursor:pointer; width:100px; height:100px; margin:0 auto 20px;">
+                <img src="" id="edit-gc-av" class="avatar" style="background:var(--bg-input); width:100px; height:100px;">
+                <div class="profile-av-edit">Upload</div>
+                <input type="file" hidden accept="image/*" onchange="App.prepEditGCAv(event)">
+            </label>
+            <input type="text" id="edit-gc-name" class="settings-input" placeholder="Name">
+            <textarea id="edit-gc-desc" class="settings-input" placeholder="Description (Optional)" rows="2"></textarea>
+            
+            <div class="settings-row" style="background:transparent; padding:16px 0;">
+                <span>Private Chat</span>
+                <input type="checkbox" id="edit-gc-private" style="width:20px;height:20px;" onchange="document.getElementById('edit-gc-handle-box').style.display = this.checked ? 'none' : 'block'">
+            </div>
+            
+            <div id="edit-gc-handle-box">
+                <input type="text" id="edit-gc-handle" class="settings-input" placeholder="Public @handle (e.g. public_chat)">
+            </div>
+            
+            <div id="edit-gc-invite-box" style="margin-top: 16px; display: none;">
+                <div style="font-size:13px; color:var(--text-muted); margin-bottom:6px; font-weight:500;">Invite Link</div>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="edit-gc-invite-link" class="settings-input" style="margin:0; flex:1;" readonly>
+                    <button class="btn" style="width:auto; padding:0 20px;" onclick="App.copyEditGCInvite()">Copy</button>
+                </div>
+                <button class="btn btn-outline" style="margin-top:10px; font-size:13px; padding:10px;" onclick="App.revokeEditGCInvite()">🔄 Revoke Link</button>
+            </div>
+            
+            <button class="btn" style="margin-top: 24px;" onclick="App.submitEditGC()">Save Changes</button>
         </div>
     </div>
     
@@ -5623,7 +5669,7 @@
                 const f = e.target.files[0]; if(!f) return;
                 UI.toast("Uploading avatar...");
                 try {
-                    const s3Url = await this.uploadToS3(f);
+                    const s3Url = await App.uploadToS3(f);
                     State.tmpGroupAv = s3Url;
                     document.getElementById('new-group-av').src = s3Url;
                     UI.toast("Avatar uploaded!");
@@ -6988,7 +7034,7 @@
                 const f = e.target.files[0]; if(!f) return;
                 UI.toast("Uploading avatar...");
                 try {
-                    const s3Url = await this.uploadToS3(f);
+                    const s3Url = await App.uploadToS3(f);
                     State.tmpChanAv = s3Url;
                     document.getElementById('new-chan-av').src = s3Url;
                     UI.toast("Channel avatar uploaded!");
@@ -7339,11 +7385,11 @@
                 if (p.get('channel') || p.get('group')) {
                     const h = p.get('channel') || p.get('group');
                     try {
-                        const r = await req('/api/chats/join', 'POST', {handle: h});
-                        await this.sync();
-                        this.openChat(r.chat_id);
+                        const chatInfo = await req(`/api/chats/by-handle/${h}`);
+                        State.chats.set(chatInfo.id, chatInfo);
+                        this.openChat(chatInfo.id);
                         routed = true;
-                    } catch(e) { UI.toast("Join failed"); }
+                    } catch(e) { UI.toast("Failed to resolve invite link"); }
                 } 
                 else if (p.get('stickerpack')) {
                     const sp = p.get('stickerpack');
@@ -8047,13 +8093,45 @@
                 if (id === 'ai') { chatAv.classList.add('ai-avatar'); chatAv.parentElement.classList.add('ai-wrap'); } 
                 else { chatAv.classList.remove('ai-avatar'); chatAv.parentElement.classList.remove('ai-wrap'); }
                 
-                if (c.type === 'channel' && c.my_role !== 'admin') {
+                if (!c.my_role) {
+                    document.getElementById('input-bar').style.display = 'none'; 
+                    document.getElementById('channel-bar').innerHTML = `<button class="btn" style="border-radius:12px; padding:10px; width:100%" onclick="App.joinChatId(${c.id})">${c.type === 'channel' ? 'Join Channel' : 'Join Group'}</button>`;
+                    document.getElementById('channel-bar').style.display = 'block';
+                } else if (c.type === 'channel' && c.my_role !== 'admin' && c.my_role !== 'owner') {
                     document.getElementById('input-bar').style.display = 'none'; 
                     document.getElementById('channel-bar').innerHTML = `<button class="btn btn-outline" style="border-radius:12px; padding:10px; width:100%" onclick="App.toggleMute(${c.id})">${c.muted ? '🔇 Unmute Channel' : '🔊 Mute Channel'}</button>`;
                     document.getElementById('channel-bar').style.display = 'block';
                 } else {
                     document.getElementById('input-bar').style.display = 'flex'; 
                     document.getElementById('channel-bar').style.display = 'none';
+                }
+
+                // Fetch and display latest pinned message
+                if (id !== 'ai') {
+                    req(`/api/chats/${id}/pinned`).then(async p => {
+                        const pinEl = document.getElementById('pinned-msg');
+                        if (p && p.id) {
+                            let text = p.content || '';
+                            if (p.type === 'photo') text = '🖼️ Photo';
+                            if (p.type === 'file') text = '📁 File';
+                            if (p.type === 'audio') text = '🎵 Audio';
+                            if (p.type === 'voice') text = '🎤 Voice Note';
+                            if (p.type === 'video_note') text = '👁️ Video Note';
+                            if (p.type === 'sticker') text = 'Sticker';
+                            
+                            if (text.startsWith("__E2EE__:")) {
+                                text = await E2EE.decrypt(id, text);
+                            }
+                            
+                            pinEl.style.display = 'flex';
+                            document.getElementById('pinned-text').innerText = text;
+                            pinEl.setAttribute('data-msg-id', p.id);
+                        } else {
+                            pinEl.style.display = 'none';
+                        }
+                    }).catch(()=>{});
+                } else {
+                    document.getElementById('pinned-msg').style.display = 'none';
                 }
                 
                 const clearBtn = document.getElementById('ai-clear-btn');
@@ -8307,7 +8385,42 @@
                 document.getElementById('msg-input').focus(); 
             },
             cancelReply() { State.replyTo = null; document.getElementById('reply-preview').style.display='none'; },
-            scrollToPin() { const c = document.getElementById('msgs'); if(c) c.scrollTop = 0; },
+            scrollToPin() { 
+                const pinEl = document.getElementById('pinned-msg');
+                const msgId = pinEl.getAttribute('data-msg-id');
+                if (msgId) {
+                    const targetEl = document.getElementById(`msg-${msgId}`);
+                    if (targetEl) {
+                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        targetEl.style.outline = '2px solid var(--primary)';
+                        targetEl.style.borderRadius = '20px';
+                        setTimeout(() => { targetEl.style.outline = 'none'; }, 3000);
+                    } else {
+                        UI.toast("Jumping to pinned message...");
+                        req(`/api/messages/${State.chat}?after=${Number(msgId) - 5}`).then(async msgs => {
+                            const cont = document.getElementById('msgs');
+                            cont.innerHTML = '';
+                            const grouped = App.groupMessages(msgs);
+                            for (let m of grouped) {
+                                if (m.content && m.content.startsWith("__E2EE__:")) {
+                                    m.content = await E2EE.decrypt(State.chat, m.content);
+                                }
+                                const isMine = m.sender_id === State.u.userId;
+                                const innerHTML = this.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
+                                cont.insertAdjacentHTML('beforeend', `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}">${innerHTML}</div>`);
+                            }
+                            App.renderMath();
+                            const targetEl = document.getElementById(`msg-${msgId}`);
+                            if (targetEl) {
+                                targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                targetEl.style.outline = '2px solid var(--primary)';
+                                targetEl.style.borderRadius = '20px';
+                                setTimeout(() => { targetEl.style.outline = 'none'; }, 3000);
+                            }
+                        });
+                    }
+                }
+            },
 
             prepMedia(e, typeOverride = null) {
                 const files = Array.from(e.target.files);
@@ -9351,6 +9464,16 @@
                 document.getElementById('prof-handle').innerText = handleText;
                 document.getElementById('prof-bio').innerText = isDM ? (c.dm_bio || 'No bio') : (c.description || 'No description');
                 
+                // Toggle edit pencil button
+                const editBtn = document.getElementById('prof-edit-btn');
+                if (editBtn) {
+                    if (c.type !== 'dm' && (c.my_role === 'owner' || c.my_role === 'admin')) {
+                        editBtn.style.display = 'block';
+                    } else {
+                        editBtn.style.display = 'none';
+                    }
+                }
+
                 // Banner & Gradient Setup
                 const bannerImg = document.getElementById('prof-banner-img');
                 const bannerGrad = document.getElementById('prof-banner-gradient');
@@ -9387,9 +9510,20 @@
                 if (c.type === 'channel' || c.type === 'group') {
                     const link = c.is_private ? `${window.location.origin}${window.location.pathname}?channel=${c.invite_hash}` : `${window.location.origin}${window.location.pathname}?channel=${c.username}`;
                     acts += `<button class="btn btn-outline" onclick="navigator.clipboard.writeText('${link}'); UI.toast('Link Copied!')">🔗 Copy Link</button>`;
-                } else if (c.type === 'dm') {
-                    const link = `${window.location.origin}${window.location.pathname}?dm=${c.dm_user_id}`;
-                    acts += `<button class="btn btn-outline" onclick="navigator.clipboard.writeText('${link}'); UI.toast('Link Copied!')">🔗 Copy DM Link</button>`;
+                    
+                    document.getElementById('prof-subs-title').innerText = c.type === 'channel' ? 'Subscribers' : 'Members';
+                    document.getElementById('prof-subs-section').style.display = 'block';
+                    
+                    const canAdd = c.my_role === 'owner' || c.my_role === 'admin';
+                    document.getElementById('prof-add-mem-btn').style.display = canAdd ? 'block' : 'none';
+                    
+                    this.loadChatMembers(chatId);
+                } else {
+                    document.getElementById('prof-subs-section').style.display = 'none';
+                    if (c.type === 'dm') {
+                        const link = `${window.location.origin}${window.location.pathname}?dm=${c.dm_user_id}`;
+                        acts += `<button class="btn btn-outline" onclick="navigator.clipboard.writeText('${link}'); UI.toast('Link Copied!')">🔗 Copy DM Link</button>`;
+                    }
                 }
                 
                 document.getElementById('prof-actions').innerHTML = acts;
@@ -9543,37 +9677,37 @@
 
             async updateProfile(e, field) {
                 const body = {};
-if(field === 'avatar') {
-                const f = e.target.files[0]; if(!f) return;
-                UI.toast("Uploading avatar...");
-                try {
-                    const s3Url = await this.uploadToS3(f);
-                    body.avatar = s3Url;
-                    await req('/api/user/profile', 'PUT', body);
-                    State.u.avatar = s3Url;
-                    localStorage.setItem('y_u', JSON.stringify(State.u));
-                    document.getElementById('set-av').src = s3Url;
-                    document.getElementById('nav-av').src = s3Url;
-                    UI.toast('Profile updated');
-                } catch(err) { UI.toast('Profile avatar update failed'); }
-                return;
-            }
-            if(field === 'banner') {
-                const f = e.target.files[0]; if(!f) return;
-                UI.toast("Uploading banner...");
-                try {
-                    const s3Url = await this.uploadToS3(f);
-                    body.profile_banner_url = s3Url;
-                    await req('/api/user/profile', 'PUT', body);
-                    State.u.profile_banner_url = s3Url;
-                    localStorage.setItem('y_u', JSON.stringify(State.u));
-                    document.getElementById('set-banner-preview').src = s3Url;
-                    document.getElementById('set-banner-preview').style.display = 'block';
-                    document.getElementById('set-banner-gradient').style.display = 'none';
-                    UI.toast('Profile banner updated');
-                } catch(err) { UI.toast('Profile banner update failed'); }
-                return;
-            }
+                if(field === 'avatar') {
+                    const f = e.target.files[0]; if(!f) return;
+                    UI.toast("Uploading avatar...");
+                    try {
+                        const s3Url = await App.uploadToS3(f);
+                        body.avatar = s3Url;
+                        await req('/api/user/profile', 'PUT', body);
+                        State.u.avatar = s3Url;
+                        localStorage.setItem('y_u', JSON.stringify(State.u));
+                        document.getElementById('set-av').src = s3Url;
+                        document.getElementById('nav-av').src = s3Url;
+                        UI.toast('Profile updated');
+                    } catch(err) { UI.toast('Profile avatar update failed'); }
+                    return;
+                }
+                if(field === 'banner') {
+                    const f = e.target.files[0]; if(!f) return;
+                    UI.toast("Uploading banner...");
+                    try {
+                        const s3Url = await App.uploadToS3(f);
+                        body.profile_banner_url = s3Url;
+                        await req('/api/user/profile', 'PUT', body);
+                        State.u.profile_banner_url = s3Url;
+                        localStorage.setItem('y_u', JSON.stringify(State.u));
+                        document.getElementById('set-banner-preview').src = s3Url;
+                        document.getElementById('set-banner-preview').style.display = 'block';
+                        document.getElementById('set-banner-gradient').style.display = 'none';
+                        UI.toast('Profile banner updated');
+                    } catch(err) { UI.toast('Profile banner update failed'); }
+                    return;
+                }
             if(field === 'bio') {
                 body.bio = document.getElementById('set-bio').value;
                 State.u.bio = body.bio;
@@ -9702,6 +9836,96 @@ if(field === 'avatar') {
             toggleAttachPopover() {
                 const p = document.getElementById('attach-popover');
                 p.style.display = p.style.display === 'block' ? 'none' : 'block';
+            },
+            async joinChatId(chatId) {
+                UI.toast('Joining...');
+                try {
+                    await req(`/api/chats/${chatId}/join`, 'POST');
+                    await this.sync();
+                    this.openChat(chatId);
+                } catch(e) { UI.toast(e.message); }
+            },
+            editGroupOrChannel() {
+                const c = State.chats.get(State.chat);
+                if (!c) return;
+                
+                document.getElementById('edit-gc-title').innerText = c.type === 'channel' ? 'Edit Channel' : 'Edit Group';
+                document.getElementById('edit-gc-name').value = c.name || '';
+                document.getElementById('edit-gc-desc').value = c.description || '';
+                document.getElementById('edit-gc-av').src = c.avatar || defAv;
+                State.tmpEditGCAv = c.avatar || null;
+                
+                const isPrivate = c.is_private === 1;
+                document.getElementById('edit-gc-private').checked = isPrivate;
+                document.getElementById('edit-gc-handle-box').style.display = isPrivate ? 'none' : 'block';
+                document.getElementById('edit-gc-handle').value = c.username || '';
+                
+                const inviteBox = document.getElementById('edit-gc-invite-box');
+                if (isPrivate) {
+                    inviteBox.style.display = 'block';
+                    const link = `${window.location.origin}${window.location.pathname}?channel=${c.invite_hash}`;
+                    document.getElementById('edit-gc-invite-link').value = link;
+                } else {
+                    inviteBox.style.display = 'none';
+                }
+                
+                Router.push('panel-edit-group-channel');
+            },
+            async prepEditGCAv(e) {
+                const f = e.target.files[0]; if(!f) return;
+                UI.toast("Uploading avatar...");
+                try {
+                    const s3Url = await App.uploadToS3(f);
+                    State.tmpEditGCAv = s3Url;
+                    document.getElementById('edit-gc-av').src = s3Url;
+                    UI.toast("Avatar uploaded!");
+                } catch(err) { UI.toast("Avatar upload failed"); }
+            },
+            copyEditGCInvite() {
+                const link = document.getElementById('edit-gc-invite-link').value;
+                navigator.clipboard.writeText(link).then(() => {
+                    UI.toast('Invite link copied!');
+                }).catch(() => {
+                    UI.toast('Failed to copy');
+                });
+            },
+            async revokeEditGCInvite() {
+                if (!confirm("Are you sure you want to generate a new invite link? The old link will stop working.")) return;
+                try {
+                    const res = await req(`/api/chats/${State.chat}/revoke-invite`, 'POST');
+                    const link = `${window.location.origin}${window.location.pathname}?channel=${res.invite_hash}`;
+                    document.getElementById('edit-gc-invite-link').value = link;
+                    UI.toast("Invite link updated!");
+                } catch(e) {
+                    UI.toast("Failed to revoke invite link");
+                }
+            },
+            async submitEditGC() {
+                const name = document.getElementById('edit-gc-name').value.trim();
+                const desc = document.getElementById('edit-gc-desc').value.trim();
+                const isPriv = document.getElementById('edit-gc-private').checked;
+                const handle = document.getElementById('edit-gc-handle').value.trim();
+                if (!name) return UI.toast('Name is required');
+                
+                const payload = {
+                    name,
+                    description: desc,
+                    is_private: isPriv ? 1 : 0,
+                    handle: isPriv ? '' : handle
+                };
+                if (State.tmpEditGCAv) payload.avatar = State.tmpEditGCAv;
+                
+                try {
+                    await req(`/api/chats/${State.chat}`, 'PUT', payload);
+                    UI.toast('Updated!');
+                    State.tmpEditGCAv = null;
+                    await this.sync();
+                    Router.pop();
+                    Router.pop();
+                    this.openChat(State.chat);
+                } catch(e) {
+                    UI.toast('Failed to update group settings');
+                }
             },
             triggerAttach(type) {
                 document.getElementById('attach-popover').style.display = 'none';
