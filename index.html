@@ -1406,6 +1406,10 @@
         /* --- FORWARD MODAL --- */
         #forward-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99999; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(5px); }
         #forward-content { background: var(--bg-panel); width: 100%; max-width: 400px; height: 70vh; border-top-left-radius: 24px; border-top-right-radius: 24px; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* --- ADD MEMBER MODAL --- */
+        #add-member-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99999; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(5px); }
+        #add-member-content { background: var(--bg-panel); width: 100%; max-width: 400px; height: 70vh; border-top-left-radius: 24px; border-top-right-radius: 24px; display: flex; flex-direction: column; overflow: hidden; }
         /* --- CHAT FOLDERS (TABS) --- */
         #mobile-folders-nav { display: none; gap: 16px; padding: 0 20px; border-bottom: 1px solid var(--border); margin-top: 0; }
         #mobile-folders-nav::-webkit-scrollbar { display: none; }
@@ -3231,6 +3235,14 @@
         <div id="forward-content" onclick="event.stopPropagation()">
             <div style="padding:16px 20px; font-weight:600; border-bottom:1px solid var(--border);">Forward to...</div>
             <div id="forward-chat-list" style="flex:1; overflow-y:auto;"></div>
+        </div>
+    </div>
+
+    <!-- ADD MEMBER MODAL -->
+    <div id="add-member-modal" onclick="this.style.display='none'">
+        <div id="add-member-content" onclick="event.stopPropagation()">
+            <div style="padding:16px 20px; font-weight:600; border-bottom:1px solid var(--border);">Add Member...</div>
+            <div id="add-member-chat-list" style="flex:1; overflow-y:auto;"></div>
         </div>
     </div>
     
@@ -5905,10 +5917,11 @@
                     const count = m.items.length;
                     let cols = 2;
                     if (count === 3) cols = 3;
-                    else if (count >= 4) cols = 2;
-                    let gridHtml = `<div class="media-group-grid" style="display: grid; grid-template-columns: repeat(${cols}, 1fr); gap: 6px; border-radius: 14px; overflow: hidden; max-width: 320px; width: 100%;">`;
+                    else if (count === 2 || count === 4) cols = 2;
+                    else if (count >= 5) cols = 3;
+                    let gridHtml = `<div class="media-group-grid" style="display: grid; grid-template-columns: repeat(${cols}, 1fr); gap: 6px; border-radius: 14px; overflow: hidden; max-width: 340px; width: 100%;">`;
                     m.items.forEach(item => {
-                        const height = count <= 2 ? '150px' : '100px';
+                        const height = count <= 2 ? '160px' : (count <= 4 ? '110px' : '85px');
                         gridHtml += `<img src="${item.content}" style="width: 100%; height: ${height}; object-fit: cover; cursor: pointer;" onclick="event.stopPropagation(); App.openMedia('${item.content}')">`;
                     });
                     gridHtml += `</div>`;
@@ -7343,8 +7356,14 @@
                 
                 App.checkDevToolsRow(); // Evaluates and displays developer options if previously unlocked [1]
                 
-                let skels=''; for(let i=0;i<6;i++) skels+=`<div class="user-item"><div class="skel-av skeleton"></div><div class="user-info"><div class="skel-text skeleton"></div><div class="skel-text short skeleton"></div></div></div>`;
-                document.getElementById('chat-list').innerHTML = skels;
+                // --- LOAD CACHED CHATS ---
+                const cachedChatsHtml = await localforage.getItem('y_cache_chats_list_html');
+                if (cachedChatsHtml) {
+                    document.getElementById('chat-list').innerHTML = cachedChatsHtml;
+                } else {
+                    let skels=''; for(let i=0;i<6;i++) skels+=`<div class="user-item"><div class="skel-av skeleton"></div><div class="user-info"><div class="skel-text skeleton"></div><div class="skel-text short skeleton"></div></div></div>`;
+                    document.getElementById('chat-list').innerHTML = skels;
+                }
                 
                 this.loadStickerKeyboard();
                 if(State.u.username === 'vasiliy') document.getElementById('admin-panel').style.display = 'block';
@@ -7825,7 +7844,9 @@
                     
                     if (!isSearching && State.lastChatsSignature !== chatsSignature) {
                         State.lastChatsSignature = chatsSignature;
-                        document.getElementById('chat-list').innerHTML = html || `<div style="padding:40px;text-align:center;color:var(--text-muted)">${I18N.t('No chats found')}</div>`;
+                        const chatsHtml = html || `<div style="padding:40px;text-align:center;color:var(--text-muted)">${I18N.t('No chats found')}</div>`;
+                        document.getElementById('chat-list').innerHTML = chatsHtml;
+                        localforage.setItem('y_cache_chats_list_html', chatsHtml);
                         I18N.scan(document.getElementById('chat-list'));
                     }
         
@@ -8093,7 +8114,7 @@
                 if (id === 'ai') { chatAv.classList.add('ai-avatar'); chatAv.parentElement.classList.add('ai-wrap'); } 
                 else { chatAv.classList.remove('ai-avatar'); chatAv.parentElement.classList.remove('ai-wrap'); }
                 
-                if (!c.my_role) {
+                if (c.type !== 'dm' && !c.my_role) {
                     document.getElementById('input-bar').style.display = 'none'; 
                     document.getElementById('channel-bar').innerHTML = `<button class="btn" style="border-radius:12px; padding:10px; width:100%" onclick="App.joinChatId(${c.id})">${c.type === 'channel' ? 'Join Channel' : 'Join Group'}</button>`;
                     document.getElementById('channel-bar').style.display = 'block';
@@ -8545,32 +8566,126 @@
                 const activeChatObj = State.chats.get(targetChat);
                 const isDM = targetChat !== 'ai' && activeChatObj && activeChatObj.type === 'dm';
                 
-                // Group ID for sending multiple photos/files together
                 const groupId = queue.length > 1 ? 'group_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9) : null;
 
-                const uploadTasks = queue.map(async (item, i) => {
-                    const currentCap = (i === 0) ? cap : '';
-                    const tempId = 'temp-rec-' + Date.now() + '-' + i;
+                if (queue.length > 1) {
+                    const tempGroupId = 'temp-group-' + Date.now();
+                    const count = queue.length;
+                    let cols = 2;
+                    if (count === 3) cols = 3;
+                    else if (count === 2 || count === 4) cols = 2;
+                    else if (count >= 5) cols = 3;
+
+                    let gridHtml = `<div class="media-group-grid" style="display: grid; grid-template-columns: repeat(${cols}, 1fr); gap: 6px; border-radius: 14px; overflow: hidden; max-width: 340px; width: 100%;">`;
                     
-                    // 1. Generate Custom Unified Optimistic UI Placeholder HTML
-                    let customPlaceholderHtml = '';
-                    const localUrl = item.rawFile ? URL.createObjectURL(item.rawFile) : '';
+                    queue.forEach((item, idx) => {
+                        const tempId = `temp-rec-${tempGroupId}-${idx}`;
+                        const fileOrData = item.data || item.rawFile;
+                        const localUrl = fileOrData ? (typeof fileOrData === 'string' ? fileOrData : URL.createObjectURL(fileOrData)) : '';
+                        const height = count <= 2 ? '160px' : (count <= 4 ? '110px' : '85px');
+                        
+                        gridHtml += `
+                            <div id="grid-cell-${tempId}" style="position: relative; width: 100%; height: ${height}; background: #222; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                <img src="${localUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: blur(5px); opacity: 0.6;" class="sending-media-blur">
+                                <div class="sending-media-loader-container" style="position: absolute; display: flex; align-items: center; justify-content: center; z-index: 3;">
+                                    <svg class="sending-progress-circle" style="width: 40px; height: 40px; transform: rotate(-90deg);">
+                                        <circle class="sending-circle-bg" cx="20" cy="25" r="16" style="fill: rgba(0,0,0,0.4); stroke: rgba(255,255,255,0.2); stroke-width: 3;"></circle>
+                                        <circle class="sending-circle-bar" id="sending-bar-${tempId}" cx="20" cy="25" r="16" style="fill: none; stroke: #fff; stroke-width: 3; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 0.1s;"></circle>
+                                    </svg>
+                                    <span class="sending-progress-icon" style="color: #fff; font-size: 14px; font-weight: bold; position: absolute;">⬆</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    gridHtml += `</div>`;
+                    
+                    const captionHtml = cap ? `<div class="msg-caption" style="margin-top: 6px;">${cap}</div>` : '';
+                    const tickHtml = `<span class="msg-tick">✓</span>`;
+                    
+                    if (State.chat === targetChat) {
+                        msgsCont.insertAdjacentHTML('beforeend', `
+                            <div class="msg-row sent" id="${tempGroupId}" style="opacity: 0.9;">
+                                <div class="msg-bubble" style="background: transparent; padding: 0; box-shadow: none; border: none !important;">
+                                    ${gridHtml}
+                                    ${captionHtml}
+                                    <div class="msg-timestamp" style="font-size:10px; opacity:0.6; text-align:right; margin-top:4px;">Sending... ${tickHtml}</div>
+                                </div>
+                            </div>
+                        `);
+                        msgsCont.scrollTop = msgsCont.scrollHeight;
+                    }
+
+                    const uploadTasks = queue.map(async (item, i) => {
+                        const tempId = `temp-rec-${tempGroupId}-${i}`;
+                        const fileOrData = item.data || item.rawFile;
+                        try {
+                            const s3Url = await this.uploadToS3(fileOrData, 'bin', 'application/octet-stream', (percent) => {
+                                if (State.chat !== targetChat) return;
+                                const bar = document.getElementById(`sending-bar-${tempId}`);
+                                if (bar) {
+                                    bar.style.strokeDashoffset = 100 - (percent / 100 * 100);
+                                }
+                            });
+                            
+                            const finalContent = isDM ? await E2EE.encrypt(targetChat, s3Url) : s3Url;
+                            let finalCap = (i === 0) ? cap : '';
+                            if (finalCap && isDM) {
+                                finalCap = await E2EE.encrypt(targetChat, finalCap);
+                            }
+                            
+                            return { content: finalContent, caption: finalCap, type: item.type };
+                        } catch (err) {
+                            console.error("Upload error for cell:", tempId, err);
+                            throw err;
+                        }
+                    });
+
+                    try {
+                        const uploadedItems = await Promise.all(uploadTasks);
+                        
+                        for (let i = 0; i < uploadedItems.length; i++) {
+                            const item = uploadedItems[i];
+                            await req(`/api/messages/${targetChat}`, 'POST', {
+                                content: item.content,
+                                caption: item.caption,
+                                type: item.type,
+                                reply_to_id: (i === 0 ? State.replyTo : null),
+                                group_id: groupId
+                            });
+                        }
+                        
+                        if (State.chat === targetChat) {
+                            document.getElementById(tempGroupId)?.remove();
+                            App.fastPoll(true);
+                        }
+                    } catch (e) {
+                        if (State.chat === targetChat) {
+                            const tempEl = document.getElementById(tempGroupId);
+                            if (tempEl) {
+                                tempEl.innerHTML = `
+                                    <div class="msg-bubble" style="background:var(--danger); color:white; font-size:12px; padding:8px 12px; border-radius:12px;">
+                                        ⚠️ Failed to send grouped media
+                                    </div>`;
+                            }
+                        }
+                    }
+                } else {
+                    const item = queue[0];
+                    const tempId = 'temp-rec-' + Date.now() + '-0';
+                    const fileOrData = item.data || item.rawFile;
+                    const localUrl = fileOrData ? (typeof fileOrData === 'string' ? fileOrData : URL.createObjectURL(fileOrData)) : '';
+                    
                     let previewBg = '';
                     let placeholderIcon = '';
                     
                     if (item.type === 'photo' || item.type === 'video') {
                         previewBg = `<img src="${localUrl}" class="sending-media-blur">`;
-                    } else if (item.type === 'audio') {
-                        placeholderIcon = `<div style="font-size:24px; margin-bottom:4px; z-index:2; color:#fff;">🎵</div>`;
-                    } else if (item.type === 'voice') {
-                        placeholderIcon = `<div style="font-size:24px; margin-bottom:4px; z-index:2; color:#fff;">🎤</div>`;
-                    } else if (item.type === 'video_note') {
-                        placeholderIcon = `<div style="font-size:24px; margin-bottom:4px; z-index:2; color:#fff;">👁️</div>`;
                     } else {
                         placeholderIcon = `<div style="font-size:24px; margin-bottom:4px; z-index:2; color:#fff;">📄</div>`;
                     }
 
-                    customPlaceholderHtml = `
+                    const customPlaceholderHtml = `
                         <div class="sending-media-wrapper" id="sending-media-wrap-${tempId}">
                             ${previewBg}
                             ${placeholderIcon}
@@ -8598,15 +8713,13 @@
                     }
                     
                     try {
-                        // Upload to S3 with individual progress updates
-                        const s3Url = await this.uploadToS3(item.rawFile, 'bin', 'application/octet-stream', (percent) => {
+                        const s3Url = await this.uploadToS3(fileOrData, 'bin', 'application/octet-stream', (percent) => {
                             if (State.chat !== targetChat) return;
                             const card = document.getElementById(tempId);
                             if (card) {
                                 const sendingBar = document.getElementById(`sending-bar-${tempId}`);
                                 if (sendingBar) {
-                                    const offset = 126 - (percent / 100 * 126);
-                                    sendingBar.style.strokeDashoffset = offset;
+                                    sendingBar.style.strokeDashoffset = 126 - (percent / 100 * 126);
                                 }
                                 const progressText = card.querySelector('.upload-txt');
                                 if (progressText) {
@@ -8615,28 +8728,8 @@
                             }
                         });
                         
-                        // Encrypt content and caption only if this is a DM chat
                         const finalContent = isDM ? await E2EE.encrypt(targetChat, s3Url) : s3Url;
-                        let finalCap = currentCap;
-                        
-                        if (item.type === 'audio' && item.audioMeta) {
-                            let coverS3Url = "";
-                            if (item.audioMeta.cover && item.audioMeta.cover.startsWith("data:")) {
-                                try {
-                                    coverS3Url = await this.uploadToS3(item.audioMeta.cover);
-                                } catch(e) {
-                                    console.warn("Failed to upload cover art to S3, falling back", e);
-                                }
-                            }
-                            const metaPayload = {
-                                title: item.audioMeta.title,
-                                artist: item.audioMeta.artist,
-                                cover: coverS3Url,
-                                userCaption: currentCap
-                            };
-                            finalCap = JSON.stringify(metaPayload);
-                        }
-                        
+                        let finalCap = cap;
                         if (finalCap && isDM) {
                             finalCap = await E2EE.encrypt(targetChat, finalCap);
                         }
@@ -8645,8 +8738,7 @@
                             content: finalContent,
                             caption: finalCap,
                             type: item.type,
-                            reply_to_id: (i === 0 ? State.replyTo : null),
-                            group_id: groupId
+                            reply_to_id: State.replyTo
                         });
                         
                         if (State.chat === targetChat) {
@@ -8654,16 +8746,14 @@
                             if (tempEl) {
                                 tempEl.id = `msg-${res.id}`;
                                 tempEl.style.opacity = '1';
-                                
                                 const fakeMsg = {
                                     id: res.id,
                                     content: s3Url,
-                                    caption: currentCap,
+                                    caption: cap,
                                     type: item.type,
                                     created_at: new Date().toISOString(),
                                     is_read: 0,
-                                    sender_id: State.u.userId,
-                                    group_id: groupId
+                                    sender_id: State.u.userId
                                 };
                                 tempEl.innerHTML = this.buildMsgHTML(fakeMsg, true, State.chats.get(State.chat)?.type);
                             }
@@ -8678,12 +8768,8 @@
                                     ⚠️ Failed to send ${item.filename || 'file'}
                                 </div>`;
                         }
-                    } finally {
-                        if (localUrl) URL.revokeObjectURL(localUrl);
                     }
-                });
-                
-                await Promise.all(uploadTasks);
+                }
                 this.cancelReply();
             },
 
@@ -9657,9 +9743,9 @@
                         h += `<div class="user-item" style="padding:8px 0;">
                             <img src="${m.avatar||defAv}" class="avatar" style="width:36px;height:36px;">
                             <div class="user-info" style="font-size:14px;"><b>${m.username}</b> <span style="font-size:11px; color:var(--text-muted)">${m.role}</span></div>
-                            <div style="display:flex; gap:8px;">
-                                ${m.role === 'member' ? `<button class="icon-btn" style="width:auto; font-size:12px; color:var(--primary)" onclick="App.promoteMem(${id}, ${m.id})">Promote</button>` : ''}
-                                ${m.role !== 'owner' ? `<button class="icon-btn" style="width:auto; font-size:12px; color:var(--danger)" onclick="App.kickMem(${id}, ${m.id})">Kick</button>` : ''}
+                            <div style="display:flex; gap:8px; align-items: center;">
+                                ${m.role === 'member' ? `<button style="font-size:12px; color:var(--primary); border:1px solid var(--border); border-radius:6px; padding:6px 12px; background:var(--bg-input); font-weight:600; cursor:pointer;" onclick="App.promoteMem(${id}, ${m.id})">Promote</button>` : ''}
+                                ${m.role !== 'owner' ? `<button style="font-size:12px; color:var(--danger); border:1px solid var(--danger); border-radius:6px; padding:6px 12px; background:transparent; font-weight:600; cursor:pointer;" onclick="App.kickMem(${id}, ${m.id})">Kick</button>` : ''}
                             </div>
                         </div>`;
                     });
@@ -9670,9 +9756,32 @@
                 if(!confirm('Make admin?')) return;
                 try { await req(`/api/chats/${chatId}/members/${targetId}`, 'PUT', {role:'admin'}); this.loadChatMembers(chatId); } catch(e){}
             },
-            async addMember(chatId) {
-                const u = prompt("Enter username to add:"); if(!u) return;
-                try { await req(`/api/chats/${chatId}/members`, 'POST', {username:u}); UI.toast('Added!'); } catch(e) { UI.toast(e.message); }
+            addMember(chatId) {
+                const list = document.getElementById('add-member-chat-list');
+                let html = '';
+                State.chats.forEach(c => {
+                    if (c.id === 'ai') return;
+                    if (c.type !== 'dm') return; // Exclude channels and groups
+                    
+                    const name = c.dm_username;
+                    const av = c.dm_avatar || defAv;
+                    html += `<div class="user-item" onclick="App.submitAddMember('${chatId}', '${name}')" style="padding:10px 20px;">
+                                <img src="${av}" class="avatar" style="width:40px;height:40px;">
+                                <div class="user-info"><b>${name}</b></div>
+                             </div>`;
+                });
+                list.innerHTML = html || `<div style="padding: 20px; text-align: center; color: var(--text-muted);">No chats available.</div>`;
+                document.getElementById('add-member-modal').style.display = 'flex';
+            },
+            async submitAddMember(chatId, username) {
+                document.getElementById('add-member-modal').style.display = 'none';
+                try {
+                    await req(`/api/chats/${chatId}/members`, 'POST', { username });
+                    UI.toast('Added!');
+                    this.loadChatMembers(chatId);
+                } catch(e) {
+                    UI.toast(e.message);
+                }
             },
 
             async updateProfile(e, field) {
@@ -10041,20 +10150,25 @@
             },
             async start() {
                 if (this.isRecording) return;
-                this.isRecording = true;
-                this.chunks = [];
-                this.peaks = [];
-                
                 try {
-                    const videoOpts = this.mode === 'video' ? { width: 320, height: 320, facingMode: "user" } : false;
-                    this.stream = await navigator.mediaDevices.getUserMedia({
+                    this.chunks = [];
+                    this.peaks = [];
+                    this.isRecording = true;
+                    this.hasCanceled = false;
+
+                    const constraints = {
                         audio: true,
-                        video: videoOpts
-                    });
+                        video: this.mode === 'video' ? { width: 320, height: 320, facingMode: "user" } : false
+                    };
+                    
+                    this.stream = await navigator.mediaDevices.getUserMedia(constraints);
                     
                     if (this.mode === 'video') {
-                        const feed = document.getElementById('recording-preview-feed');
-                        feed.srcObject = this.stream;
+                        const preview = document.getElementById('recording-preview-feed');
+                        if (preview) {
+                            preview.srcObject = this.stream;
+                            preview.play().catch(()=>{});
+                        }
                         document.getElementById('recording-video-circle').style.display = 'block';
                     } else {
                         document.getElementById('recording-video-circle').style.display = 'none';
@@ -10062,77 +10176,75 @@
                     
                     document.getElementById('recording-hud').style.display = 'flex';
                     
-                    // Setup visualizer/analyzer for peaks if audioCtx is available
+                    let startTime = Date.now();
+                    this.timerInterval = setInterval(() => {
+                        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                        const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                        const secs = String(elapsed % 60).padStart(2, '0');
+                        document.getElementById('recording-hud-timer').innerText = `Recording... ${mins}:${secs}`;
+                    }, 1000);
+
+                    if (this.mode === 'voice') {
+                        try {
+                            const AudioContext = window.AudioContext || window.webkitAudioContext;
+                            this.audioCtx = new AudioContext();
+                            const source = this.audioCtx.createMediaStreamSource(this.stream);
+                            const analyser = this.audioCtx.createAnalyser();
+                            analyser.fftSize = 32;
+                            source.connect(analyser);
+                            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                            
+                            this.analyseInterval = setInterval(() => {
+                                analyser.getByteFrequencyData(dataArray);
+                                let sum = 0;
+                                for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+                                let avg = sum / dataArray.length;
+                                this.peaks.push(Math.round(avg));
+                            }, 100);
+                        } catch(e) {
+                            console.warn("Audio peaks failed:", e);
+                        }
+                    }
+
+                    const options = { mimeType: this.mode === 'video' ? 'video/webm;codecs=vp8' : 'audio/webm' };
                     try {
-                        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                        const source = this.audioCtx.createMediaStreamSource(this.stream);
-                        const processor = this.audioCtx.createScriptProcessor(2048, 1, 1);
-                        source.connect(processor);
-                        processor.connect(this.audioCtx.destination);
-                        processor.onaudioprocess = (e) => {
-                            const input = e.inputBuffer.getChannelData(0);
-                            let sum = 0;
-                            for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
-                            const rms = Math.sqrt(sum / input.length);
-                            const peak = Math.max(0, Math.min(100, Math.round(rms * 100)));
-                            this.peaks.push(peak);
-                        };
+                        this.mediaRecorder = new MediaRecorder(this.stream, options);
                     } catch(e) {
-                        console.warn("Audio peaks analyzer not supported", e);
+                        this.mediaRecorder = new MediaRecorder(this.stream);
                     }
-                    
-                    let options = {};
-                    if (this.mode === 'video') {
-                        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) options = { mimeType: 'video/webm;codecs=vp9' };
-                        else if (MediaRecorder.isTypeSupported('video/mp4')) options = { mimeType: 'video/mp4' };
-                    } else {
-                        if (MediaRecorder.isTypeSupported('audio/webm')) options = { mimeType: 'audio/webm' };
-                    }
-                    
-                    this.mediaRecorder = new MediaRecorder(this.stream, options);
+
                     this.mediaRecorder.ondataavailable = e => {
                         if (e.data && e.data.size > 0) this.chunks.push(e.data);
                     };
-                    
+
                     this.mediaRecorder.onstop = async () => {
-                        if (this.hasCanceled) return;
+                        if (this.hasCanceled) {
+                            this.chunks = [];
+                            this.peaks = [];
+                            return;
+                        }
+                        const blob = new Blob(this.chunks, { type: this.mode === 'video' ? 'video/webm' : 'audio/webm' });
+                        const file = new File([blob], this.mode === 'video' ? 'video_note.webm' : 'voice.webm', { type: blob.type });
                         
-                        const blobType = this.mode === 'video' ? 'video/webm' : 'audio/webm';
-                        const blob = new Blob(this.chunks, { type: blobType });
-                        const ext = this.mode === 'video' ? 'webm' : 'webm';
+                        const queueItem = { 
+                            rawFile: file, 
+                            type: this.mode === 'video' ? 'video_note' : 'voice', 
+                            filename: file.name 
+                        };
                         
-                        const filename = `recording_${Date.now()}.${ext}`;
-                        const file = new File([blob], filename, { type: blobType });
+                        if (this.mode === 'voice') {
+                            queueItem.caption = JSON.stringify({ peaks: this.peaks });
+                        }
                         
-                        // Prep caption with peaks
-                        const capObj = { peaks: this.peaks };
-                        
-                        // Add to queue
-                        State.capMediaQueue = [{
-                            rawFile: file,
-                            type: this.mode === 'video' ? 'video_note' : 'voice',
-                            filename: filename,
-                            caption: JSON.stringify(capObj)
-                        }];
-                        
+                        State.capMediaQueue = [queueItem];
                         await App.sendMedia();
                     };
-                    
+
                     this.mediaRecorder.start();
-                    
-                    let secs = 0;
-                    this.timerInterval = setInterval(() => {
-                        secs++;
-                        const m = Math.floor(secs / 60).toString().padStart(2, '0');
-                        const s = (secs % 60).toString().padStart(2, '0');
-                        document.getElementById('recording-hud-timer').innerText = `Recording... ${m}:${s}`;
-                    }, 1000);
-                    
-                } catch(err) {
-                    console.error("Recording failed to start:", err);
-                    UI.toast("Microphone/Camera permission required");
+                } catch(e) {
+                    console.error("Recording start error:", e);
                     this.isRecording = false;
-                    document.getElementById('recording-hud').style.display = 'none';
+                    UI.toast("Could not access mic/camera");
                 }
             },
             async stop(canceled = false) {
