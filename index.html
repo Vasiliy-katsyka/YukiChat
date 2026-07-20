@@ -1800,21 +1800,28 @@
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
-            position: absolute;
-            bottom: -15px;
+            margin-top: 6px;
+            margin-bottom: 2px;
+            position: relative;
             z-index: 20;
             perspective: 1000px;
         }
-        
-        /* Align reactions to the right for sent messages, left for received */
-        .msg-row.sent .msg-reactions-wrap {
-            right: 14px;
-            left: auto;
+        .rx-avatars-wrap {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 6px;
+            margin-right: 2px;
         }
-        
-        .msg-row.received .msg-reactions-wrap {
-            left: 14px;
-            right: auto;
+        .rx-mini-avatar {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            object-fit: cover;
+            margin-left: -5px;
+        }
+        .rx-mini-avatar:first-child {
+            margin-left: 0;
         }
         
         .rx-chain-stack {
@@ -2409,12 +2416,26 @@
                 <button class="icon-btn n-clear" id="ai-clear-btn" onclick="App.clearAI()" style="display:none; color:var(--danger); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>
                 </button>
+                <button class="icon-btn n-clear" id="btn-chat-search" style="color:var(--text-main); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" onclick="App.toggleChatSearch(true)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </button>
                 <button class="icon-btn n-clear" id="btn-call-audio" style="color:var(--text-main); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" onclick="RTC.startCall()">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                 </button>
                 <button class="icon-btn n-clear" id="btn-chat-menu" style="color:var(--text-main); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" onclick="App.toggleChatMenu(event)">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
                 </button>
+            </div>
+        </div>
+
+        <!-- Single Conversation Search Overlay Header -->
+        <div id="chat-search-header" class="liquid-glass n-liquid n-glass-border" style="display:none; position:absolute; top:calc(12px + var(--safe-top)); left:16px; right:16px; height:44px; border-radius:22px; z-index:60; align-items:center; padding:0 12px; gap:8px; pointer-events:auto;">
+            <button class="icon-btn" onclick="App.toggleChatSearch(false)">✕</button>
+            <input type="text" id="chat-search-input" placeholder="Search in chat..." style="flex:1; border:none; background:transparent; outline:none; font-size:14px; color:var(--text-main);" oninput="App.searchInChat(this.value)">
+            <div style="display:flex; gap:4px; align-items:center;">
+                <span id="chat-search-index" style="font-size:12px; color:var(--text-muted); font-weight:bold; margin-right:4px;">0/0</span>
+                <button class="icon-btn" onclick="App.navigateChatSearch(-1)" style="width:28px; height:28px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"></polyline></svg></button>
+                <button class="icon-btn" onclick="App.navigateChatSearch(1)" style="width:28px; height:28px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
             </div>
         </div>
         <!-- Persistent Top Mini Music Player -->
@@ -2447,6 +2468,15 @@
             <div class="messages n-messages-absolute" id="msgs">
                 <!-- Messages populate here -->
             </div>
+
+            <!-- Scroll-to-Bottom Button with Unread Badge -->
+            <button id="scroll-bottom-btn" class="liquid-glass n-liquid n-glass-border" style="display:none; position:absolute; bottom:110px; right:24px; width:44px; height:44px; border-radius:50%; align-items:center; justify-content:center; z-index:49; pointer-events:auto; color:var(--text-main);" onclick="App.scrollToBottom(true)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                <div id="scroll-bottom-badge" class="nav-badge" style="display:none; top:-6px; right:-6px; position:absolute; background:var(--danger); color:#fff; border-radius:10px; padding:2px 6px; font-size:10px; font-weight:bold;">0</div>
+            </button>
+
+            <!-- Group Mentions Autocomplete Suggestions -->
+            <div id="mention-autocomplete" class="liquid-glass n-liquid n-glass-border" style="display:none; position:absolute; bottom:110px; left:20px; right:20px; max-height:160px; overflow-y:auto; border-radius:16px; z-index:100; box-shadow:var(--shadow); padding:6px 0;"></div>
             
             <!-- WRAPPED IN ABSOLUTE BOTTOM CONTAINER -->
             <!-- WRAPPED IN ABSOLUTE BOTTOM CONTAINER -->
@@ -3245,6 +3275,7 @@
             <div class="ctx-reactions" id="ctx-reactions-bar"></div>
             <button class="icon-btn" onclick="App.expandReactions()" style="width:30px;height:30px;color:#fff;margin-left:8px;" id="ctx-react-expand"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
         </div>
+        <div class="ctx-item" id="ctx-who-read" onclick="App.showReadersModal()"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Who Read</div>
         <div class="ctx-item" onclick="App.initReply()"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg> Reply</div>
         <div class="ctx-item" onclick="App.initForward()"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"></path></svg> Forward</div>
         <div class="ctx-item" onclick="App.msgAct('pin')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Pin / Unpin</div>
@@ -4153,7 +4184,11 @@
             notifiedCalls: new Set(),
             settingsTaps: 0,
             rawPassword: "", // Escrow uses this temporary session-lifetime variable to derive backing storage keys
-            loadedMedia: new Set()
+            loadedMedia: new Set(),
+            unreadScrollCount: 0,
+            chatSearchResults: [],
+            chatSearchIndex: -1,
+            memberCache: {}
         };
 
         const req = async (path, m='GET', b=null) => {
@@ -4960,7 +4995,24 @@
             }
         };
 
-        function renderReactionChains(reactionsJson, msgId) {
+        function getUserAvatarAndName(uid, chatId) {
+            if (uid == State.u.userId) {
+                return { avatar: State.u.avatar || getDefAv(State.u.username), username: State.u.username };
+            }
+            const c = State.chats.get(chatId);
+            if (c && c.type === 'dm' && c.dm_user_id == uid) {
+                return { avatar: c.dm_avatar || getDefAv(c.dm_username), username: c.dm_username };
+            }
+            if (State.memberCache && State.memberCache[chatId]) {
+                const mem = State.memberCache[chatId].find(m => m.id == uid);
+                if (mem) {
+                    return { avatar: mem.avatar || getDefAv(mem.username), username: mem.username };
+                }
+            }
+            return { avatar: getDefAv('?'), username: 'User' };
+        }
+
+        function renderReactionChains(reactionsJson, msgId, chatId) {
             let chains = [];
             try {
                 const parsed = JSON.parse(reactionsJson || '{}');
@@ -4969,50 +5021,371 @@
                 return '';
             }
             
-            // FIX 1: If there are no reactions, return an empty string immediately
-            // This prevents creating empty containers that stretch message bubbles vertically
             if (chains.length === 0) return '';
             
-            // FIX 2: Removed inline styles completely to allow clean stylesheet positioning
             let html = '<div class="msg-reactions-wrap">';
+            
+            const chat = State.chats.get(chatId);
+            const isChannel = chat && chat.type === 'channel';
+            const isGroup = chat && chat.type === 'group';
             
             chains.forEach((chain, chainIdx) => {
                 if (chain.length === 0) return;
                 
-                const visibleSlice = chain.slice(-3);
                 const latestReaction = chain[chain.length - 1];
                 const isMineOnTop = latestReaction.uid === Number(State.u.userId);
+                const activeClass = isMineOnTop ? ' active-reaction' : '';
                 
-                html += `<div class="rx-chain-stack" onclick="App.handleChainClick(event, ${msgId}, ${chainIdx})">`;
+                const animOn = localStorage.getItem('y_anim_react') !== 'false';
+                let emojiContent = (animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[latestReaction.emoji])
+                    ? `<div data-url="${window.REACTION_LOTTIES[latestReaction.emoji]}" style="width:18px;height:18px;pointer-events:none;"></div>`
+                    : latestReaction.emoji;
                 
-                visibleSlice.forEach((item, index) => {
-                    const depth = visibleSlice.length - 1 - index; 
-                    const isLatest = depth === 0;
-                    const activeClass = (isLatest && isMineOnTop) ? ' active-reaction' : '';
-                    
-                    const animOn = localStorage.getItem('y_anim_react') !== 'false';
-                    let content = (animOn && window.REACTION_LOTTIES && window.REACTION_LOTTIES[item.emoji])
-                        ? `<div data-url="${window.REACTION_LOTTIES[item.emoji]}" style="width:18px;height:18px;pointer-events:none;"></div>`
-                        : item.emoji;
-                    
-                    // FIX 3: Append the total count of the chain to the topmost visual pill if greater than 1
-                    if (isLatest && chain.length > 1) {
-                        content += `<span style="margin-left:4px; font-weight:700; font-size:11px;">${chain.length}</span>`;
+                // Overlapping avatars
+                let avatarsHtml = '';
+                if (!isChannel) {
+                    const uniqueUsers = [];
+                    for (let i = chain.length - 1; i >= 0; i--) {
+                        if (!uniqueUsers.includes(chain[i].uid)) {
+                            uniqueUsers.push(chain[i].uid);
+                        }
                     }
                     
-                    html += `
-                        <div class="rx-stack-pill${activeClass}" style="--depth: ${depth};" data-depth="${depth}" data-emoji="${item.emoji}">
-                            ${content}
-                        </div>
-                    `;
-                });
+                    const maxAvatars = isGroup ? 2 : 1;
+                    const visibleUids = uniqueUsers.slice(0, maxAvatars);
+                    
+                    avatarsHtml = '<div class="rx-avatars-wrap">';
+                    visibleUids.forEach(uid => {
+                        const uInfo = getUserAvatarAndName(uid, chatId);
+                        avatarsHtml += `<img class="rx-mini-avatar" src="${uInfo.avatar}" title="${uInfo.username}">`;
+                    });
+                    avatarsHtml += '</div>';
+                }
                 
-                html += `</div>`;
+                html += `
+                    <div class="rx-chain-stack" 
+                         onpointerdown="App.handleReactionPointerDown(event, ${msgId}, ${chainIdx})" 
+                         onpointerup="App.handleReactionPointerUp(event)" 
+                         onpointerleave="App.handleReactionPointerLeave(event)"
+                         onclick="App.handleChainClick(event, ${msgId}, ${chainIdx})">
+                        <div class="rx-stack-pill${activeClass}" data-emoji="${latestReaction.emoji}">
+                            ${emojiContent}
+                            ${avatarsHtml}
+                            ${chain.length > 1 ? `<span style="margin-left:4px; font-weight:700; font-size:11px;">${chain.length}</span>` : ''}
+                        </div>
+                    </div>
+                `;
             });
             
             html += '</div>';
             return html;
         }
+
+        // Long Press & Active State Handlers for Reactions
+        App.handleReactionPointerDown = function(e, msgId, chainIdx) {
+            e.stopPropagation();
+            State.reactionPressTimer = setTimeout(() => {
+                App.showReactionUsersModal(msgId, chainIdx);
+                State.reactionPressTimer = null;
+            }, 600);
+        };
+        App.handleReactionPointerUp = function(e) {
+            if (State.reactionPressTimer) {
+                clearTimeout(State.reactionPressTimer);
+                State.reactionPressTimer = null;
+            }
+        };
+        App.handleReactionPointerLeave = function(e) {
+            if (State.reactionPressTimer) {
+                clearTimeout(State.reactionPressTimer);
+                State.reactionPressTimer = null;
+            }
+        };
+        App.showReactionUsersModal = async function(msgId, chainIdx) {
+            try {
+                const res = await req(`/api/messages/${State.chat}?after=0`);
+                const msg = res.find(m => m.id == msgId);
+                if (!msg) return;
+                const rx = JSON.parse(msg.reactions || '{}');
+                const chains = rx.chains || [];
+                const chain = chains[chainIdx];
+                if (!chain || chain.length === 0) return;
+                
+                const uids = chain.map(item => item.uid).join(',');
+                UI.toast("Loading list of reactions...");
+                const users = await req(`/api/users/by-ids?ids=${uids}`);
+                
+                let html = '<div style="display:flex; flex-direction:column; gap:12px; max-height:300px; overflow-y:auto; padding:10px 0;">';
+                chain.forEach(item => {
+                    const u = users.find(usr => usr.id == item.uid) || { username: 'User', avatar: defAv };
+                    html += `
+                        <div style="display:flex; align-items:center; justify-content:space-between;">
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <img src="${u.avatar || getDefAv(u.username)}" style="width:36px; height:36px; border-radius:50%; object-fit:cover;">
+                                <span style="font-weight:600; font-size:14px; color:var(--text-main);">${u.username}</span>
+                            </div>
+                            <span style="font-size:20px;">${item.emoji}</span>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = html;
+                
+                App.showModal({
+                    title: "Reactions",
+                    body: "Users who reacted to this message:",
+                    customEl: wrapper,
+                    buttons: [
+                        {
+                            text: "Close",
+                            className: "btn liquid-glass n-glass-border",
+                            style: "flex: 1; color: var(--text-main); background: var(--bg-input);",
+                            action: () => {}
+                        }
+                    ]
+                });
+            } catch(e) {
+                UI.toast("Failed to load reaction details");
+            }
+        };
+
+        // Group read list (Who Read Modal)
+        App.showReadersModal = async function() {
+            const msgId = State.targetId;
+            App.closeCtx();
+            if (!msgId) return;
+            UI.toast("Loading readers list...");
+            try {
+                const readers = await req(`/api/messages/${msgId}/readers`);
+                let html = '<div style="display:flex; flex-direction:column; gap:12px; max-height:300px; overflow-y:auto; padding:10px 0;">';
+                if (readers.length === 0) {
+                    html += '<div style="text-align:center; color:var(--text-muted); font-size:14px; padding:20px 0;">No other members have read this message yet.</div>';
+                } else {
+                    readers.forEach(r => {
+                        html += `
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <img src="${r.avatar || getDefAv(r.username)}" style="width:36px; height:36px; border-radius:50%; object-fit:cover;">
+                                <span style="font-weight:600; font-size:14px; color:var(--text-main);">${r.username}</span>
+                            </div>
+                        `;
+                    });
+                }
+                html += '</div>';
+                
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = html;
+                
+                App.showModal({
+                    title: "Who Read",
+                    body: "Members who read this message:",
+                    customEl: wrapper,
+                    buttons: [
+                        {
+                            text: "Close",
+                            className: "btn liquid-glass n-glass-border",
+                            style: "flex: 1; color: var(--text-main); background: var(--bg-input);",
+                            action: () => {}
+                        }
+                    ]
+                });
+            } catch(e) {
+                UI.toast(e.message || "Failed to load readers list");
+            }
+        };
+
+        // Autocomplete group mentions
+        App.handleMentionAutocomplete = function(e) {
+            const val = e.target.value;
+            const cursor = e.target.selectionStart;
+            const textBeforeCursor = val.substring(0, cursor);
+            const lastAtIdx = textBeforeCursor.lastIndexOf('@');
+            
+            if (lastAtIdx !== -1 && (lastAtIdx === 0 || /\s/.test(textBeforeCursor[lastAtIdx - 1]))) {
+                const query = textBeforeCursor.substring(lastAtIdx + 1).toLowerCase();
+                if (!query.includes(' ')) {
+                    const members = State.memberCache ? State.memberCache[State.chat] : null;
+                    if (members && members.length > 0) {
+                        const matches = members.filter(m => m.username.toLowerCase().includes(query));
+                        if (matches.length > 0) {
+                            App.showMentionAutocomplete(matches, lastAtIdx, cursor);
+                            return;
+                        }
+                    }
+                }
+            }
+            App.hideMentionAutocomplete();
+        };
+        App.showMentionAutocomplete = function(members, atIdx, cursor) {
+            const el = document.getElementById('mention-autocomplete');
+            if (!el) return;
+            el.innerHTML = '';
+            members.forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'ctx-item';
+                div.style.cssText = "display:flex; align-items:center; gap:10px; padding:10px 16px; cursor:pointer;";
+                div.innerHTML = `
+                    <img src="${m.avatar || getDefAv(m.username)}" style="width:24px; height:24px; border-radius:50%; object-fit:cover;">
+                    <span style="font-weight:600; font-size:13px; color:var(--text-main);">@${m.username}</span>
+                `;
+                div.onclick = (e) => {
+                    e.stopPropagation();
+                    const inp = document.getElementById('msg-input');
+                    const val = inp.value;
+                    const newVal = val.substring(0, atIdx) + `@${m.username} ` + val.substring(cursor);
+                    inp.value = newVal;
+                    inp.focus();
+                    App.hideMentionAutocomplete();
+                };
+                el.appendChild(div);
+            });
+            el.style.display = 'block';
+        };
+        App.hideMentionAutocomplete = function() {
+            const el = document.getElementById('mention-autocomplete');
+            if (el) el.style.display = 'none';
+        };
+
+        // Scroll to bottom logic with unread badge
+        App.scrollToBottom = function(smooth = true) {
+            const msgsCont = document.getElementById('msgs');
+            if (msgsCont) {
+                msgsCont.scrollTo({ top: msgsCont.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+                State.unreadScrollCount = 0;
+                const badge = document.getElementById('scroll-bottom-badge');
+                if (badge) badge.style.display = 'none';
+            }
+        };
+
+        // Single Conversation Search Feature
+        App.toggleChatSearch = function(show) {
+            const searchHeader = document.getElementById('chat-search-header');
+            const input = document.getElementById('chat-search-input');
+            if (show) {
+                searchHeader.style.display = 'flex';
+                input.value = '';
+                document.getElementById('chat-search-index').innerText = '0/0';
+                State.chatSearchResults = [];
+                State.chatSearchIndex = -1;
+                input.focus();
+            } else {
+                searchHeader.style.display = 'none';
+                document.querySelectorAll('.msgs-search-highlight').forEach(el => {
+                    const text = el.innerText;
+                    el.replaceWith(document.createTextNode(text));
+                });
+                State.chatSearchResults = [];
+                State.chatSearchIndex = -1;
+            }
+        };
+        App.searchInChat = function(query) {
+            document.querySelectorAll('.msgs-search-highlight').forEach(el => {
+                const text = el.innerText;
+                el.replaceWith(document.createTextNode(text));
+            });
+            
+            query = query.trim().toLowerCase();
+            if (!query) {
+                document.getElementById('chat-search-index').innerText = '0/0';
+                State.chatSearchResults = [];
+                State.chatSearchIndex = -1;
+                return;
+            }
+            
+            const rows = Array.from(document.querySelectorAll('#msgs .msg-row'));
+            const results = [];
+            
+            rows.forEach(row => {
+                const bubble = row.querySelector('.msg-bubble');
+                if (!bubble) return;
+                
+                const walk = (node) => {
+                    if (node.nodeType === 3) {
+                        const text = node.nodeValue;
+                        const idx = text.toLowerCase().indexOf(query);
+                        if (idx !== -1) {
+                            results.push({ row, node });
+                        }
+                    } else if (node.nodeType === 1 && node.tagName !== 'SCRIPT' && node.className !== 'msgs-search-highlight') {
+                        node.childNodes.forEach(walk);
+                    }
+                };
+                walk(bubble);
+            });
+            
+            State.chatSearchResults = results;
+            State.chatSearchIndex = results.length > 0 ? 0 : -1;
+            document.getElementById('chat-search-index').innerText = results.length > 0 ? `1/${results.length}` : '0/0';
+            
+            if (results.length > 0) {
+                results.forEach((res, idx) => {
+                    const node = res.node;
+                    const text = node.nodeValue;
+                    const lowerText = text.toLowerCase();
+                    const queryIdx = lowerText.indexOf(query);
+                    
+                    const before = text.substring(0, queryIdx);
+                    const match = text.substring(queryIdx, queryIdx + query.length);
+                    const after = text.substring(queryIdx + query.length);
+                    
+                    const span = document.createElement('span');
+                    span.className = 'msgs-search-highlight';
+                    span.style.cssText = "background: yellow; color: #000; border-radius: 2px;";
+                    span.innerText = match;
+                    
+                    const parent = node.parentNode;
+                    if (parent) {
+                        parent.insertBefore(document.createTextNode(before), node);
+                        parent.insertBefore(span, node);
+                        parent.insertBefore(document.createTextNode(after), node);
+                        parent.removeChild(node);
+                        res.span = span;
+                    }
+                });
+                App.navigateChatSearch(0);
+            }
+        };
+        App.navigateChatSearch = function(direction) {
+            if (State.chatSearchResults.length === 0) return;
+            
+            document.querySelectorAll('.msgs-search-highlight').forEach(el => el.style.border = 'none');
+            
+            State.chatSearchIndex += direction;
+            if (State.chatSearchIndex < 0) State.chatSearchIndex = State.chatSearchResults.length - 1;
+            if (State.chatSearchIndex >= State.chatSearchResults.length) State.chatSearchIndex = 0;
+            
+            document.getElementById('chat-search-index').innerText = `${State.chatSearchIndex + 1}/${State.chatSearchResults.length}`;
+            
+            const current = State.chatSearchResults[State.chatSearchIndex];
+            if (current && current.row) {
+                current.row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (current.span) {
+                    current.span.style.border = '2px solid red';
+                }
+            }
+        };
+
+        // Draft text helper
+        App.updateDraftPreviewInSidebar = function(chatId, text) {
+            const itemEl = document.querySelector(`.user-item[data-chat-id="${chatId}"]`);
+            if (itemEl) {
+                const previewEl = itemEl.querySelector('.user-last-msg');
+                if (previewEl) {
+                    if (text.trim()) {
+                        previewEl.innerHTML = `<span style="color:var(--danger); font-weight:600;">Draft:</span> <span style="color:var(--text-main);">${text.replace(/</g,'&lt;')}</span>`;
+                    } else {
+                        const c = State.chats.get(chatId === 'ai' ? 'ai' : Number(chatId));
+                        if (c) {
+                            let prevH = c.last_msg ? c.last_msg.replace(/</g,'&lt;') : 'Start chatting...';
+                            if(c.last_msg_type === 'photo') prevH = '🖼️ Photo';
+                            if(c.last_msg_type === 'file') prevH = '📁 File';
+                            previewEl.innerHTML = prevH;
+                        }
+                    }
+                }
+            }
+        };
         
         const App = {
             rebuildDateDividers() {
@@ -6177,15 +6550,17 @@
                     }
                 }
 
-                // Render the cascading stack chains recursively [1]
-                inner += renderReactionChains(m.reactions, m.id);
+                // Render the cascading stack chains recursively with E2EE and Telegram aesthetics
+                inner += renderReactionChains(m.reactions, m.id, m.chat_id);
                         
                 let viewsH = (chatType === 'channel' && m.views) ? `<span style="margin-left:8px; display:inline-flex; align-items:center; gap:2px;">👁 ${m.views}</span>` : '';
                 const tickHtml = isMine ? `<span class="msg-tick ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
                 const senderName = (!isMine && chatType !== 'dm') ? `<div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:4px">${m.sender_name} ${m.sender_verified ? verifiedTick : ''}</div>` : '';
                 const bubbleStyle = (m.type === 'sticker' || m.type === 'video_note') ? 'background: transparent !important; padding: 0 !important; box-shadow: none !important; border: none !important;' : '';
 
-                return `<div class="msg-bubble" style="${bubbleStyle}" ${rawAttr} onclick="App.handleBubbleClick(event, ${m.id}, ${isMine})">${senderName}${inner}<div class="msg-timestamp" style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${UI.formatTime(m.created_at)}${tickHtml}${viewsH}</div></div>`;
+                const editedHtml = (m.edited_at && m.edited_at !== 'null') ? `<span style="font-size:9px; opacity:0.6; margin-right:4px;">(edited)</span>` : '';
+
+                return `<div class="msg-bubble" style="${bubbleStyle}" ${rawAttr} onclick="App.handleBubbleClick(event, ${m.id}, ${isMine})">${senderName}${inner}<div class="msg-timestamp" style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">${editedHtml}${UI.formatTime(m.created_at)}${tickHtml}${viewsH}</div></div>`;
             },
             renderGraphs() {
                 const containers = document.querySelectorAll('.desmos-graph-container:not(.graph-loaded)');
@@ -6431,7 +6806,17 @@
                             cont.insertAdjacentHTML('beforeend', `<div class="msg-row ${isMine ? 'sent' : 'received'}" id="msg-${m.id}" data-time="${m.created_at}">${innerHTML}</div>`);
                             App.rebuildDateDividers();
                             App.renderMath();
-                            if (isAtBottom) cont.scrollTop = cont.scrollHeight;
+                            
+                            if (isAtBottom) {
+                                cont.scrollTop = cont.scrollHeight;
+                            } else if (!isMine) {
+                                State.unreadScrollCount = (State.unreadScrollCount || 0) + 1;
+                                const badge = document.getElementById('scroll-bottom-badge');
+                                if (badge) {
+                                    badge.style.display = 'block';
+                                    badge.textContent = `+${State.unreadScrollCount}`;
+                                }
+                            }
                             
                             State.lastMsgId = m.id;
                             localforage.setItem(`y_cache_msgs_${State.chat}`, cont.innerHTML);
@@ -7246,7 +7631,7 @@
                     }
                 });
                 
-                // Shift+Enter / Enter sending
+                // Shift+Enter / Enter sending & Mentions / Drafts
                 const msgInput = document.getElementById('msg-input');
                 if(msgInput) {
                     msgInput.addEventListener('keydown', (e) => {
@@ -7255,6 +7640,20 @@
                             App.sendText();
                         }
                     });
+                    msgInput.addEventListener('input', function(e) {
+                        if (State.chat) {
+                            const draftText = this.value;
+                            if (draftText.trim()) {
+                                localStorage.setItem(`draft_${State.chat}`, draftText);
+                            } else {
+                                localStorage.removeItem(`draft_${State.chat}`);
+                            }
+                            App.updateDraftPreviewInSidebar(State.chat, draftText);
+                        }
+                        App.handleMentionAutocomplete(e);
+                    });
+                    msgInput.addEventListener('keyup', App.handleMentionAutocomplete);
+                    msgInput.addEventListener('click', App.handleMentionAutocomplete);
                 }
                 const effectsEnabled = localStorage.getItem('y_msg_effects_enabled') === 'true';
                 const effectsCheckbox = document.getElementById('set-msg-effects');
@@ -7606,6 +8005,9 @@
                 menu.style.top = `${y}px`;
         
                 // Toggle context item visibility
+                const activeChatObj = State.chats.get(State.chat);
+                const isGroup = activeChatObj && activeChatObj.type === 'group';
+                document.getElementById('ctx-who-read').style.display = isGroup ? 'flex' : 'none';
                 document.getElementById('ctx-save-media').style.display = isMedia ? 'flex' : 'none';
                 document.getElementById('ctx-copy').style.display = State.targetTxt ? 'flex' : 'none';
                 document.getElementById('ctx-del').style.display = isMine ? 'flex' : 'none';
@@ -7812,8 +8214,18 @@
                         if(c.last_msg_type === 'photo') prevH = '🖼️ Photo';
                         if(c.last_msg_type === 'file') prevH = '📁 File';
                         
-                        if(isDM && c.dm_typing == c.id) prevH = '<span style="color:var(--primary)">typing...</span>';
-                        else if(!isDM && c.is_typing == c.id) prevH = '<span style="color:var(--primary)">typing...</span>';
+                        const draft = localStorage.getItem(`draft_${c.id}`);
+                        if (draft && draft.trim()) {
+                            prevH = `<span style="color:var(--danger); font-weight:600;">Draft:</span> <span style="color:var(--text-main);">${draft.replace(/</g,'&lt;')}</span>`;
+                        } else {
+                            const typingDotsHtml = `
+                                <div class="typing-dots" style="color:var(--primary); transform:scale(0.85); width:32px;">
+                                    <span></span><span></span><span></span>
+                                </div>
+                            `;
+                            if(isDM && c.dm_typing == c.id) prevH = typingDotsHtml;
+                            else if(!isDM && c.is_typing == c.id) prevH = typingDotsHtml;
+                        }
         
                         const bage = c.unread > 0 ? `<span class="badge">${c.unread}</span>` : '';
                         totalUnread += c.unread || 0; 
@@ -8160,6 +8572,29 @@
                 if (id === 'ai') { chatAv.classList.add('ai-avatar'); chatAv.parentElement.classList.add('ai-wrap'); } 
                 else { chatAv.classList.remove('ai-avatar'); chatAv.parentElement.classList.remove('ai-wrap'); }
                 
+                // Hide search header
+                App.toggleChatSearch(false);
+                
+                // Load local draft if exists
+                const draft = localStorage.getItem(`draft_${id}`);
+                const inp = document.getElementById('msg-input');
+                if (inp) {
+                    inp.value = draft || '';
+                    inp.style.height = '44px';
+                    if (draft) {
+                        inp.style.height = Math.min(inp.scrollHeight, 100) + 'px';
+                        document.getElementById('record-btn').style.display = 'none';
+                        document.getElementById('send-btn-el').style.display = 'flex';
+                    } else {
+                        document.getElementById('record-btn').style.display = 'flex';
+                        document.getElementById('send-btn-el').style.display = 'none';
+                    }
+                }
+                
+                if (c.type === 'group' || c.type === 'channel') {
+                    App.loadChatMembers(id);
+                }
+                
                 if (c.type !== 'dm' && !c.my_role) {
                     document.getElementById('input-bar').style.display = 'none'; 
                     document.getElementById('channel-bar').innerHTML = `<button class="btn" style="border-radius:12px; padding:10px; width:100%" onclick="App.joinChatId(${c.id})">${c.type === 'channel' ? 'Join Channel' : 'Join Group'}</button>`;
@@ -8208,9 +8643,23 @@
                 this.loadMsgs(id);
                 // Add inside App.openChat(id) right after this.loadMsgs(id);
                 // Inside openChat(id), replace the scroll listener with this:
-                // --- UPDATED CODE (With E2EE Decryption) ---
+                // --- UPDATED CODE (With E2EE Decryption, unread counting, and bottom scroll buttons) ---
                 const msgsCont = document.getElementById('msgs');
                 msgsCont.onscroll = async () => {
+                    // Bottom scroll detection & unread count badge resetting
+                    const scrollDiff = msgsCont.scrollHeight - msgsCont.scrollTop - msgsCont.clientHeight;
+                    const btn = document.getElementById('scroll-bottom-btn');
+                    if (btn) {
+                        if (scrollDiff > 300) {
+                            btn.style.display = 'flex';
+                        } else {
+                            btn.style.display = 'none';
+                            State.unreadScrollCount = 0;
+                            const badge = document.getElementById('scroll-bottom-badge');
+                            if (badge) badge.style.display = 'none';
+                        }
+                    }
+
                     if (msgsCont.scrollTop === 0 && !State.isFetchingOlder) {
                         State.isFetchingOlder = true;
                         const oldestMsg = msgsCont.querySelector('.msg-row');
@@ -8397,6 +8846,17 @@
                         if (isAtBottom || forceFull) {
                             cont.scrollTop = cont.scrollHeight;
                             setTimeout(() => { if (cont) cont.scrollTop = cont.scrollHeight; }, 10);
+                        } else {
+                            // Only count unread messages that came while scrolled up
+                            const incomingOthers = msgs.filter(m => m.sender_id !== State.u.userId);
+                            if (incomingOthers.length > 0) {
+                                State.unreadScrollCount = (State.unreadScrollCount || 0) + incomingOthers.length;
+                                const badge = document.getElementById('scroll-bottom-badge');
+                                if (badge) {
+                                    badge.style.display = 'block';
+                                    badge.textContent = `+${State.unreadScrollCount}`;
+                                }
+                            }
                         }
                         
                         // 3. Save cache in the BACKGROUND so the UI doesn't freeze
@@ -9792,6 +10252,9 @@
             async loadChatMembers(id) {
                 try {
                     const mems = await req(`/api/chats/${id}/members`);
+                    if (!State.memberCache) State.memberCache = {};
+                    State.memberCache[id] = mems;
+                    
                     let h = '';
                     mems.forEach(m => {
                         // Inside App.loadChatMembers
