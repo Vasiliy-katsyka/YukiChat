@@ -10039,232 +10039,101 @@
             handlePointerLeave(e) {
                 clearTimeout(this.gestureTimeout);
             },
-            // --- INITIALIZATION ---
-            // --- INITIALIZATION ---
             async start() {
-                // Mirror token to localforage so the Service Worker can authenticate background fetches [2]
-                if (State.t) {
-                    localforage.setItem('y_t', State.t).catch(err => console.error(err));
-                }
-
-                document.getElementById('set-av').src = State.u.avatar || getDefAv(State.u.username);
-                document.getElementById('nav-av').src = State.u.avatar || getDefAv(State.u.username);
-                Router.updateNav();
-                this.initFolders();
-
-                // Initialize End-to-End Encryption
+                if (this.isRecording) return;
+                this.isRecording = true;
+                this.chunks = [];
+                this.peaks = [];
+                
                 try {
-                    await E2EE.init();
-                } catch (e) {
-                    console.error("E2EE Initialization Failed:", e);
-                }
-                
-                // --- NEW: Keyboard Shortcuts ---
-                document.addEventListener('keydown', (e) => {
-                    const isInput = ['INPUT', 'TEXTAREA'].includes(e.target.tagName);
-                    
-                    // Ctrl+K or '/' for Search
-                    if (((e.ctrlKey || e.metaKey) && e.key === 'k') || (!isInput && e.key === '/')) {
-                        e.preventDefault();
-                        document.querySelector('.search-bar input')?.focus();
-                        if(Router.stack[Router.stack.length-1] !== 'panel-root') App.switchTab('chats');
-                    }
-                    
-                    // Esc: Close Modals, Cancel Reply, Close Chat
-                    if (e.key === 'Escape') {
-                        if (State.replyTo) App.cancelReply();
-                        else if (document.getElementById('ctx-menu').classList.contains('show')) App.closeCtx();
-                        else if (Router.stack.length > 1 && Router.stack[Router.stack.length-1] !== 'panel-chat') Router.pop();
-                    }
-                
-                    // Up Arrow: Edit/Reply to last message if input is empty
-                    if (e.key === 'ArrowUp' && e.target.id === 'msg-input' && !e.target.value) {
-                        e.preventDefault();
-                        const myMsgs = Array.from(document.querySelectorAll('.msg-row.sent'));
-                        if (myMsgs.length > 0) {
-                            const lastMsg = myMsgs[myMsgs.length - 1];
-                            State.targetId = lastMsg.id.replace('msg-', '');
-                            const bubble = lastMsg.querySelector('.msg-bubble');
-                            State.targetTxt = bubble ? (bubble.getAttribute('data-raw') || 'Media') : '';
-                            App.initReply();
-                        }
-                    }
-                });
-                
-                // Shift+Enter / Enter sending
-                const msgInput = document.getElementById('msg-input');
-                if(msgInput) {
-                    msgInput.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter' && !e.shiftKey && window.innerWidth >= 768) {
-                            e.preventDefault();
-                            App.sendText();
-                        }
+                    const videoOpts = this.mode === 'video' ? { width: 320, height: 320, facingMode: "user" } : false;
+                    this.stream = await navigator.mediaDevices.getUserMedia({
+                        audio: true,
+                        video: videoOpts
                     });
-                }
-                const effectsEnabled = localStorage.getItem('y_msg_effects_enabled') === 'true';
-                const effectsCheckbox = document.getElementById('set-msg-effects');
-                if (effectsCheckbox) effectsCheckbox.checked = effectsEnabled;
-                // --- NEW: Drag & Drop Dropzone UI ---
-                const chatArea = document.getElementById('panel-chat');
-                const dropOverlay = document.getElementById('drop-zone-overlay');
-                chatArea.addEventListener('dragover', (e) => { e.preventDefault(); dropOverlay.style.display = 'flex'; });
-                chatArea.addEventListener('dragleave', (e) => { 
-                    if(e.relatedTarget === dropOverlay || e.target === dropOverlay) return;
-                    e.preventDefault(); dropOverlay.style.display = 'none'; 
-                });
-                chatArea.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    dropOverlay.style.display = 'none';
-                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                        App.prepMedia({ target: { files: e.dataTransfer.files, value: '' } });
-                    }
-                });
-                
-                // Init Compact Mode setting
-                const isCompact = localStorage.getItem('y_compact') === 'true';
-                if (document.getElementById('set-compact')) document.getElementById('set-compact').checked = isCompact;
-                this.toggleCompactMode(isCompact);
-
-                const msgsCont = document.getElementById('msgs');
-                let touchStartX = 0;
-                let swipeTarget = null;
-                
-                msgsCont.addEventListener('touchstart', e => {
-                    const bubble = e.target.closest('.msg-bubble');
-                    if (!bubble) return;
-                    touchStartX = e.touches[0].clientX;
-                    swipeTarget = bubble;
-                    swipeTarget.style.transition = 'none';
-                }, {passive: true});
-                
-                msgsCont.addEventListener('touchmove', e => {
-                    if (!swipeTarget) return;
-                    const diff = e.touches[0].clientX - touchStartX;
-                    if (diff < -10) { // Swipe left
-                        swipeTarget.style.transform = `translateX(${Math.max(diff, -60)}px)`;
-                    }
-                }, {passive: true});
-                
-                msgsCont.addEventListener('touchend', e => {
-                    if (!swipeTarget) return;
-                    const diff = e.changedTouches[0].clientX - touchStartX;
-                    swipeTarget.style.transition = 'transform 0.2s';
-                    swipeTarget.style.transform = 'translateX(0)';
                     
-                    if (diff < -50) {
-                        // Trigger reply
-                        const row = swipeTarget.closest('.msg-row');
-                        State.targetId = row.id.replace('msg-', '');
-                        State.targetTxt = swipeTarget.getAttribute('data-raw') || 'Media';
-                        App.initReply();
+                    if (this.mode === 'video') {
+                        const feed = document.getElementById('recording-preview-feed');
+                        feed.srcObject = this.stream;
+                        document.getElementById('recording-video-circle').style.display = 'block';
+                    } else {
+                        document.getElementById('recording-video-circle').style.display = 'none';
                     }
-                    swipeTarget = null;
-                });
-                const mCont = document.getElementById('media-zoom-container');
-                const mImg = document.getElementById('media-viewer-img');
-                let mStartDist = 0, mStartX = 0, mStartY = 0, mPanX = 0, mPanY = 0;
-                
-                mCont.addEventListener('touchstart', e => {
-                    if(e.touches.length === 2) {
-                        mStartDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-                    } else if (e.touches.length === 1 && State.mScale > 1) {
-                        mStartX = e.touches[0].pageX - mPanX;
-                        mStartY = e.touches[0].pageY - mPanY;
+                    
+                    document.getElementById('recording-hud').style.display = 'flex';
+                    
+                    // Setup visualizer/analyzer for peaks if audioCtx is available
+                    try {
+                        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        const source = this.audioCtx.createMediaStreamSource(this.stream);
+                        const processor = this.audioCtx.createScriptProcessor(2048, 1, 1);
+                        source.connect(processor);
+                        processor.connect(this.audioCtx.destination);
+                        processor.onaudioprocess = (e) => {
+                            const input = e.inputBuffer.getChannelData(0);
+                            let sum = 0;
+                            for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
+                            const rms = Math.sqrt(sum / input.length);
+                            const peak = Math.max(0, Math.min(100, Math.round(rms * 100)));
+                            this.peaks.push(peak);
+                        };
+                    } catch(e) {
+                        console.warn("Audio peaks analyzer not supported", e);
                     }
-                });
-                
-                mCont.addEventListener('touchmove', e => {
-                    if(e.touches.length === 2) {
-                        e.preventDefault();
-                        const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-                        State.mScale = Math.min(Math.max(1, State.mScale * (dist / mStartDist)), 4);
-                        mStartDist = dist;
-                    } else if (e.touches.length === 1 && State.mScale > 1) {
-                        e.preventDefault();
-                        mPanX = e.touches[0].pageX - mStartX;
-                        mPanY = e.touches[0].pageY - mStartY;
+                    
+                    let options = {};
+                    if (this.mode === 'video') {
+                        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) options = { mimeType: 'video/webm;codecs=vp9' };
+                        else if (MediaRecorder.isTypeSupported('video/mp4')) options = { mimeType: 'video/mp4' };
+                    } else {
+                        if (MediaRecorder.isTypeSupported('audio/webm')) options = { mimeType: 'audio/webm' };
                     }
-                    mImg.style.transform = `scale(${State.mScale}) translate(${mPanX/State.mScale}px, ${mPanY/State.mScale}px)`;
-                });
-                
-                mCont.addEventListener('touchend', () => {
-                    if(State.mScale <= 1) { mPanX = 0; mPanY = 0; mImg.style.transform = `scale(1) translate(0px, 0px)`; }
-                });
-                
-                const nameEl = document.getElementById('set-name');
-                if(nameEl.tagName === 'INPUT') nameEl.value = State.u.username; else nameEl.textContent = State.u.username;
-                document.getElementById('set-bio').value = State.u.bio || '';
-                if(document.getElementById('set-pronouns')) document.getElementById('set-pronouns').value = State.u.pronouns || '';
-                if(document.getElementById('set-location')) document.getElementById('set-location').value = State.u.location || '';
-                if(document.getElementById('set-birthday')) document.getElementById('set-birthday').value = State.u.birthday || '';
-                
-                if (State.u.profile_banner_url && document.getElementById('set-banner-preview')) {
-                    document.getElementById('set-banner-preview').src = State.u.profile_banner_url;
-                    document.getElementById('set-banner-preview').style.display = 'block';
-                    document.getElementById('set-banner-gradient').style.display = 'none';
+                    
+                    this.mediaRecorder = new MediaRecorder(this.stream, options);
+                    this.mediaRecorder.ondataavailable = e => {
+                        if (e.data && e.data.size > 0) this.chunks.push(e.data);
+                    };
+                    
+                    this.mediaRecorder.onstop = async () => {
+                        if (this.hasCanceled) return;
+                        
+                        const blobType = this.mode === 'video' ? 'video/webm' : 'audio/webm';
+                        const blob = new Blob(this.chunks, { type: blobType });
+                        const ext = this.mode === 'video' ? 'webm' : 'webm';
+                        
+                        const filename = `recording_${Date.now()}.${ext}`;
+                        const file = new File([blob], filename, { type: blobType });
+                        
+                        // Prep caption with peaks
+                        const capObj = { peaks: this.peaks };
+                        
+                        // Add to queue
+                        State.capMediaQueue = [{
+                            rawFile: file,
+                            type: this.mode === 'video' ? 'video_note' : 'voice',
+                            filename: filename,
+                            caption: JSON.stringify(capObj)
+                        }];
+                        
+                        await App.sendMedia();
+                    };
+                    
+                    this.mediaRecorder.start();
+                    
+                    let secs = 0;
+                    this.timerInterval = setInterval(() => {
+                        secs++;
+                        const m = Math.floor(secs / 60).toString().padStart(2, '0');
+                        const s = (secs % 60).toString().padStart(2, '0');
+                        document.getElementById('recording-hud-timer').innerText = `Recording... ${m}:${s}`;
+                    }, 1000);
+                    
+                } catch(err) {
+                    console.error("Recording failed to start:", err);
+                    UI.toast("Microphone/Camera permission required");
+                    this.isRecording = false;
+                    document.getElementById('recording-hud').style.display = 'none';
                 }
-
-                // Initialize Bubble Style setting
-                const savedBubbleStyle = localStorage.getItem('y_bubble_style') || 'asymmetric';
-                this.setBubbleStyle(savedBubbleStyle);
-                if (document.getElementById('set-bubble-style')) {
-                    document.getElementById('set-bubble-style').value = savedBubbleStyle;
-                }
-
-                // Initialize Auto-Download setting
-                const isAutoDownload = localStorage.getItem('y_auto_download') !== 'false';
-                if (document.getElementById('set-auto-download')) {
-                    document.getElementById('set-auto-download').checked = isAutoDownload;
-                }
-
-                // Initialize Hide Online Status setting
-                const isOnlineStatusChecked = State.u.hide_online_status === 1;
-                if (document.getElementById('set-online-status')) {
-                    document.getElementById('set-online-status').checked = isOnlineStatusChecked;
-                }
-
-                // Initialize Animated Reactions Setting (Default to true)
-                const animReact = localStorage.getItem('y_anim_react') !== 'false';
-                if (document.getElementById('set-anim-react')) {
-                    document.getElementById('set-anim-react').checked = animReact;
-                }
-                
-                const t = localStorage.getItem('y_theme') || 'dark'; this.setTheme(t);
-                const w = localStorage.getItem('y_wall') || ''; this.setWallpaper(w);
-
-                // Initialize Blur state
-                const blur = localStorage.getItem('y_glass_blur') || '4';
-                document.documentElement.style.setProperty('--glass-blur', `${blur}px`);
-                const blurSlider = document.getElementById('set-blur');
-                if (blurSlider) blurSlider.value = blur;
-                const blurDisp = document.getElementById('blur-val-disp');
-                if (blurDisp) blurDisp.innerText = `${blur}px`;
-                
-                let skels=''; for(let i=0;i<6;i++) skels+=`<div class="user-item"><div class="skel-av skeleton"></div><div class="user-info"><div class="skel-text skeleton"></div><div class="skel-text short skeleton"></div></div></div>`;
-                document.getElementById('chat-list').innerHTML = skels;
-                
-                this.loadStickerKeyboard();
-                if(State.u.username === 'vasiliy') document.getElementById('admin-panel').style.display = 'block';
-
-                let totalBytes = 0;
-                for(let key in localStorage) if(localStorage.hasOwnProperty(key)) totalBytes += ((localStorage[key].length + key.length) * 2);
-                document.getElementById('cache-size').innerText = (totalBytes / 1024).toFixed(1) + ' KB';
-                Weather.init();
-                
-                this.sync(); 
-
-                App.connectWS();
-
-                // Kill the high-CPU fast poll loop (WebSocket handles this instantly now!)
-                if (State.fastLoop) clearInterval(State.fastLoop);
-                
-                // Background Sync Loop: Slowed down to 30s just to safely keep online dots updated
-                if (State.syncLoop) clearInterval(State.syncLoop);
-                State.syncLoop = setInterval(() => {
-                    if (document.visibilityState === 'visible') {
-                        App.sync(); 
-                    }
-                }, 8000);
             },
             async stop(canceled = false) {
                 if (!this.isRecording) return;
