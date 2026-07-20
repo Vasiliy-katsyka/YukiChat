@@ -5015,6 +5015,66 @@
         }
         
         const App = {
+            rebuildDateDividers() {
+                const cont = document.getElementById('msgs');
+                if (!cont) return;
+
+                // Remove existing date dividers
+                const existingDividers = cont.querySelectorAll('.date-divider, [data-type="date-divider"]');
+                existingDividers.forEach(el => el.remove());
+
+                const rows = cont.querySelectorAll('.msg-row');
+                let lastDateKey = null;
+
+                const months = [
+                    "January", "February", "March", "April", "May", "June",
+                    "July", "August", "September", "October", "November", "December"
+                ];
+
+                rows.forEach(row => {
+                    const timeStr = row.getAttribute('data-time');
+                    if (!timeStr) return;
+
+                    const d = new Date(timeStr);
+                    if (isNaN(d.getTime())) return;
+
+                    const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+
+                    if (dateKey !== lastDateKey) {
+                        const div = document.createElement('div');
+                        div.className = 'date-divider';
+                        div.setAttribute('data-type', 'date-divider');
+                        div.style.cssText = 'width:100%; text-align:center; margin: 16px 0; display:flex; justify-content:center; color:var(--text-muted); font-size:12px; font-weight:600; user-select:none; pointer-events:none;';
+                        
+                        const day = d.getDate();
+                        const year = d.getFullYear();
+                        const currentYear = new Date().getFullYear();
+                        let displayStr = "";
+
+                        if (I18N.lang === 'ru') {
+                            const ruMonths = [
+                                "Января", "Февраля", "Марта", "Апреля", "Мая", "Июня",
+                                "Июля", "Августа", "Сентября", "Октября", "Ноября", "Декабря"
+                            ];
+                            const month = ruMonths[d.getMonth()];
+                            displayStr = (year < currentYear) ? `${day} ${month} ${year}` : `${day} ${month}`;
+                        } else {
+                            const month = months[d.getMonth()];
+                            let suffix = "th";
+                            if (day === 1 || day === 21 || day === 31) suffix = "st";
+                            else if (day === 2 || day === 22) suffix = "nd";
+                            else if (day === 3 || day === 23) suffix = "rd";
+                            displayStr = (year < currentYear) ? `${month} ${day}${suffix}, ${year}` : `${month} ${day}${suffix}`;
+                        }
+
+                        div.innerHTML = `<span style="background: color-mix(in srgb, var(--bg-input) 80%, transparent); border: 1px solid var(--border); padding: 4px 12px; border-radius: 12px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">${displayStr}</span>`;
+                        
+                        row.parentNode.insertBefore(div, row);
+                        lastDateKey = dateKey;
+                    }
+                });
+            },
+
             // --- GROUP MESSAGES BY GROUP_ID ---
             groupMessages(msgs) {
                 const grouped = [];
@@ -5551,10 +5611,12 @@
                 const msgsCont = document.getElementById('msgs');
                 
                 // Append Optimistic UI (Rendered as large photo)
+                const nowTime = new Date().toISOString();
                 msgsCont.insertAdjacentHTML('beforeend', `
-                    <div class="msg-row sent" id="${tempId}" style="opacity: 0.8;">
+                    <div class="msg-row sent" id="${tempId}" data-time="${nowTime}" style="opacity: 0.8;">
                         <div class="msg-bubble" style="background: transparent; padding: 0;"><img src="${url}" class="msg-media" style="border-radius: 12px;"><div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;">Sending...</div></div>
                     </div>`);
+                App.rebuildDateDividers();
                 msgsCont.scrollTop = msgsCont.scrollHeight;
                 
                 try {
@@ -5563,9 +5625,11 @@
                         const tempEl = document.getElementById(tempId);
                         if (tempEl && res && res.id) {
                             tempEl.id = `msg-${res.id}`;
+                            tempEl.setAttribute('data-time', res.created_at || nowTime);
                             tempEl.style.opacity = '1';
                             const loadingTxt = tempEl.querySelector('.msg-bubble > div:last-child');
                             if(loadingTxt) loadingTxt.innerHTML = `${UI.formatTime(res.created_at)} <span class="msg-tick">✓</span>`;
+                            App.rebuildDateDividers();
                         }
                     }
                 } catch(e) {
@@ -6353,6 +6417,8 @@
                             if (existingMsg) {
                                 const isMine = m.sender_id === State.u.userId;
                                 existingMsg.innerHTML = App.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
+                                existingMsg.setAttribute('data-time', m.created_at);
+                                App.rebuildDateDividers();
                                 return; 
                             }
                             const cont = document.getElementById('msgs');
@@ -6362,7 +6428,8 @@
                             const isMine = m.sender_id === State.u.userId;
                             const innerHTML = App.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
                             
-                            cont.insertAdjacentHTML('beforeend', `<div class="msg-row ${isMine ? 'sent' : 'received'}" id="msg-${m.id}">${innerHTML}</div>`);
+                            cont.insertAdjacentHTML('beforeend', `<div class="msg-row ${isMine ? 'sent' : 'received'}" id="msg-${m.id}" data-time="${m.created_at}">${innerHTML}</div>`);
+                            App.rebuildDateDividers();
                             App.renderMath();
                             if (isAtBottom) cont.scrollTop = cont.scrollHeight;
                             
@@ -6595,16 +6662,18 @@
                 // 1. Immediate Optimistic UI
                 const tempId = 'temp-' + Date.now();
                 const msgsCont = document.getElementById('msgs');
+                const nowTime = new Date().toISOString();
                 
-                msgsCont.innerHTML += `
-                    <div class="msg-row sent" id="${tempId}" style="opacity: 0.9;">
+                msgsCont.insertAdjacentHTML('beforeend', `
+                    <div class="msg-row sent" id="${tempId}" data-time="${nowTime}" style="opacity: 0.9;">
                         <div class="msg-bubble" style="background: transparent; padding: 0; box-shadow: none;">
                             <img src="${url}" class="msg-sticker" onclick="event.stopPropagation(); App.findAndPreviewSticker('${url}')">
                             <div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px;color:var(--text-muted);">
                                 Just now <span class="msg-tick" style="color:gray;">✓</span>
                             </div>
                         </div>
-                    </div>`;
+                    </div>`);
+                App.rebuildDateDividers();
                 msgsCont.scrollTop = msgsCont.scrollHeight;
             
                 // 2. Send to backend
@@ -6616,9 +6685,11 @@
                         const tempEl = document.getElementById(tempId);
                         if (tempEl) {
                             tempEl.id = 'msg-' + res.id;
+                            tempEl.setAttribute('data-time', res.created_at || nowTime);
                             tempEl.style.opacity = '1';
                             const tick = tempEl.querySelector('.msg-tick');
                             if (tick) tick.style.color = 'var(--text-muted)';
+                            App.rebuildDateDividers();
                         }
                         if (res && res.id > State.lastMsgId) State.lastMsgId = res.id;
                         if (msgsCont) localforage.setItem(`y_cache_msgs_${targetChat}`, msgsCont.innerHTML);
@@ -6952,12 +7023,14 @@
             async sendToAI(text, type, mediaData) {
                 const msgsCont = document.getElementById('msgs');
                 const displayTxt = type === 'text' ? text.replace(/</g,'&lt;') : '🖼️ Photo Sent';
+                const nowTime = new Date().toISOString();
                 msgsCont.insertAdjacentHTML('beforeend', `
-                    <div class="msg-row sent">
+                    <div class="msg-row sent" data-time="${nowTime}">
                         <div class="msg-bubble">${displayTxt}
                             <div style="font-size:10px;opacity:0.6;text-align:right;margin-top:4px">Just now ✓</div>
                         </div>
                     </div>`);
+                App.rebuildDateDividers();
                 
                 const typingId = 'ai-typing-' + Date.now();
                 msgsCont.insertAdjacentHTML('beforeend', `
@@ -8161,9 +8234,11 @@
                                 }
                                 const isMine = m.sender_id === State.u.userId;
                                 const innerHTML = this.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
-                                const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}">${innerHTML}</div>`;
+                                const rowHtml = `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" data-time="${m.created_at}">${innerHTML}</div>`;
                                 msgsCont.insertAdjacentHTML('afterbegin', rowHtml);
                             }
+                            
+                            App.rebuildDateDividers();
                             
                             // Maintain scroll position after prepending DOM nodes
                             msgsCont.scrollTop = msgsCont.scrollHeight - oldHeight;
@@ -8193,6 +8268,7 @@
                 
                 if (cachedHtml && cachedHtml.includes('msg-row')) {
                     cont.innerHTML = cachedHtml;
+                    App.rebuildDateDividers();
                     App.renderMath();
                     hasCache = true;
                     
@@ -8302,7 +8378,7 @@
                     
                         const isMine = m.sender_id === State.u.userId;
                         const innerHTML = this.buildMsgHTML(m, isMine, chat?.type);
-                        htmlBatch += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
+                        htmlBatch += `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" data-time="${m.created_at}" oncontextmenu="App.showCtx(event, ${m.id}, ${isMine})">${innerHTML}</div>`;
                         if (!isMine && m.content) fxChecks.push({ content: m.content, id: `msg-${m.id}` });
                         addedNew = true;
                     });
@@ -8310,6 +8386,7 @@
                     // 1. Inject all 50 messages AT ONCE (Stops CSS thrashing)
                     if (htmlBatch) cont.insertAdjacentHTML('beforeend', htmlBatch);
                     if (addedNew || forceFull) {
+                        App.rebuildDateDividers();
                         App.renderMath();
                     }
                     fxChecks.forEach(fx => FX.check(fx.content, fx.id));
@@ -8401,8 +8478,9 @@
                                 }
                                 const isMine = m.sender_id === State.u.userId;
                                 const innerHTML = this.buildMsgHTML(m, isMine, State.chats.get(State.chat)?.type);
-                                cont.insertAdjacentHTML('beforeend', `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}">${innerHTML}</div>`);
+                                cont.insertAdjacentHTML('beforeend', `<div class="msg-row ${isMine?'sent':'received'}" id="msg-${m.id}" data-time="${m.created_at}">${innerHTML}</div>`);
                             }
+                            App.rebuildDateDividers();
                             App.renderMath();
                             const targetEl = document.getElementById(`msg-${msgId}`);
                             if (targetEl) {
@@ -8578,7 +8656,7 @@
                     
                     if (State.chat === targetChat) {
                         msgsCont.insertAdjacentHTML('beforeend', `
-                            <div class="msg-row sent" id="${tempGroupId}" style="opacity: 0.9;">
+                            <div class="msg-row sent" id="${tempGroupId}" data-time="${new Date().toISOString()}" style="opacity: 0.9;">
                                 <div class="msg-bubble" style="background: transparent; padding: 0; box-shadow: none; border: none !important;">
                                     ${gridHtml}
                                     ${captionHtml}
@@ -8586,6 +8664,7 @@
                                 </div>
                             </div>
                         `);
+                        App.rebuildDateDividers();
                         msgsCont.scrollTop = msgsCont.scrollHeight;
                     }
 
@@ -8781,7 +8860,8 @@
                 };
                 const bubbleHtml = this.buildMsgHTML(fakeMsg, true, State.chats.get(targetChat)?.type);
                 
-                msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}" style="opacity: 0.7;">${bubbleHtml}</div>`);
+                msgsCont.insertAdjacentHTML('beforeend', `<div class="msg-row sent" id="${tempId}" data-time="${fakeMsg.created_at}" style="opacity: 0.7;">${bubbleHtml}</div>`);
+                App.rebuildDateDividers();
                 App.renderMath();
                 msgsCont.scrollTop = msgsCont.scrollHeight;
                 
@@ -8811,9 +8891,11 @@
                             tempEl?.remove();
                         } else if (tempEl && res && res.id) {
                             tempEl.id = `msg-${res.id}`;
+                            tempEl.setAttribute('data-time', res.created_at);
                             tempEl.style.opacity = '1';
                             const loadingTxt = tempEl.querySelector('.msg-bubble > div:last-child');
                             if (loadingTxt) loadingTxt.innerHTML = `${UI.formatTime(res.created_at)} <span class="msg-tick">✓</span>`;
+                            App.rebuildDateDividers();
                         }
                         
                         if (res.id > State.lastMsgId) State.lastMsgId = res.id;
