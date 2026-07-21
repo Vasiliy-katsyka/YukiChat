@@ -483,6 +483,12 @@
         .profile-av-wrap .avatar { width: 100%; height: 100%; border-radius: 0; }
         .profile-av-edit { position: absolute; bottom: 0; left: 0; right: 0; height: 35%; background: rgba(0,0,0,0.6); color: white; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: 600; cursor: pointer; }
 
+        .cropper-circle .cropper-view-box,
+        .cropper-circle .cropper-face {
+            border-radius: 50% !important;
+            outline: none !important;
+        }
+
         .call-badge { background: var(--bg-input); color: var(--danger); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
         .online-dot { width: 12px; height: 12px; background: var(--success); border-radius: 50%; border: 2px solid var(--bg-panel); position: absolute; bottom: 2px; right: 2px; }
 
@@ -3314,7 +3320,7 @@
             <button class="icon-btn" onclick="App.closeMedia()" style="color: #fff;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
             <button class="icon-btn" onclick="App.downloadMedia()" style="color: #fff;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
         </div>
-        <div id="media-zoom-container" style="flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none;">
+        <div id="media-zoom-container" style="flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none;" onclick="App.handleMediaContainerClick(event)">
             <img id="media-viewer-img" style="max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.1s ease-out;">
         </div>
     </div>
@@ -4270,7 +4276,35 @@
                 this.updateNav();
             }
         };
-        window.addEventListener('popstate', () => { if(Router.stack.length>1) Router.pop(); else Router.updateNav(); });
+        window.addEventListener('popstate', () => {
+            const mediaViewer = document.getElementById('media-viewer');
+            if (mediaViewer && mediaViewer.style.display === 'flex') {
+                mediaViewer.style.display = 'none';
+                document.getElementById('media-viewer-img').src = '';
+                State.targetMedia = null;
+                return;
+            }
+
+            const modals = [
+                'ai-modal', 'why-best-modal', 'change-password-modal',
+                'recovery-modal', 'interactive-modal', 'forward-modal', 'add-member-modal'
+            ];
+            for (let id of modals) {
+                const el = document.getElementById(id);
+                if (el && el.style.display && el.style.display !== 'none') {
+                    el.style.display = 'none';
+                    return;
+                }
+            }
+
+            const crop = document.getElementById('panel-crop');
+            if (crop && crop.classList.contains('active')) {
+                App.cancelCrop();
+                return;
+            }
+
+            if (Router.stack.length > 1) Router.pop(); else Router.updateNav();
+        });
 
         const UI = {
             toast(m) { 
@@ -5766,17 +5800,20 @@
                     this.sendText().then(() => { State.chat = origChat; UI.toast('Forwarded!'); });
                 }
             },
-            async authAv(e) {
+            authAv(e) {
                 const f = e.target.files[0]; if(!f) return;
-                UI.toast("Uploading avatar...");
-                try {
-                    const s3Url = await this.uploadToS3(f);
-                    State.regAv = s3Url;
-                    document.getElementById('auth-av-preview').src = s3Url;
-                    document.getElementById('auth-av-preview').style.display = 'block';
-                    document.getElementById('auth-av-svg').style.display = 'none';
-                    UI.toast("Avatar uploaded!");
-                } catch(err) { UI.toast("Image upload failed"); }
+                e.target.value = '';
+                this.openAvatarCrop(f, async (b64) => {
+                    UI.toast("Uploading photo...");
+                    try {
+                        const s3Url = await App.uploadToS3(b64);
+                        State.regAv = s3Url;
+                        document.getElementById('auth-av-preview').src = s3Url;
+                        document.getElementById('auth-av-preview').style.display = 'block';
+                        document.getElementById('auth-av-svg').style.display = 'none';
+                        UI.toast("Photo uploaded!");
+                    } catch(err) { UI.toast("Image upload failed"); }
+                });
             },
             createGroupUI() {
                 document.getElementById('new-group-name').value = '';
@@ -5787,15 +5824,18 @@
                 State.tmpGroupAv = null; document.getElementById('new-group-av').src = defAv;
                 Router.push('panel-create-group');
             },
-            async prepGroupAv(e) {
+            prepGroupAv(e) {
                 const f = e.target.files[0]; if(!f) return;
-                UI.toast("Uploading avatar...");
-                try {
-                    const s3Url = await App.uploadToS3(f);
-                    State.tmpGroupAv = s3Url;
-                    document.getElementById('new-group-av').src = s3Url;
-                    UI.toast("Avatar uploaded!");
-                } catch(err) { UI.toast("Group avatar upload failed"); }
+                e.target.value = '';
+                this.openAvatarCrop(f, async (b64) => {
+                    UI.toast("Uploading avatar...");
+                    try {
+                        const s3Url = await App.uploadToS3(b64);
+                        State.tmpGroupAv = s3Url;
+                        document.getElementById('new-group-av').src = s3Url;
+                        UI.toast("Avatar uploaded!");
+                    } catch(err) { UI.toast("Group avatar upload failed"); }
+                });
             },
             setBlur(val) {
                 document.documentElement.style.setProperty('--glass-blur', `${val}px`);
@@ -6372,15 +6412,30 @@
                 const viewer = document.getElementById('media-viewer');
                 img.src = url;
                 viewer.style.display = 'flex';
+                viewer.style.background = '#000';
                 
                 // Reset zoom states
                 State.mScale = 1;
+                State.mPanX = 0;
+                State.mPanY = 0;
                 img.style.transform = `scale(1) translate(0px, 0px)`;
+                
+                history.pushState({ overlay: 'media-viewer' }, '', '#media-viewer');
             },
             closeMedia() {
-                document.getElementById('media-viewer').style.display = 'none';
+                const viewer = document.getElementById('media-viewer');
+                if (!viewer || viewer.style.display === 'none') return;
+                viewer.style.display = 'none';
                 document.getElementById('media-viewer-img').src = '';
                 State.targetMedia = null;
+                if (history.state && history.state.overlay === 'media-viewer') {
+                    history.back();
+                }
+            },
+            handleMediaContainerClick(e) {
+                if (State.mScale <= 1) {
+                    App.closeMedia();
+                }
             },
             downloadMedia() {
                 if(!State.targetMedia) return;
@@ -7174,15 +7229,18 @@
                 State.tmpChanAv = null; document.getElementById('new-chan-av').src = defAv;
                 Router.push('panel-create-channel');
             },
-            async prepChanAv(e) {
+            prepChanAv(e) {
                 const f = e.target.files[0]; if(!f) return;
-                UI.toast("Uploading avatar...");
-                try {
-                    const s3Url = await App.uploadToS3(f);
-                    State.tmpChanAv = s3Url;
-                    document.getElementById('new-chan-av').src = s3Url;
-                    UI.toast("Channel avatar uploaded!");
-                } catch(err) { UI.toast("Channel avatar upload failed"); }
+                e.target.value = '';
+                this.openAvatarCrop(f, async (b64) => {
+                    UI.toast("Uploading avatar...");
+                    try {
+                        const s3Url = await App.uploadToS3(b64);
+                        State.tmpChanAv = s3Url;
+                        document.getElementById('new-chan-av').src = s3Url;
+                        UI.toast("Channel avatar uploaded!");
+                    } catch(err) { UI.toast("Channel avatar upload failed"); }
+                });
             },
             async submitChannel() {
                 const name = document.getElementById('new-chan-name').value.trim();
@@ -7421,14 +7479,15 @@
                 });
                 const mCont = document.getElementById('media-zoom-container');
                 const mImg = document.getElementById('media-viewer-img');
-                let mStartDist = 0, mStartX = 0, mStartY = 0, mPanX = 0, mPanY = 0;
+                let mStartDist = 0, mStartX = 0, mStartY = 0, mPanX = 0, mPanY = 0, mSwipeY = 0;
                 
                 mCont.addEventListener('touchstart', e => {
+                    mSwipeY = 0;
                     if(e.touches.length === 2) {
                         mStartDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-                    } else if (e.touches.length === 1 && State.mScale > 1) {
-                        mStartX = e.touches[0].pageX - mPanX;
-                        mStartY = e.touches[0].pageY - mPanY;
+                    } else if (e.touches.length === 1) {
+                        mStartX = e.touches[0].pageX - (mPanX || 0);
+                        mStartY = e.touches[0].pageY - (mPanY || 0);
                     }
                 });
                 
@@ -7438,16 +7497,54 @@
                         const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
                         State.mScale = Math.min(Math.max(1, State.mScale * (dist / mStartDist)), 4);
                         mStartDist = dist;
-                    } else if (e.touches.length === 1 && State.mScale > 1) {
-                        e.preventDefault();
-                        mPanX = e.touches[0].pageX - mStartX;
-                        mPanY = e.touches[0].pageY - mStartY;
+                        mImg.style.transform = `scale(${State.mScale}) translate(${mPanX/State.mScale}px, ${mPanY/State.mScale}px)`;
+                    } else if (e.touches.length === 1) {
+                        if (State.mScale > 1) {
+                            e.preventDefault();
+                            mPanX = e.touches[0].pageX - mStartX;
+                            mPanY = e.touches[0].pageY - mStartY;
+                            mImg.style.transform = `scale(${State.mScale}) translate(${mPanX/State.mScale}px, ${mPanY/State.mScale}px)`;
+                        } else {
+                            const dy = e.touches[0].pageY - mStartY;
+                            if (dy > 0) {
+                                e.preventDefault();
+                                mSwipeY = dy;
+                                mImg.style.transform = `translateY(${dy}px) scale(${Math.max(0.7, 1 - dy/1000)})`;
+                                document.getElementById('media-viewer').style.background = `rgba(0,0,0,${Math.max(0.2, 1 - dy/300)})`;
+                            }
+                        }
                     }
-                    mImg.style.transform = `scale(${State.mScale}) translate(${mPanX/State.mScale}px, ${mPanY/State.mScale}px)`;
                 });
                 
                 mCont.addEventListener('touchend', () => {
-                    if(State.mScale <= 1) { mPanX = 0; mPanY = 0; mImg.style.transform = `scale(1) translate(0px, 0px)`; }
+                    if (mSwipeY > 100) {
+                        document.getElementById('media-viewer').style.background = '#000';
+                        App.closeMedia();
+                    } else {
+                        document.getElementById('media-viewer').style.background = '#000';
+                        if(State.mScale <= 1) { mPanX = 0; mPanY = 0; mImg.style.transform = `scale(1) translate(0px, 0px)`; }
+                    }
+                    mSwipeY = 0;
+                });
+
+                document.addEventListener('click', (e) => {
+                    const attachPop = document.getElementById('attach-popover');
+                    const attachBtn = document.getElementById('file-upload-btn-wrap');
+                    if (attachPop && attachPop.style.display === 'block' && !attachPop.contains(e.target) && !attachBtn?.contains(e.target)) {
+                        attachPop.style.display = 'none';
+                    }
+
+                    const weatherPop = document.getElementById('weather-popup');
+                    const weatherBtn = document.getElementById('header-weather-btn');
+                    if (weatherPop && weatherPop.style.display === 'block' && !weatherPop.contains(e.target) && !weatherBtn?.contains(e.target)) {
+                        weatherPop.style.display = 'none';
+                    }
+
+                    const stickerPan = document.getElementById('sticker-panel');
+                    const stickerToggle = document.querySelector('[onclick="App.toggleStickers()"]');
+                    if (stickerPan && stickerPan.classList.contains('active') && !stickerPan.contains(e.target) && !stickerToggle?.contains(e.target)) {
+                        stickerPan.classList.remove('active');
+                    }
                 });
                 
                 const nameEl = document.getElementById('set-name');
@@ -8854,18 +8951,50 @@
                     State.cropper = new Cropper(imgTarget, { viewMode: 1, background: false });
                 }, 100);
             },
+            openAvatarCrop(file, callback) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    State.cropMode = 'avatar';
+                    State.cropCallback = callback;
+                    document.getElementById('panel-crop').classList.add('active');
+                    
+                    const imgTarget = document.getElementById('crop-target');
+                    imgTarget.src = e.target.result;
+                    
+                    if (State.cropper) State.cropper.destroy();
+                    setTimeout(() => {
+                        State.cropper = new Cropper(imgTarget, {
+                            aspectRatio: 1,
+                            viewMode: 1,
+                            background: false,
+                            ready() {
+                                const cropperContainer = document.querySelector('.cropper-container');
+                                if (cropperContainer) cropperContainer.classList.add('cropper-circle');
+                            }
+                        });
+                    }, 100);
+                };
+                reader.readAsDataURL(file);
+            },
             cancelCrop() {
                 document.getElementById('panel-crop').classList.remove('active');
                 if (State.cropper) State.cropper.destroy();
+                State.cropMode = null;
+                State.cropCallback = null;
             },
             async confirmCrop() {
                 if (!State.cropper) return;
-                const canvas = State.cropper.getCroppedCanvas({ maxWidth: 1200, maxHeight: 1200 });
+                const isAvatar = State.cropMode === 'avatar';
+                const canvas = State.cropper.getCroppedCanvas(isAvatar ? { width: 500, height: 500 } : { maxWidth: 1200, maxHeight: 1200 });
                 const b64 = canvas.toDataURL('image/jpeg', 0.85);
                 
+                const callback = State.cropCallback;
+                const mode = State.cropMode;
                 this.cancelCrop();
                 
-                if (State.cropMode === 'wallpaper') {
+                if (mode === 'avatar' && callback) {
+                    callback(b64);
+                } else if (mode === 'wallpaper') {
                     UI.toast("Uploading wallpaper...");
                     try {
                         const url = await App.uploadToS3(b64);
@@ -8877,8 +9006,7 @@
                     } catch (err) {
                         UI.toast("Upload failed");
                     }
-                    State.cropMode = null;
-                } else {
+                } else if (State.capMediaQueue && State.capMediaQueue.length > 0) {
                     State.capMediaQueue[0].data = b64; 
                     document.getElementById('media-preview-img').src = b64;
                     document.getElementById('msg-input').focus();
@@ -10173,17 +10301,20 @@
                 const body = {};
                 if(field === 'avatar') {
                     const f = e.target.files[0]; if(!f) return;
-                    UI.toast("Uploading avatar...");
-                    try {
-                        const s3Url = await App.uploadToS3(f);
-                        body.avatar = s3Url;
-                        await req('/api/user/profile', 'PUT', body);
-                        State.u.avatar = s3Url;
-                        localStorage.setItem('y_u', JSON.stringify(State.u));
-                        document.getElementById('set-av').src = s3Url;
-                        document.getElementById('nav-av').src = s3Url;
-                        UI.toast('Profile updated');
-                    } catch(err) { UI.toast('Profile avatar update failed'); }
+                    e.target.value = '';
+                    this.openAvatarCrop(f, async (b64) => {
+                        UI.toast("Uploading avatar...");
+                        try {
+                            const s3Url = await App.uploadToS3(b64);
+                            body.avatar = s3Url;
+                            await req('/api/user/profile', 'PUT', body);
+                            State.u.avatar = s3Url;
+                            localStorage.setItem('y_u', JSON.stringify(State.u));
+                            document.getElementById('set-av').src = s3Url;
+                            document.getElementById('nav-av').src = s3Url;
+                            UI.toast('Profile updated');
+                        } catch(err) { UI.toast('Profile avatar update failed'); }
+                    });
                     return;
                 }
                 if(field === 'banner') {
@@ -10365,15 +10496,18 @@
                 
                 Router.push('panel-edit-group-channel');
             },
-            async prepEditGCAv(e) {
+            prepEditGCAv(e) {
                 const f = e.target.files[0]; if(!f) return;
-                UI.toast("Uploading avatar...");
-                try {
-                    const s3Url = await App.uploadToS3(f);
-                    State.tmpEditGCAv = s3Url;
-                    document.getElementById('edit-gc-av').src = s3Url;
-                    UI.toast("Avatar uploaded!");
-                } catch(err) { UI.toast("Avatar upload failed"); }
+                e.target.value = '';
+                this.openAvatarCrop(f, async (b64) => {
+                    UI.toast("Uploading avatar...");
+                    try {
+                        const s3Url = await App.uploadToS3(b64);
+                        State.tmpEditGCAv = s3Url;
+                        document.getElementById('edit-gc-av').src = s3Url;
+                        UI.toast("Avatar uploaded!");
+                    } catch(err) { UI.toast("Avatar upload failed"); }
+                });
             },
             copyEditGCInvite() {
                 const link = document.getElementById('edit-gc-invite-link').value;
