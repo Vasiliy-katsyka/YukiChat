@@ -2485,6 +2485,11 @@
                     <div style="border-left:3px solid var(--primary); padding-left:10px; font-size:13px; color:var(--text-main)" id="reply-preview-text">Replying...</div>
                     <button class="icon-btn" style="width:24px;height:24px; color:var(--text-main)" onclick="App.cancelReply()">✕</button>
                 </div>
+
+                <div id="edit-preview" class="reply-bar-active liquid-glass" style="display:none; margin: 0 20px 10px; border: 1px solid var(--border);">
+                    <div style="border-left:3px solid var(--primary); padding-left:10px; font-size:13px; color:var(--text-main)" id="edit-preview-text">Editing message...</div>
+                    <button class="icon-btn" style="width:24px;height:24px; color:var(--text-main)" onclick="App.cancelEdit()">✕</button>
+                </div>
                 
                 <!-- ADD THIS NEW MEDIA PREVIEW BLOCK -->
                 <div id="media-preview" class="reply-bar-active liquid-glass" style="display:none; margin: 0 20px 10px; border: 1px solid var(--border); padding: 8px 12px; align-items: flex-start;">
@@ -3276,6 +3281,7 @@
             <button class="icon-btn" onclick="App.expandReactions()" style="width:30px;height:30px;color:#fff;margin-left:8px;" id="ctx-react-expand"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
         </div>
         <div class="ctx-item" id="ctx-who-read" onclick="App.showReadersModal()"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Who Read</div>
+        <div class="ctx-item" id="ctx-edit" onclick="App.initEdit()" style="display:none;"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Edit Message</div>
         <div class="ctx-item" onclick="App.initReply()"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg> Reply</div>
         <div class="ctx-item" onclick="App.initForward()"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"></path></svg> Forward</div>
         <div class="ctx-item" onclick="App.msgAct('pin')"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Pin / Unpin</div>
@@ -5871,7 +5877,7 @@
                         const bubble = repEl.querySelector('.msg-bubble');
                         if (bubble) repTxt = bubble.getAttribute('data-raw') || Array.from(bubble.childNodes).filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() || 'Media';
                     }
-                    inner += `<div class="reply-block" onclick="document.getElementById('msg-${m.reply_to_id}')?.scrollIntoView({behavior:'smooth', block:'center'})">${repTxt.substring(0, 40)}</div>`;
+                    inner += `<div class="reply-block" onclick="App.scrollToMessage(${m.reply_to_id})">${repTxt.substring(0, 40)}</div>`;
                 }
 
                 let safeContent = m.content || '';
@@ -7702,6 +7708,7 @@
                 const activeChatObj = State.chats.get(State.chat);
                 const isGroup = activeChatObj && activeChatObj.type === 'group';
                 document.getElementById('ctx-who-read').style.display = isGroup ? 'flex' : 'none';
+                document.getElementById('ctx-edit').style.display = (isMine && State.targetTxt) ? 'flex' : 'none';
                 document.getElementById('ctx-save-media').style.display = isMedia ? 'flex' : 'none';
                 document.getElementById('ctx-copy').style.display = State.targetTxt ? 'flex' : 'none';
                 document.getElementById('ctx-del').style.display = isMine ? 'flex' : 'none';
@@ -8601,8 +8608,125 @@
                 } catch(e) { UI.toast('Error finding user'); }
             },
             // --- MESSAGING ACTIONS ---
+            initEdit() {
+                this.closeCtx();
+                if (!State.targetId || !State.targetTxt) return;
+                State.editingMsgId = State.targetId;
+                this.cancelReply();
+                const editPreview = document.getElementById('edit-preview');
+                if (editPreview) editPreview.style.display = 'flex';
+                const editPreviewText = document.getElementById('edit-preview-text');
+                if (editPreviewText) editPreviewText.textContent = `Edit: ${State.targetTxt.substring(0, 40)}`;
+                const inp = document.getElementById('msg-input');
+                if (inp) {
+                    inp.value = State.targetTxt;
+                    inp.focus();
+                    inp.style.height = '44px';
+                    inp.style.height = Math.min(inp.scrollHeight, 100) + 'px';
+                }
+                document.getElementById('record-btn').style.display = 'none';
+                document.getElementById('send-btn-el').style.display = 'flex';
+            },
+            cancelEdit() {
+                State.editingMsgId = null;
+                const editPreview = document.getElementById('edit-preview');
+                if (editPreview) editPreview.style.display = 'none';
+                const inp = document.getElementById('msg-input');
+                if (inp) {
+                    if (State.chat) {
+                        inp.value = localStorage.getItem(`draft_${State.chat}`) || '';
+                    } else {
+                        inp.value = '';
+                    }
+                    inp.style.height = '44px';
+                    const hasText = inp.value.trim().length > 0;
+                    document.getElementById('record-btn').style.display = hasText ? 'none' : 'flex';
+                    document.getElementById('send-btn-el').style.display = hasText ? 'flex' : 'none';
+                }
+            },
+            updateDraftPreviewInSidebar(chatId, draftText) {
+                const itemEl = document.querySelector(`.user-item[data-chat-id="${chatId}"]`);
+                if (!itemEl) return;
+                const lastMsgEl = itemEl.querySelector('.user-last-msg');
+                if (!lastMsgEl) return;
+
+                if (draftText && draftText.trim()) {
+                    if (!lastMsgEl.hasAttribute('data-orig-html')) {
+                        lastMsgEl.setAttribute('data-orig-html', lastMsgEl.innerHTML);
+                    }
+                    lastMsgEl.innerHTML = `<span style="color:var(--danger); font-weight:600;">Draft:</span> <span style="color:var(--text-main);">${draftText.replace(/</g,'&lt;')}</span>`;
+                } else {
+                    if (lastMsgEl.hasAttribute('data-orig-html')) {
+                        lastMsgEl.innerHTML = lastMsgEl.getAttribute('data-orig-html');
+                        lastMsgEl.removeAttribute('data-orig-html');
+                    }
+                }
+            },
+            handleMentionAutocomplete(e) {
+                const inp = document.getElementById('msg-input');
+                const autocompleteBox = document.getElementById('mention-autocomplete');
+                if (!inp || !autocompleteBox) return;
+
+                const val = inp.value;
+                const cursorPos = inp.selectionStart;
+                const textBeforeCursor = val.substring(0, cursorPos);
+                const atMatch = textBeforeCursor.match(/@([a-zA-Z0-9_]*)$/);
+
+                if (!atMatch || !State.chat) {
+                    autocompleteBox.style.display = 'none';
+                    return;
+                }
+
+                const query = atMatch[1].toLowerCase();
+                const chatMembers = State.memberCache[State.chat] || [];
+                
+                let candidates = [...chatMembers];
+                if (candidates.length === 0) {
+                    State.chats.forEach(c => {
+                        if (c.type === 'dm') candidates.push({ id: c.dm_user_id, username: c.dm_username, avatar: c.dm_avatar });
+                    });
+                }
+
+                const matches = candidates.filter(m => m.username && m.username.toLowerCase().includes(query) && m.id !== State.u.userId);
+
+                if (matches.length === 0) {
+                    autocompleteBox.style.display = 'none';
+                    return;
+                }
+
+                let html = '';
+                matches.slice(0, 5).forEach(m => {
+                    const av = m.avatar || getDefAv(m.username);
+                    html += `<div class="user-item" style="padding: 8px 16px; cursor: pointer;" onclick="App.applyMention('${m.username}')">
+                        <img src="${av}" class="avatar" style="width:28px; height:28px; border-radius:50%;">
+                        <span style="font-size:14px; font-weight:600;">@${m.username}</span>
+                    </div>`;
+                });
+
+                autocompleteBox.innerHTML = html;
+                autocompleteBox.style.display = 'block';
+            },
+            applyMention(username) {
+                const inp = document.getElementById('msg-input');
+                const autocompleteBox = document.getElementById('mention-autocomplete');
+                if (!inp) return;
+
+                const val = inp.value;
+                const cursorPos = inp.selectionStart;
+                const textBeforeCursor = val.substring(0, cursorPos);
+                const textAfterCursor = val.substring(cursorPos);
+
+                const newBefore = textBeforeCursor.replace(/@([a-zA-Z0-9_]*)$/, `@${username} `);
+                inp.value = newBefore + textAfterCursor;
+                inp.focus();
+                inp.setSelectionRange(newBefore.length, newBefore.length);
+
+                if (autocompleteBox) autocompleteBox.style.display = 'none';
+                if (State.chat) localStorage.setItem(`draft_${State.chat}`, inp.value);
+            },
             initReply() { 
                 State.replyTo = State.targetId; 
+                this.cancelEdit();
                 document.getElementById('reply-preview').style.display = 'flex'; 
                 document.getElementById('reply-preview-text').textContent = App.targetTxt || 'Media'; 
                 
@@ -8610,16 +8734,31 @@
                 document.getElementById('msg-input').focus(); 
             },
             cancelReply() { State.replyTo = null; document.getElementById('reply-preview').style.display='none'; },
+            scrollToMessage(msgId) {
+                const targetEl = document.getElementById(`msg-${msgId}`);
+                const msgsCont = document.getElementById('msgs');
+                if (!targetEl || !msgsCont) return;
+
+                const targetTop = targetEl.offsetTop - msgsCont.offsetTop;
+                const scrollTo = targetTop - (msgsCont.clientHeight / 2) + (targetEl.clientHeight / 2);
+
+                msgsCont.scrollTo({
+                    top: Math.max(0, scrollTo),
+                    behavior: 'smooth'
+                });
+
+                targetEl.style.outline = '2px solid var(--primary)';
+                targetEl.style.borderRadius = '20px';
+                setTimeout(() => { targetEl.style.outline = 'none'; }, 3000);
+            },
+
             scrollToPin() { 
                 const pinEl = document.getElementById('pinned-msg');
                 const msgId = pinEl.getAttribute('data-msg-id');
                 if (msgId) {
                     const targetEl = document.getElementById(`msg-${msgId}`);
                     if (targetEl) {
-                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        targetEl.style.outline = '2px solid var(--primary)';
-                        targetEl.style.borderRadius = '20px';
-                        setTimeout(() => { targetEl.style.outline = 'none'; }, 3000);
+                        App.scrollToMessage(msgId);
                     } else {
                         UI.toast("Jumping to pinned message...");
                         req(`/api/messages/${State.chat}?after=${Number(msgId) - 5}`).then(async msgs => {
@@ -8636,13 +8775,7 @@
                             }
                             App.rebuildDateDividers();
                             App.renderMath();
-                            const targetEl = document.getElementById(`msg-${msgId}`);
-                            if (targetEl) {
-                                targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                targetEl.style.outline = '2px solid var(--primary)';
-                                targetEl.style.borderRadius = '20px';
-                                setTimeout(() => { targetEl.style.outline = 'none'; }, 3000);
-                            }
+                            App.scrollToMessage(msgId);
                         });
                     }
                 }
@@ -8985,9 +9118,49 @@
                 const inp = document.getElementById('msg-input'); 
                 const txt = inp.value.trim();
                 if(!txt || !State.chat) return; 
+
+                if (State.editingMsgId) {
+                    const editId = State.editingMsgId;
+                    this.cancelEdit();
+                    
+                    let finalContent = txt;
+                    const activeChatObj = State.chats.get(State.chat);
+                    if (State.chat !== 'ai' && activeChatObj && activeChatObj.type === 'dm') {
+                        const encrypted = await E2EE.encrypt(State.chat, txt);
+                        if (encrypted !== txt) finalContent = encrypted;
+                    }
+
+                    try {
+                        await req(`/api/messages/${editId}/action`, 'POST', { action: 'edit', text: finalContent });
+                        const msgEl = document.getElementById(`msg-${editId}`);
+                        if (msgEl) {
+                            const fakeMsg = {
+                                id: editId, content: txt, type: 'text',
+                                created_at: new Date().toISOString(),
+                                sender_id: State.u.userId,
+                                edited_at: new Date().toISOString()
+                            };
+                            msgEl.innerHTML = this.buildMsgHTML(fakeMsg, true, activeChatObj?.type);
+                            this.renderMath(msgEl);
+                        }
+                        if (State.chat) {
+                            localStorage.removeItem(`draft_${State.chat}`);
+                            App.updateDraftPreviewInSidebar(State.chat, '');
+                        }
+                    } catch(e) {
+                        UI.toast(e.message || 'Failed to edit message');
+                    }
+                    return;
+                }
+
                 inp.value = '';
                 inp.style.height = '44px';
                 document.getElementById('input-ai-btn').style.display = 'none';
+                
+                if (State.chat) {
+                    localStorage.removeItem(`draft_${State.chat}`);
+                    App.updateDraftPreviewInSidebar(State.chat, '');
+                }
             
                 const tempId = 'temp-' + Date.now();
                 const msgsCont = document.getElementById('msgs');
